@@ -7,6 +7,7 @@ import subprocess
 import os
 
 from asrreal import ASR
+from rtmp_streaming import StreamerConfig, Streamer
 
 class NeRFReal:
     def __init__(self, opt, trainer, data_loader, debug=True):
@@ -53,6 +54,25 @@ class NeRFReal:
         if self.opt.asr:
             self.asr = ASR(opt)
         
+        fps=25
+        #push_url='rtmp://localhost/live/livestream' #'data/video/output_0.mp4'
+        sc = StreamerConfig()
+        sc.source_width = self.W
+        sc.source_height = self.H
+        sc.stream_width = self.W
+        sc.stream_height = self.H
+        sc.stream_fps = fps
+        sc.stream_bitrate = 1000000
+        sc.stream_profile = 'main' #'high444' # 'main'
+        sc.audio_channel = 1
+        sc.sample_rate = 16000
+        sc.stream_server = opt.push_url
+
+        self.streamer = Streamer()
+        self.streamer.init(sc)
+        self.streamer.enable_av_debug_log()
+        
+        '''
         video_path = 'video_stream'
         if not os.path.exists(video_path):
             os.mkfifo(video_path, mode=0o777)
@@ -61,8 +81,6 @@ class NeRFReal:
             os.mkfifo(audio_path, mode=0o777)
         width=450
         height=450
-        fps=25
-        push_url='rtmp://localhost/live/livestream' #'data/video/output_0.mp4'
         command = ['ffmpeg',
                     '-y', #'-an',
                     #'-re',
@@ -90,6 +108,7 @@ class NeRFReal:
         self.fifo_video = open(video_path, 'wb')
         self.fifo_audio = open(audio_path, 'wb')
         #self.test_step()
+        '''
         
 
     def __enter__(self):
@@ -127,13 +146,14 @@ class NeRFReal:
             outputs = self.trainer.test_gui_with_data(data, self.W, self.H)
             print(f'[INFO] outputs shape ',outputs['image'].shape)
             image = (outputs['image'] * 255).astype(np.uint8)
+            self.streamer.stream_frame(image)
             #self.pipe.stdin.write(image.tostring())
             for _ in range(2):
                 frame = self.asr.get_audio_out()
                 print(f'[INFO] get_audio_out shape ',frame.shape)
-                frame = (frame * 32767).astype(np.int16).tobytes()
-                self.fifo_audio.write(frame)
-            self.fifo_video.write(image.tostring())           
+                self.streamer.stream_frame_audio(frame)
+            #     frame = (frame * 32767).astype(np.int16).tobytes()
+            #     self.fifo_audio.write(frame)           
         else:
             if self.audio_features is not None:
                 auds = get_audio_features(self.audio_features, self.opt.att, self.audio_idx)

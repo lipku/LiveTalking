@@ -191,6 +191,8 @@ if __name__ == '__main__':
     parser.add_argument('--asr_model', type=str, default='cpierse/wav2vec2-large-xlsr-53-esperanto')
     # parser.add_argument('--asr_model', type=str, default='facebook/wav2vec2-large-960h-lv60-self')
 
+    parser.add_argument('--push_url', type=str, default='rtmp://localhost/live/livestream')
+
     parser.add_argument('--asr_save_feats', action='store_true')
     # audio FPS
     parser.add_argument('--fps', type=int, default=50)
