@@ -7,10 +7,11 @@ import json
 import gevent
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
-from tools import audio_pre_process, video_pre_process, generate_video,audio_process
 import os
 import re
 import numpy as np
+from threading import Thread
+import multiprocessing
 
 import argparse
 from nerf_triplane.provider import NeRFDataset_Test
@@ -24,7 +25,6 @@ import edge_tts
 
 app = Flask(__name__)
 sockets = Sockets(app)
-video_list = []
 global nerfreal
 
 
@@ -40,33 +40,15 @@ async def main(voicename: str, text: str, render):
             pass                
 
 
-def send_information(path, ws):
-
-        print('传输信息开始！')
-        #path = video_list[0]
-        ''''''
-        with open(path, 'rb') as f:
-            video_data = base64.b64encode(f.read()).decode()
-
-        data = {
-                'video': 'data:video/mp4;base64,%s' % video_data,
-                }
-        json_data = json.dumps(data)
-
-        ws.send(json_data)
-
-
-
 def txt_to_audio(text_):
     audio_list = []
     #audio_path = 'data/audio/aud_0.wav'
     voicename = "zh-CN-YunxiaNeural"
-    # 让我们一起学习。必应由 AI 提供支持，因此可能出现意外和错误。请确保核对事实，并 共享反馈以便我们可以学习和改进!
     text = text_
     asyncio.get_event_loop().run_until_complete(main(voicename,text,nerfreal))
     #audio_process(audio_path)
     
-@sockets.route('/dighuman')
+@sockets.route('/humanecho')
 def echo_socket(ws):
     # 获取WebSocket对象
     #ws = request.environ.get('wsgi.websocket')
@@ -81,19 +63,12 @@ def echo_socket(ws):
             message = ws.receive()           
             
             if len(message)==0:
-
                 return '输入信息为空'
             else:                                
                 txt_to_audio(message)                       
-                audio_path = 'data/audio/aud_0.wav'
-                audio_path_eo = 'data/audio/aud_0_eo.npy'
-                video_path = 'data/video/results/ngp_0.mp4'
-                output_path = 'data/video/results/output_0.mp4'
-                generate_video(audio_path, audio_path_eo, video_path, output_path)
-                video_list.append(output_path)
-                send_information(output_path, ws)
-                
 
+def render():
+    nerfreal.render()                  
                
 
 if __name__ == '__main__':
@@ -242,12 +217,13 @@ if __name__ == '__main__':
 
     # we still need test_loader to provide audio features for testing.
     nerfreal = NeRFReal(opt, trainer, test_loader)
-    txt_to_audio('我是中国人,我来自北京')
-    nerfreal.render()
+    #txt_to_audio('我是中国人,我来自北京')
+    rendthrd = Thread(target=render)
+    rendthrd.start()
 
     #############################################################################
-    
-    server = pywsgi.WSGIServer(('127.0.0.1', 8800), app, handler_class=WebSocketHandler)
+    print('start websocket server')
+    server = pywsgi.WSGIServer(('0.0.0.0', 8000), app, handler_class=WebSocketHandler)
     server.serve_forever()
     
     
