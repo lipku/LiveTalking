@@ -12,6 +12,7 @@ rich
 dearpygui
 packaging
 scipy
+scikit-learn
 
 face_alignment
 python_speech_features
@@ -24,3 +25,8 @@ configargparse
 
 lpips
 imageio-ffmpeg
+
+transformers
+edge_tts
+flask
+flask_sockets

@@ -144,13 +144,13 @@ class NeRFReal:
                 data['auds'] = self.asr.get_next_feat()
 
             outputs = self.trainer.test_gui_with_data(data, self.W, self.H)
-            print(f'[INFO] outputs shape ',outputs['image'].shape)
+            #print(f'[INFO] outputs shape ',outputs['image'].shape)
             image = (outputs['image'] * 255).astype(np.uint8)
             self.streamer.stream_frame(image)
             #self.pipe.stdin.write(image.tostring())
             for _ in range(2):
                 frame = self.asr.get_audio_out()
-                print(f'[INFO] get_audio_out shape ',frame.shape)
+                #print(f'[INFO] get_audio_out shape ',frame.shape)
                 self.streamer.stream_frame_audio(frame)
             #     frame = (frame * 32767).astype(np.int16).tobytes()
             #     self.fifo_audio.write(frame)           
