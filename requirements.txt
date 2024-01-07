@@ -18,7 +18,7 @@ face_alignment
 python_speech_features
 numba
 resampy
-pyaudio
+#pyaudio
 soundfile
 einops
 configargparse
@@ -30,3 +30,4 @@ transformers
 edge_tts
 flask
 flask_sockets
+opencv-python-headless

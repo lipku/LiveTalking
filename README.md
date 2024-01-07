@@ -58,6 +58,13 @@ python app.py
 
 用浏览器打开http://serverip/echo.html，在文本框输入任意文字，提交。数字人播报该段文字
 
+### docker运行
+先运行srs和nginx  
+启动数字人
+```
+docker run --gpus all -it --network=host --rm  registry.cn-hangzhou.aliyuncs.com/lipku/nerfstream:v1.2
+```
+
 ## Data flow
 ![](/assets/dataflow.png)
 

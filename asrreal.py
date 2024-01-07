@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from transformers import AutoModelForCTC, AutoProcessor
 
-import pyaudio
+#import pyaudio
 import soundfile as sf
 import resampy
 
