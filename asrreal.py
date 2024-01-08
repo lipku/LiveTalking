@@ -383,21 +383,9 @@ class ASR:
 
     def push_audio(self,buffer):
         print(f'[INFO] push_audio {len(buffer)}')
-        if len(buffer)>0:
-            byte_stream=BytesIO(buffer)
-            stream = self.create_bytes_stream(byte_stream)
-            streamlen = stream.shape[0]
-            idx=0
-            while streamlen >= self.chunk:
-                self.queue.put(stream[idx:idx+self.chunk])
-                streamlen -= self.chunk
-                idx += self.chunk
-            if streamlen>0:
-                self.queue.put(stream[idx:])
-        # self.input_stream.write(buffer)
-        # if len(buffer)<=0:
-        #     self.input_stream.seek(0)
-        #     stream = self.create_bytes_stream(self.input_stream)
+        # if len(buffer)>0:
+        #     byte_stream=BytesIO(buffer)
+        #     stream = self.create_bytes_stream(byte_stream)
         #     streamlen = stream.shape[0]
         #     idx=0
         #     while streamlen >= self.chunk:
@@ -406,6 +394,18 @@ class ASR:
         #         idx += self.chunk
         #     if streamlen>0:
         #         self.queue.put(stream[idx:])
+        self.input_stream.write(buffer)
+        if len(buffer)<=0:
+            self.input_stream.seek(0)
+            stream = self.create_bytes_stream(self.input_stream)
+            streamlen = stream.shape[0]
+            idx=0
+            while streamlen >= self.chunk:
+                self.queue.put(stream[idx:idx+self.chunk])
+                streamlen -= self.chunk
+                idx += self.chunk
+            if streamlen>0:
+                self.queue.put(stream[idx:])
     
     def get_audio_out(self):
         return self.output_queue.get()
