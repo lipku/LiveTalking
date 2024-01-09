@@ -406,6 +406,8 @@ class ASR:
                 idx += self.chunk
             if streamlen>0:
                 self.queue.put(stream[idx:])
+            self.input_stream.seek(0)
+            self.input_stream.truncate()
     
     def get_audio_out(self):
         return self.output_queue.get()

@@ -5,6 +5,7 @@ import numpy as np
 #from .utils import *
 import subprocess
 import os
+import time
 
 from asrreal import ASR
 from rtmp_streaming import StreamerConfig, Streamer
@@ -129,8 +130,8 @@ class NeRFReal:
 
     def test_step(self):
         
-        starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
-        starter.record()
+        #starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+        #starter.record()
 
         if self.playing:
             try:
@@ -161,9 +162,9 @@ class NeRFReal:
                 auds = None
             outputs = self.trainer.test_gui(self.cam.pose, self.cam.intrinsics, self.W, self.H, auds, self.eye_area, self.ind_index, self.bg_color, self.spp, self.downscale)
 
-        ender.record()
-        torch.cuda.synchronize()
-        t = starter.elapsed_time(ender)
+        #ender.record()
+        #torch.cuda.synchronize()
+        #t = starter.elapsed_time(ender)
             
     def render(self):
         if self.opt.asr:
@@ -171,8 +172,13 @@ class NeRFReal:
         while True: #todo
             # update texture every frame
             # audio stream thread...
+            t = time.time()
             if self.opt.asr and self.playing:
                 # run 2 ASR steps (audio is at 50FPS, video is at 25FPS)
                 for _ in range(2):
                     self.asr.run_step()
             self.test_step()
+            delay = 0.04 - (time.time() - t) #40ms
+            if delay > 0:
+                time.sleep(delay)
+            
