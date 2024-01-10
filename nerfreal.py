@@ -64,7 +64,7 @@ class NeRFReal:
         sc.stream_height = self.H
         sc.stream_fps = fps
         sc.stream_bitrate = 1000000
-        sc.stream_profile = 'main' #'high444' # 'main'
+        sc.stream_profile = 'baseline' #'high444' # 'main'
         sc.audio_channel = 1
         sc.sample_rate = 16000
         sc.stream_server = opt.push_url
@@ -178,7 +178,7 @@ class NeRFReal:
                 for _ in range(2):
                     self.asr.run_step()
             self.test_step()
-            delay = 0.04 - (time.time() - t) #40ms
-            if delay > 0:
-                time.sleep(delay)
+            # delay = 0.04 - (time.time() - t) #40ms
+            # if delay > 0:
+            #     time.sleep(delay)
             

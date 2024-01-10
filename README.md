@@ -1,6 +1,9 @@
 A streaming digital human based on the Ernerf model， realize audio video synchronous dialogue. It can basically achieve commercial effects.  
 基于ernerf模型的流式数字人，实现音视频同步对话。基本可以达到商用效果
 
+<video id="video" controls="" preload="none" poster="封面">
+      <source id="mp4" src="assets/demo.mp4" type="video/mp4">
+</video>
 
 ## Installation
 
