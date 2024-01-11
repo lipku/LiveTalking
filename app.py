@@ -45,8 +45,9 @@ def txt_to_audio(text_):
     #audio_path = 'data/audio/aud_0.wav'
     voicename = "zh-CN-YunxiaNeural"
     text = text_
+    t = time.time()
     asyncio.get_event_loop().run_until_complete(main(voicename,text,nerfreal))
-    #audio_process(audio_path)
+    print('-------tts time: ',time.time()-t)
     
 @sockets.route('/humanecho')
 def echo_socket(ws):

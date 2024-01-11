@@ -231,8 +231,8 @@ class ASR:
         self.feat_buffer_idx = (self.feat_buffer_idx + 1) % self.feat_buffer_size
 
         # very naive, just concat the text output.
-        if text != '':
-            self.text = self.text + ' ' + text
+        #if text != '':
+        #    self.text = self.text + ' ' + text
 
         # will only run once at ternimation
         if self.terminated:

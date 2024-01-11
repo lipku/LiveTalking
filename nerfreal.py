@@ -71,7 +71,7 @@ class NeRFReal:
 
         self.streamer = Streamer()
         self.streamer.init(sc)
-        self.streamer.enable_av_debug_log()
+        #self.streamer.enable_av_debug_log()
         
         '''
         video_path = 'video_stream'
