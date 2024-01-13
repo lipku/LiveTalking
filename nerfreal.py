@@ -144,7 +144,9 @@ class NeRFReal:
                 # use the live audio stream
                 data['auds'] = self.asr.get_next_feat()
 
+            #t = time.time()
             outputs = self.trainer.test_gui_with_data(data, self.W, self.H)
+            #print('-------ernerf time: ',time.time()-t)
             #print(f'[INFO] outputs shape ',outputs['image'].shape)
             image = (outputs['image'] * 255).astype(np.uint8)
             self.streamer.stream_frame(image)
@@ -168,7 +170,9 @@ class NeRFReal:
             
     def render(self):
         if self.opt.asr:
-            self.asr.warm_up()
+             self.asr.warm_up()
+        count=0
+        totaltime=0
         while True: #todo
             # update texture every frame
             # audio stream thread...
@@ -178,6 +182,12 @@ class NeRFReal:
                 for _ in range(2):
                     self.asr.run_step()
             self.test_step()
+            totaltime += (time.time() - t)
+            count += 1
+            if count==100:
+                print(f"------actual avg fps:{count/totaltime:.4f}")
+                count=0
+                totaltime=0
             # delay = 0.04 - (time.time() - t) #40ms
             # if delay > 0:
             #     time.sleep(delay)
