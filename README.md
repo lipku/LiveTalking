@@ -19,7 +19,7 @@ pip install tensorflow-gpu==2.8.0
 ```
 linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/674972886
 
-安装rtmpstream库  
+### 1.2 安装rtmpstream库  
 参照 https://github.com/lipku/python_rtmpstream
 
 
@@ -54,7 +54,7 @@ nginx
 
 
 用浏览器打开http://serverip/echo.html, 在文本框输入任意文字，提交。数字人播报该段文字
-
+  
 ## 3. Docker Run  
 不需要第1步的安装，直接运行。
 ```
