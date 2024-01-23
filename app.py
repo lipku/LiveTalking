@@ -27,8 +27,18 @@ app = Flask(__name__)
 sockets = Sockets(app)
 global nerfreal
 
+from src.LLM import *
+# llm = Gemini(model_path='gemini-pro', api_key=None, proxy_url=None)
+# llm = Linly(mode = 'offline', model_path="Linly-AI/Chinese-LLaMA-2-7B-hf")
+# llm = Linly(mode = 'api', model_path="Linly-AI/Chinese-LLaMA-2-7B-hf")
+llm = Qwen(mode = 'offline', model_path="Qwen/Qwen-1_8B-Chat")
+
+
+def llm_response(question, history = None):
+    return llm.generate(question)
 
 async def main(voicename: str, text: str, render):
+    # print("text:", text, "voicename:", voicename)
     communicate = edge_tts.Communicate(text, voicename)
 
     #with open(OUTPUT_FILE, "wb") as file:
@@ -42,12 +52,12 @@ async def main(voicename: str, text: str, render):
 
 def txt_to_audio(text_):
     audio_list = []
-    #audio_path = 'data/audio/aud_0.wav'
+    # audio_path = 'data/audio/aud_0.wav'
     voicename = "zh-CN-YunxiaNeural"
     text = text_
     t = time.time()
     asyncio.get_event_loop().run_until_complete(main(voicename,text,nerfreal))
-    print('-------tts time: ',time.time()-t)
+    print(f'-------tts time:{time.time()-t:.4f}s')
     
 @sockets.route('/humanecho')
 def echo_socket(ws):
@@ -65,8 +75,9 @@ def echo_socket(ws):
             
             if len(message)==0:
                 return '输入信息为空'
-            else:                                
-                txt_to_audio(message)                       
+            else:                    
+                answer = llm_response(message)            
+                txt_to_audio(answer)                       
 
 def render():
     nerfreal.render()                  
@@ -226,5 +237,3 @@ if __name__ == '__main__':
     print('start websocket server')
     server = pywsgi.WSGIServer(('0.0.0.0', 8000), app, handler_class=WebSocketHandler)
     server.serve_forever()
-    
-    

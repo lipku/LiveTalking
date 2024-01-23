@@ -59,6 +59,39 @@ python app.py
 
 用浏览器打开http://serverip/echo.html，在文本框输入任意文字，提交。数字人播报该段文字
 
+### 使用LLM模型进行数字人对话
+
+目前借鉴数字人对话系统[LinlyTalker](https://github.com/Kedreamix/Linly-Talker)的方式，LLM模型支持Linly-AI,Qwen和GeminiPro
+
+建议使用来自阿里云的通义千问Qwen，查看 [https://github.com/QwenLM/Qwen](https://github.com/QwenLM/Qwen)
+
+下载 Qwen 模型: [https://huggingface.co/Qwen/Qwen-1_8B-Chat](https://huggingface.co/Qwen/Qwen-1_8B-Chat)
+
+可以使用`git`下载
+
+```bash
+git lfs install
+git clone https://huggingface.co/Qwen/Qwen-1_8B-Chat
+```
+
+或者使用`huggingface`的下载工具`huggingface-cli`
+
+```bash
+pip install -U huggingface_hub
+
+# 设置镜像加速
+# Linux
+export HF_ENDPOINT="https://hf-mirror.com"
+# windows powershell
+$env:HF_ENDPOINT="https://hf-mirror.com"
+
+huggingface-cli download --resume-download Qwen/Qwen-1_8B-Chat --local-dir Qwen/Qwen-1_8B-Chat
+```
+
+除此之外，还可以考虑使用魔搭社区链接进行下载 [https://modelscope.cn/models/qwen/Qwen-1_8B-Chat/files(https://modelscope.cn/models/qwen/Qwen-1_8B-Chat/files)
+
+### 
+
 ### docker运行
 先运行srs和nginx  
 启动数字人
@@ -81,9 +114,9 @@ docker run --gpus all -it --network=host --rm  registry.cn-hangzhou.aliyuncs.com
 ```
 
 ## TODO
-- 添加chatgpt实现数字人对话
-- 声音克隆
-- 数字人静音时用一段视频代替
+- [x] 添加chatgpt实现数字人对话
+- [ ] 声音克隆
+- [ ] 数字人静音时用一段视频代替
 
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目。  
 Email: lipku@foxmail.com
