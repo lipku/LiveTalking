@@ -38,8 +38,9 @@ async def main(voicename: str, text: str, render):
             #file.write(chunk["data"])
         elif chunk["type"] == "WordBoundary":
             pass                
-from llm.LLM import *
+
 def llm_response(message):
+    from llm.LLM import LLM
     # llm = LLM().init_model('Gemini', model_path= 'gemini-pro',api_key='Your API Key', proxy_url=None)
     llm = LLM().init_model('ChatGPT', model_path= 'gpt-3.5-turbo',api_key='Your API Key')
     response = llm.chat(message)
