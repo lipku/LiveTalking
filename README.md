@@ -49,9 +49,7 @@ export HF_ENDPOINT=https://hf-mirror.com
 apt install nginx
 nginx
 ```
-修改echo.html中websocket和视频播放地址，将serverip替换成实际服务器ip  
-然后将echo.html和mpegts-1.7.3.min.js拷到/var/www/html下
-
+将echo.html和mpegts-1.7.3.min.js拷到/var/www/html下  
 
 用浏览器打开http://serverip/echo.html, 在文本框输入任意文字，提交。数字人播报该段文字
   

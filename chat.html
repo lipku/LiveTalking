@@ -29,7 +29,7 @@
 
 	$(document).ready(function() {
 	  var host = window.location.hostname
-	  var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	  var ws = new WebSocket("ws://"+host+":8000/humanchat");
 	  //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
 	  ws.onopen = function() {
 		console.log('Connected');
