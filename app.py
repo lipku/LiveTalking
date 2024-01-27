@@ -38,7 +38,13 @@ async def main(voicename: str, text: str, render):
             #file.write(chunk["data"])
         elif chunk["type"] == "WordBoundary":
             pass                
-
+from llm.LLM import *
+def llm_response(message):
+    # llm = LLM().init_model('Gemini', model_path= 'gemini-pro',api_key='Your API Key', proxy_url=None)
+    llm = LLM().init_model('ChatGPT', model_path= 'gpt-3.5-turbo',api_key='Your API Key')
+    response = llm.chat(message)
+    print(response)
+    return response
 
 def txt_to_audio(text_):
     audio_list = []
@@ -85,7 +91,7 @@ def chat_socket(ws):
             if len(message)==0:
                 return '输入信息为空'
             else:
-                res=llm(message)                           
+                res=llm_response(message)                           
                 txt_to_audio(res)                        
 
 def render():
