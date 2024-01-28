@@ -55,7 +55,7 @@ nginx
 
 ### 2.4 使用LLM模型进行数字人对话
 
-目前借鉴数字人对话系统[LinlyTalker](https://github.com/Kedreamix/Linly-Talker)的方式，LLM模型支持Chatgpt,Qwen和GeminiPro。需要在app.py中填入自己的api_key。
+目前借鉴数字人对话系统[LinlyTalker](https://github.com/Kedreamix/Linly-Talker)的方式，LLM模型支持Chatgpt,Qwen和GeminiPro。需要在app.py中填入自己的api_key。  
 安装并启动nginx，将chat.html和mpegts-1.7.3.min.js拷到/var/www/html下  
 
 用浏览器打开http://serverip/chat.html
