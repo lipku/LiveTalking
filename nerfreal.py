@@ -55,24 +55,6 @@ class NeRFReal:
         if self.opt.asr:
             self.asr = ASR(opt)
         
-        fps=25
-        #push_url='rtmp://localhost/live/livestream' #'data/video/output_0.mp4'
-        sc = StreamerConfig()
-        sc.source_width = self.W
-        sc.source_height = self.H
-        sc.stream_width = self.W
-        sc.stream_height = self.H
-        sc.stream_fps = fps
-        sc.stream_bitrate = 1000000
-        sc.stream_profile = 'baseline' #'high444' # 'main'
-        sc.audio_channel = 1
-        sc.sample_rate = 16000
-        sc.stream_server = opt.push_url
-
-        self.streamer = Streamer()
-        self.streamer.init(sc)
-        #self.streamer.enable_av_debug_log()
-        
         '''
         video_path = 'video_stream'
         if not os.path.exists(video_path):
@@ -173,6 +155,24 @@ class NeRFReal:
              self.asr.warm_up()
         count=0
         totaltime=0
+
+        fps=25
+        #push_url='rtmp://localhost/live/livestream' #'data/video/output_0.mp4'
+        sc = StreamerConfig()
+        sc.source_width = self.W
+        sc.source_height = self.H
+        sc.stream_width = self.W
+        sc.stream_height = self.H
+        sc.stream_fps = fps
+        sc.stream_bitrate = 1000000
+        sc.stream_profile = 'baseline' #'high444' # 'main'
+        sc.audio_channel = 1
+        sc.sample_rate = 16000
+        sc.stream_server = self.opt.push_url
+        self.streamer = Streamer()
+        self.streamer.init(sc)
+        #self.streamer.enable_av_debug_log()
+
         while True: #todo
             # update texture every frame
             # audio stream thread...
