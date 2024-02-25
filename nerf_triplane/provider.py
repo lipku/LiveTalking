@@ -140,6 +140,11 @@ class NeRFDataset_Test:
 
             print(f'[INFO] load {self.opt.aud} aud_features: {aud_features.shape}')
 
+        # load action units
+        import pandas as pd
+        au_blink_info=pd.read_csv(self.opt.au)
+        au_blink = au_blink_info[' AU45_r'].values
+
         self.poses = []
         self.auds = []
         self.eye_area = []
@@ -157,10 +162,14 @@ class NeRFDataset_Test:
 
             if self.opt.exp_eye:
                 
-                if 'eye_ratio' in f:
-                    area = f['eye_ratio']
-                else:
-                    area = 0.25 # default value for opened eye
+                # if 'eye_ratio' in f:
+                #     area = f['eye_ratio']
+                # else:
+                #     area = 0.25 # default value for opened eye
+                # action units blink AU45
+                area = au_blink[f['img_id']]
+                area = np.clip(area, 0, 2) / 2
+                # area = area + np.random.rand() / 10
                 
                 self.eye_area.append(area)
         
