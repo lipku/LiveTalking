@@ -22,10 +22,15 @@ from nerfreal import NeRFReal
 import shutil
 import asyncio
 import edge_tts
+from typing import Iterator
+
+import requests
 
 app = Flask(__name__)
 sockets = Sockets(app)
 global nerfreal
+global tts_type
+global gspeaker
 
 
 async def main(voicename: str, text: str, render):
@@ -39,22 +44,63 @@ async def main(voicename: str, text: str, render):
         elif chunk["type"] == "WordBoundary":
             pass                
 
-def llm_response(message):
-    from llm.LLM import LLM
-    # llm = LLM().init_model('Gemini', model_path= 'gemini-pro',api_key='Your API Key', proxy_url=None)
-    llm = LLM().init_model('ChatGPT', model_path= 'gpt-3.5-turbo',api_key='Your API Key')
-    response = llm.chat(message)
-    print(response)
-    return response
+def get_speaker(ref_audio,server_url):
+    files = {"wav_file": ("reference.wav", open(ref_audio, "rb"))}
+    response = requests.post(f"{server_url}/clone_speaker", files=files)
+    return response.json()
+
+def xtts(text, speaker, language, server_url, stream_chunk_size) -> Iterator[bytes]:
+    start = time.perf_counter()
+    speaker["text"] = text
+    speaker["language"] = language
+    speaker["stream_chunk_size"] = stream_chunk_size  # you can reduce it to get faster response, but degrade quality
+    res = requests.post(
+        f"{server_url}/tts_stream",
+        json=speaker,
+        stream=True,
+    )
+    end = time.perf_counter()
+    print(f"xtts Time to make POST: {end-start}s")
+
+    if res.status_code != 200:
+        print("Error:", res.text)
+        return
+
+    first = True
+    for chunk in res.iter_content(chunk_size=960):
+        if first:
+            end = time.perf_counter()
+            print(f"xtts Time to first chunk: {end-start}s")
+            first = False
+        if chunk:
+            yield chunk
+
+    print("xtts response.elapsed:", res.elapsed)
+
+def stream_xtts(audio_stream,render):
+    for chunk in audio_stream:
+        if chunk is not None:
+            render.push_audio(chunk)
 
 def txt_to_audio(text_):
-    audio_list = []
-    #audio_path = 'data/audio/aud_0.wav'
-    voicename = "zh-CN-YunxiaNeural"
-    text = text_
-    t = time.time()
-    asyncio.get_event_loop().run_until_complete(main(voicename,text,nerfreal))
-    print(f'-------tts time:{time.time()-t:.4f}s')
+    if tts_type == "edgetts":
+        voicename = "zh-CN-YunxiaNeural"
+        text = text_
+        t = time.time()
+        asyncio.get_event_loop().run_until_complete(main(voicename,text,nerfreal))
+        print(f'-------edge tts time:{time.time()-t:.4f}s')
+    else: #xtts
+        stream_xtts(
+            xtts(
+                text_,
+                gspeaker,
+                "zh-cn", #en args.language,
+                "http://localhost:9000", #args.server_url,
+                "20" #args.stream_chunk_size
+            ),
+            nerfreal
+        )
+
     
 @sockets.route('/humanecho')
 def echo_socket(ws):
@@ -74,6 +120,15 @@ def echo_socket(ws):
                 return '输入信息为空'
             else:                                
                 txt_to_audio(message)
+
+
+def llm_response(message):
+    from llm.LLM import LLM
+    # llm = LLM().init_model('Gemini', model_path= 'gemini-pro',api_key='Your API Key', proxy_url=None)
+    llm = LLM().init_model('ChatGPT', model_path= 'gpt-3.5-turbo',api_key='Your API Key')
+    response = llm.chat(message)
+    print(response)
+    return response
 
 @sockets.route('/humanchat')
 def chat_socket(ws):
@@ -103,6 +158,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--pose', type=str, default="data/data_kf.json", help="transforms.json, pose source")
+    parser.add_argument('--au', type=str, default="data/au.csv", help="eye blink area")
 
     parser.add_argument('-O', action='store_true', help="equals --fp16 --cuda_ray --exp_eye")
 
@@ -204,7 +260,18 @@ if __name__ == '__main__':
     parser.add_argument('-m', type=int, default=50)
     parser.add_argument('-r', type=int, default=10)
 
+    parser.add_argument('--tts', type=str, default='edgetts') #xtts
+    parser.add_argument('--ref_file', type=str, default=None)
+    parser.add_argument('--xtts_server', type=str, default='http://localhost:9000')
+
     opt = parser.parse_args()
+    app.config.from_object(opt)
+    #print(app.config['xtts_server'])
+
+    tts_type = opt.tts
+    if tts_type == "xtts":
+        print("Computing the latents for a new reference...")
+        gspeaker = get_speaker(opt.ref_file, opt.xtts_server)
 
     # assert test mode
     opt.test = True
@@ -212,17 +279,18 @@ if __name__ == '__main__':
     #opt.train_camera =True
     # explicit smoothing
     opt.smooth_path = True
-    opt.smooth_eye = True
     opt.smooth_lips = True
 
     assert opt.pose != '', 'Must provide a pose source'
 
     # if opt.O:
     opt.fp16 = True
-    opt.exp_eye = True
-
     opt.cuda_ray = True
+    opt.exp_eye = True
+    opt.smooth_eye = True
+
     opt.torso = True
+
     # assert opt.cuda_ray, "Only support CUDA ray mode."
     opt.asr = True
 
@@ -251,6 +319,7 @@ if __name__ == '__main__':
 
     #############################################################################
     print('start websocket server')
+
     server = pywsgi.WSGIServer(('0.0.0.0', 8000), app, handler_class=WebSocketHandler)
     server.serve_forever()
     

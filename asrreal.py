@@ -377,7 +377,7 @@ class ASR:
             print(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
             stream = stream[:, 0]
     
-        if sample_rate != self.sample_rate:
+        if sample_rate != self.sample_rate and stream.shape[0]>0:
             print(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
             stream = resampy.resample(x=stream, sr_orig=sample_rate, sr_new=self.sample_rate)
 
@@ -385,31 +385,36 @@ class ASR:
 
     def push_audio(self,buffer):
         print(f'[INFO] push_audio {len(buffer)}')
-        # if len(buffer)>0:
-        #     byte_stream=BytesIO(buffer)
-        #     stream = self.create_bytes_stream(byte_stream)
-        #     streamlen = stream.shape[0]
-        #     idx=0
-        #     while streamlen >= self.chunk:
-        #         self.queue.put(stream[idx:idx+self.chunk])
-        #         streamlen -= self.chunk
-        #         idx += self.chunk
-        #     if streamlen>0:
-        #         self.queue.put(stream[idx:])
-        self.input_stream.write(buffer)
-        if len(buffer)<=0:
-            self.input_stream.seek(0)
-            stream = self.create_bytes_stream(self.input_stream)
+        if len(buffer)>0:
+            if self.opt.tts == "xtts":
+                stream = np.frombuffer(buffer, dtype=np.int16).astype(np.float32) / 32767
+                #stream = buffer.astype(np.float32)
+                stream = resampy.resample(x=stream, sr_orig=24000, sr_new=self.sample_rate)
+            else:
+                byte_stream=BytesIO(buffer)
+                stream = self.create_bytes_stream(byte_stream)
             streamlen = stream.shape[0]
             idx=0
             while streamlen >= self.chunk:
                 self.queue.put(stream[idx:idx+self.chunk])
                 streamlen -= self.chunk
                 idx += self.chunk
-            #if streamlen>0:  #skip last frame(not 20ms)
-            #    self.queue.put(stream[idx:])
-            self.input_stream.seek(0)
-            self.input_stream.truncate()
+            # if streamlen>0: #skip last frame(not 20ms)
+            #     self.queue.put(stream[idx:])
+        # self.input_stream.write(buffer)
+        # if len(buffer)<=0:
+        #     self.input_stream.seek(0)
+        #     stream = self.create_bytes_stream(self.input_stream)
+        #     streamlen = stream.shape[0]
+        #     idx=0
+        #     while streamlen >= self.chunk:
+        #         self.queue.put(stream[idx:idx+self.chunk])
+        #         streamlen -= self.chunk
+        #         idx += self.chunk
+        #     #if streamlen>0:  #skip last frame(not 20ms)
+        #     #    self.queue.put(stream[idx:])
+        #     self.input_stream.seek(0)
+        #     self.input_stream.truncate()
     
     def get_audio_out(self):
         return self.output_queue.get()
