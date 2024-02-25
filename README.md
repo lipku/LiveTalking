@@ -60,12 +60,12 @@ nginx
 
 用浏览器打开http://serverip/chat.html
 
-### 2.5 使用本地tts服务
+### 2.5 使用本地tts服务,支持声音克隆
 运行xtts服务，参照 https://github.com/coqui-ai/xtts-streaming-server
 ```
 docker run --gpus=all -e COQUI_TOS_AGREED=1 --rm -p 9000:80 ghcr.io/coqui-ai/xtts-streaming-server:latest
 ```
-然后运行
+然后运行，其中ref.wav为需要克隆的声音文件
 ```
 python app.py --tts xtts --ref_file data/ref.wav
 ```
