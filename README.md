@@ -59,6 +59,16 @@ nginx
 安装并启动nginx，将chat.html和mpegts-1.7.3.min.js拷到/var/www/html下  
 
 用浏览器打开http://serverip/chat.html
+
+### 2.5 使用本地tts服务
+运行xtts服务，参照 https://github.com/coqui-ai/xtts-streaming-server
+```
+docker run --gpus=all -e COQUI_TOS_AGREED=1 --rm -p 9000:80 ghcr.io/coqui-ai/xtts-streaming-server:latest
+```
+然后运行
+```
+python app.py --tts xtts --ref_file data/ref.wav
+```
   
 ## 3. Docker Run  
 不需要第1步的安装，直接运行。
@@ -75,7 +85,8 @@ srs和nginx的运行同2.1和2.3
 ```python
 .
 ├── data
-│   ├── data_kf.json			
+│   ├── data_kf.json
+│   ├── au.csv			
 │   ├── pretrained
 │   └── └── ngp_kf.pth
 
@@ -96,7 +107,7 @@ docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 registry.cn-hangzhou.
 
 ## 7. TODO
 - [x] 添加chatgpt实现数字人对话
-- [ ] 声音克隆
+- [x] 声音克隆
 - [ ] 数字人静音时用一段视频代替
 
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目。  
