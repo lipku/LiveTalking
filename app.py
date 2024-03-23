@@ -260,6 +260,13 @@ if __name__ == '__main__':
     parser.add_argument('-m', type=int, default=50)
     parser.add_argument('-r', type=int, default=10)
 
+    parser.add_argument('--fullbody', action='store_true', help="fullbody human")
+    parser.add_argument('--fullbody_img', type=str, default='data/fullbody/img')
+    parser.add_argument('--fullbody_width', type=int, default=580)
+    parser.add_argument('--fullbody_height', type=int, default=1080)
+    parser.add_argument('--fullbody_offset_x', type=int, default=0)
+    parser.add_argument('--fullbody_offset_y', type=int, default=0)
+
     parser.add_argument('--tts', type=str, default='edgetts') #xtts
     parser.add_argument('--ref_file', type=str, default=None)
     parser.add_argument('--xtts_server', type=str, default='http://localhost:9000')

@@ -7,6 +7,7 @@ import subprocess
 import os
 import time
 import torch.nn.functional as F
+import cv2
 
 from asrreal import ASR
 from rtmp_streaming import StreamerConfig, Streamer
@@ -32,6 +33,10 @@ class NeRFReal:
         # audio features (from dataloader, only used in non-playing mode)
         self.audio_features = data_loader._data.auds # [N, 29, 16]
         self.audio_idx = 0
+
+        self.frame_total_num = data_loader._data.end_index
+        print("frame_total_num:",self.frame_total_num)
+        self.frame_index=0
 
         # control eye
         self.eye_area = None if not self.opt.exp_eye else data_loader._data.eye_area.mean().item()
@@ -132,7 +137,15 @@ class NeRFReal:
             #print('-------ernerf time: ',time.time()-t)
             #print(f'[INFO] outputs shape ',outputs['image'].shape)
             image = (outputs['image'] * 255).astype(np.uint8)
-            self.streamer.stream_frame(image)
+            if not self.opt.fullbody:
+                self.streamer.stream_frame(image)
+            else: #fullbody human
+                image_fullbody = cv2.imread(os.path.join(self.opt.fullbody_img, str(self.frame_index%self.frame_total_num)+'.jpg'))
+                image_fullbody = cv2.cvtColor(image_fullbody, cv2.COLOR_BGR2RGB)
+                start_x = self.opt.fullbody_offset_x  # 合并后小图片的起始x坐标
+                start_y = self.opt.fullbody_offset_y  # 合并后小图片的起始y坐标
+                image_fullbody[start_y:start_y+image.shape[0], start_x:start_x+image.shape[1]] = image
+                self.streamer.stream_frame(image_fullbody)
             #self.pipe.stdin.write(image.tostring())
             for _ in range(2):
                 frame = self.asr.get_audio_out()
@@ -164,6 +177,11 @@ class NeRFReal:
         sc.source_height = self.H
         sc.stream_width = self.W
         sc.stream_height = self.H
+        if self.opt.fullbody:
+            sc.source_width = self.opt.fullbody_width
+            sc.source_height = self.opt.fullbody_height
+            sc.stream_width = self.opt.fullbody_width
+            sc.stream_height = self.opt.fullbody_height
         sc.stream_fps = fps
         sc.stream_bitrate = 1000000
         sc.stream_profile = 'baseline' #'high444' # 'main'
@@ -183,6 +201,7 @@ class NeRFReal:
                 for _ in range(2):
                     self.asr.run_step()
             self.test_step()
+            self.frame_index = (self.frame_index+1)%self.frame_total_num
             totaltime += (time.time() - t)
             count += 1
             if count==100:

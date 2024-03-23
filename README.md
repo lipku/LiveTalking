@@ -76,6 +76,28 @@ python app.py --tts xtts --ref_file data/ref.wav
 ```
 python app.py --asr_model facebook/hubert-large-ls960-ft 
 ```
+
+### 3.4 设置背景图片
+```
+python app.py --bg_img bg.jpg 
+```
+
+### 3.5 全身视频拼接
+#### 3.5.1 切割训练用的视频
+```
+ffmpeg -i fullbody.mp4 -vf crop="400:400:100:5" train.mp4 
+```
+用train.mp4训练模型
+#### 3.5.2 提取全身图片
+```
+ffmpeg -i fullbody.mp4 -vf fps=25 -qmin 1 -q:v 1 -start_number 0 data/fullbody/img/%d.jpg
+```
+#### 3.5.2 启动数字人
+```
+python app.py --fullbody --fullbody_img data/fullbody/img --fullbody_offset_x 100 --fullbody_offset_y 5 --fullbody_width 580 --fullbody_height 1080 --W 400 --H 400
+```
+- --fullbody_width、--fullbody_height 全身视频的宽、高
+- --W、--H 训练视频的宽、高
   
 ## 4. Docker Run  
 不需要第1步的安装，直接运行。
