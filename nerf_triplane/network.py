@@ -104,6 +104,8 @@ class NeRFNetwork(NeRFRenderer):
             self.audio_in_dim = 44
         elif 'deepspeech' in self.opt.asr_model:
             self.audio_in_dim = 29
+        elif 'hubert' in self.opt.asr_model:
+            self.audio_in_dim = 1024
         else:
             self.audio_in_dim = 32
             
