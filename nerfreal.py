@@ -34,9 +34,8 @@ class NeRFReal:
         self.audio_features = data_loader._data.auds # [N, 29, 16]
         self.audio_idx = 0
 
-        self.frame_total_num = data_loader._data.end_index
-        print("frame_total_num:",self.frame_total_num)
-        self.frame_index=0
+        #self.frame_total_num = data_loader._data.end_index
+        #print("frame_total_num:",self.frame_total_num)
 
         # control eye
         self.eye_area = None if not self.opt.exp_eye else data_loader._data.eye_area.mean().item()
@@ -140,7 +139,8 @@ class NeRFReal:
             if not self.opt.fullbody:
                 self.streamer.stream_frame(image)
             else: #fullbody human
-                image_fullbody = cv2.imread(os.path.join(self.opt.fullbody_img, str(self.frame_index%self.frame_total_num)+'.jpg'))
+                #print("frame index:",data['index'])
+                image_fullbody = cv2.imread(os.path.join(self.opt.fullbody_img, str(data['index'][0])+'.jpg'))
                 image_fullbody = cv2.cvtColor(image_fullbody, cv2.COLOR_BGR2RGB)
                 start_x = self.opt.fullbody_offset_x  # 合并后小图片的起始x坐标
                 start_y = self.opt.fullbody_offset_y  # 合并后小图片的起始y坐标
@@ -201,7 +201,6 @@ class NeRFReal:
                 for _ in range(2):
                     self.asr.run_step()
             self.test_step()
-            self.frame_index = (self.frame_index+1)%self.frame_total_num
             totaltime += (time.time() - t)
             count += 1
             if count==100:
