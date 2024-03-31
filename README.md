@@ -3,6 +3,12 @@ A streaming digital human based on the Ernerf model， realize audio video synch
 
 [![Watch the video]](/assets/demo.mp4)
 
+## Features
+1. 支持声音克隆
+2. 支持大模型对话
+3. 支持多种音频特征驱动：wav2vec、hubert
+4. 支持全身视频拼接
+
 ## 1. Installation
 
 Tested on Ubuntu 20.04, Python3.10, Pytorch 1.12 and CUDA 11.3
@@ -53,7 +59,7 @@ nginx
 
 用浏览器打开http://serverip/echo.html, 在文本框输入任意文字，提交。数字人播报该段文字  
 
-## 3. 更多使用
+## 3. More Usage
 ### 3.1 使用LLM模型进行数字人对话
 
 目前借鉴数字人对话系统[LinlyTalker](https://github.com/Kedreamix/Linly-Talker)的方式，LLM模型支持Chatgpt,Qwen和GeminiPro。需要在app.py中填入自己的api_key。  
@@ -97,7 +103,8 @@ ffmpeg -i fullbody.mp4 -vf fps=25 -qmin 1 -q:v 1 -start_number 0 data/fullbody/i
 python app.py --fullbody --fullbody_img data/fullbody/img --fullbody_offset_x 100 --fullbody_offset_y 5 --fullbody_width 580 --fullbody_height 1080 --W 400 --H 400
 ```
 - --fullbody_width、--fullbody_height 全身视频的宽、高
-- --W、--H 训练视频的宽、高
+- --W、--H 训练视频的宽、高  
+- ernerf训练第三步torso如果训练的不好，在拼接处会有接缝。可以在上面的命令加上--torso_imgs data/xxx/torso_imgs，torso不用模型推理，直接用训练数据集里的torso图片。这种方式可能头颈处会有些人工痕迹。
   
 ## 4. Docker Run  
 不需要第1步的安装，直接运行。

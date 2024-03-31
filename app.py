@@ -159,6 +159,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--pose', type=str, default="data/data_kf.json", help="transforms.json, pose source")
     parser.add_argument('--au', type=str, default="data/au.csv", help="eye blink area")
+    parser.add_argument('--torso_imgs', type=str, default="", help="torso images path")
 
     parser.add_argument('-O', action='store_true', help="equals --fp16 --cuda_ray --exp_eye")
 
@@ -296,7 +297,8 @@ if __name__ == '__main__':
     opt.exp_eye = True
     opt.smooth_eye = True
 
-    opt.torso = True
+    if opt.torso_imgs=='': #no img,use model output
+        opt.torso = True
 
     # assert opt.cuda_ray, "Only support CUDA ray mode."
     opt.asr = True
@@ -305,6 +307,7 @@ if __name__ == '__main__':
         # assert opt.patch_size > 16, "patch_size should > 16 to run LPIPS loss."
         assert opt.num_rays % (opt.patch_size ** 2) == 0, "patch_size ** 2 should be dividable by num_rays."
     seed_everything(opt.seed)
+    print(opt)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = NeRFNetwork(opt)
