@@ -18,6 +18,5 @@ class GPT():
         return response['choices'][0]['message']['content']
 
 if __name__ == '__main__':
-    llm = GPT('gpt-3.5-turbo', 'fk193752-RlcPi2mBQqPOU5u1F8SFkG2z0gtxD0HS','https://openai.api2d.net/v1')
-    # llm = GPT('gpt-3.5-turbo', 'fk193752-RlcPi2mBQqPOU5u1F8SFkG2z0gtxD0HS','https://openai.api2d.net/v1')
+    llm = GPT('gpt-3.5-turbo', 'sk-RlcPif13aQqPOU5udfkG2z0gtxD0HS','https://openai.api2d.net/v1')
     response = llm.chat("如何应对压力？")
