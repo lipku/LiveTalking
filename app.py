@@ -247,8 +247,9 @@ if __name__ == '__main__':
     parser.add_argument('--asr_play', action='store_true', help="play out the audio")
 
     #parser.add_argument('--asr_model', type=str, default='deepspeech')
-    parser.add_argument('--asr_model', type=str, default='cpierse/wav2vec2-large-xlsr-53-esperanto') #facebook/hubert-large-ls960-ft
+    # parser.add_argument('--asr_model', type=str, default='cpierse/wav2vec2-large-xlsr-53-esperanto') #
     # parser.add_argument('--asr_model', type=str, default='facebook/wav2vec2-large-960h-lv60-self')
+    parser.add_argument('--asr_model', type=str, default='facebook/hubert-large-ls960-ft')
 
     parser.add_argument('--push_url', type=str, default='rtmp://localhost/live/livestream')
 
