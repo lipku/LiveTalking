@@ -4,8 +4,8 @@ import requests
 
 class VllmGPT:
 
-    def __init__(self, host="127.0.0.1",
-                 port="8000",
+    def __init__(self, host="192.168.1.3",
+                 port="8101",
                  model="THUDM/chatglm3-6b",
                  max_tokens="1024"):
         self.host = host
