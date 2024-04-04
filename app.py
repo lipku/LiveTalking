@@ -95,7 +95,7 @@ def txt_to_audio(text_):
                 text_,
                 gspeaker,
                 "zh-cn", #en args.language,
-                "http://localhost:9000", #args.server_url,
+                "http://192.168.1.3:9000", #args.server_url,
                 "20" #args.stream_chunk_size
             ),
             nerfreal
