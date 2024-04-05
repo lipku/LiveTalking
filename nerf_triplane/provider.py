@@ -98,6 +98,7 @@ class NeRFDataset_Test:
 
         self.training = False
         self.num_rays = -1
+        self.preload = opt.preload # 0 = disk, 1 = cpu, 2 = gpu
 
         # load nerf-compatible format data.
         
@@ -148,6 +149,7 @@ class NeRFDataset_Test:
         self.poses = []
         self.auds = []
         self.eye_area = []
+        self.torso_img = []
 
         for f in tqdm.tqdm(frames, desc=f'Loading data'):
             
@@ -172,6 +174,29 @@ class NeRFDataset_Test:
                 # area = area + np.random.rand() / 10
                 
                 self.eye_area.append(area)
+            
+            # load frame-wise bg
+        
+            if self.opt.torso_imgs!='':
+                torso_img_path = os.path.join(self.opt.torso_imgs, str(f['img_id']) + '.png')
+
+                if self.preload > 0:
+                    torso_img = cv2.imread(torso_img_path, cv2.IMREAD_UNCHANGED) # [H, W, 4]
+                    torso_img = cv2.cvtColor(torso_img, cv2.COLOR_BGRA2RGBA)
+                    torso_img = torso_img.astype(np.float32) / 255 # [H, W, 3/4]
+
+                    self.torso_img.append(torso_img)
+                else:
+                    self.torso_img.append(torso_img_path)
+        
+        if self.opt.torso_imgs!='':
+            if self.preload > 0:
+                self.torso_img = torch.from_numpy(np.stack(self.torso_img, axis=0)) # [N, H, W, C]
+            else:
+                self.torso_img = np.array(self.torso_img)
+            if self.preload > 1:  #gpu
+                self.torso_img = self.torso_img.to(torch.half).to(self.device)
+            
         
         # load pre-extracted background image (should be the same size as training image...)
 
@@ -209,6 +234,9 @@ class NeRFDataset_Test:
         
         self.bg_img = torch.from_numpy(self.bg_img)
 
+        if self.preload > 1 or self.opt.torso_imgs=='':  #gpu
+            self.bg_img = self.bg_img.to(torch.half).to(self.device)
+
         if self.opt.exp_eye:
             self.eye_area = np.array(self.eye_area, dtype=np.float32) # [N]
             print(f'[INFO] eye_area: {self.eye_area.min()} - {self.eye_area.max()}')
@@ -229,8 +257,6 @@ class NeRFDataset_Test:
 
         if self.auds is not None:
             self.auds = self.auds.to(self.device)
-
-        self.bg_img = self.bg_img.to(torch.half).to(self.device)
         
         if self.opt.exp_eye:
             self.eye_area = self.eye_area.to(self.device)
@@ -285,8 +311,23 @@ class NeRFDataset_Test:
             results['eye'] = self.eye_area[index].to(self.device) # [1]
         else:
             results['eye'] = None
-
-        bg_img = self.bg_img.view(1, -1, 3).repeat(B, 1, 1).to(self.device)
+        
+        # load bg
+        if self.opt.torso_imgs!='':
+            bg_torso_img = self.torso_img[index]
+            if self.preload == 0: # on the fly loading
+                bg_torso_img = cv2.imread(bg_torso_img[0], cv2.IMREAD_UNCHANGED) # [H, W, 4]
+                bg_torso_img = cv2.cvtColor(bg_torso_img, cv2.COLOR_BGRA2RGBA)
+                bg_torso_img = bg_torso_img.astype(np.float32) / 255 # [H, W, 3/4]
+                bg_torso_img = torch.from_numpy(bg_torso_img).unsqueeze(0)
+            bg_torso_img = bg_torso_img[..., :3] * bg_torso_img[..., 3:] + self.bg_img * (1 - bg_torso_img[..., 3:])
+            bg_torso_img = bg_torso_img.view(B, -1, 3).to(self.device)
+            if not self.opt.torso:
+                bg_img = bg_torso_img
+            else:
+                bg_img = self.bg_img.view(1, -1, 3).repeat(B, 1, 1).to(self.device)
+        else:
+            bg_img = self.bg_img.view(1, -1, 3).repeat(B, 1, 1).to(self.device)
 
         results['bg_color'] = bg_img
 
@@ -341,8 +382,30 @@ class NeRFDataset:
 
         # load nerf-compatible format data.
       
-        with open(opt.pose, 'r') as f:
-            transform = json.load(f)
+         # load all splits (train/valid/test)
+        if type == 'all':
+            transform_paths = glob.glob(os.path.join(self.root_path, '*.json'))
+            transform = None
+            for transform_path in transform_paths:
+                with open(transform_path, 'r') as f:
+                    tmp_transform = json.load(f)
+                    if transform is None:
+                        transform = tmp_transform
+                    else:
+                        transform['frames'].extend(tmp_transform['frames'])
+        # load train and val split
+        elif type == 'trainval':
+            with open(os.path.join(self.root_path, f'transforms_train.json'), 'r') as f:
+                transform = json.load(f)
+            with open(os.path.join(self.root_path, f'transforms_val.json'), 'r') as f:
+                transform_val = json.load(f)
+            transform['frames'].extend(transform_val['frames'])
+        # only load one specified split
+        else:
+            # no test, use val as test
+            _split = 'val' if type == 'test' else type
+            with open(os.path.join(self.root_path, f'transforms_{_split}.json'), 'r') as f:
+                transform = json.load(f)
 
         # load image size
         if 'h' in transform and 'w' in transform:
@@ -371,6 +434,10 @@ class NeRFDataset:
                     aud_features = np.load(os.path.join(self.root_path, 'aud_eo.npy'))
                 elif 'deepspeech' in self.opt.asr_model:
                     aud_features = np.load(os.path.join(self.root_path, 'aud_ds.npy'))
+                # elif 'hubert_cn' in self.opt.asr_model:
+                #     aud_features = np.load(os.path.join(self.root_path, 'aud_hu_cn.npy'))
+                elif 'hubert' in self.opt.asr_model:
+                    aud_features = np.load(os.path.join(self.root_path, 'aud_hu.npy'))
                 else:
                     aud_features = np.load(os.path.join(self.root_path, 'aud.npy'))
             # cross-driven extracted features. 

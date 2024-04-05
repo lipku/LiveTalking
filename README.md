@@ -3,6 +3,12 @@ A streaming digital human based on the Ernerf model， realize audio video synch
 
 [![Watch the video]](/assets/demo.mp4)
 
+## Features
+1. 支持声音克隆
+2. 支持大模型对话
+3. 支持多种音频特征驱动：wav2vec、hubert
+4. 支持全身视频拼接
+
 ## 1. Installation
 
 Tested on Ubuntu 20.04, Python3.10, Pytorch 1.12 and CUDA 11.3
@@ -53,7 +59,7 @@ nginx
 
 用浏览器打开http://serverip/echo.html, 在文本框输入任意文字，提交。数字人播报该段文字  
 
-## 3. 更多使用
+## 3. More Usage
 ### 3.1 使用LLM模型进行数字人对话
 
 目前借鉴数字人对话系统[LinlyTalker](https://github.com/Kedreamix/Linly-Talker)的方式，LLM模型支持Chatgpt,Qwen和GeminiPro。需要在app.py中填入自己的api_key。  
@@ -97,7 +103,8 @@ ffmpeg -i fullbody.mp4 -vf fps=25 -qmin 1 -q:v 1 -start_number 0 data/fullbody/i
 python app.py --fullbody --fullbody_img data/fullbody/img --fullbody_offset_x 100 --fullbody_offset_y 5 --fullbody_width 580 --fullbody_height 1080 --W 400 --H 400
 ```
 - --fullbody_width、--fullbody_height 全身视频的宽、高
-- --W、--H 训练视频的宽、高
+- --W、--H 训练视频的宽、高  
+- ernerf训练第三步torso如果训练的不好，在拼接处会有接缝。可以在上面的命令加上--torso_imgs data/xxx/torso_imgs，torso不用模型推理，直接用训练数据集里的torso图片。这种方式可能头颈处会有些人工痕迹。
   
 ## 4. Docker Run  
 不需要第1步的安装，直接运行。
@@ -126,9 +133,9 @@ srs和nginx的运行同2.1和2.3
 在Tesla T4显卡上测试整体fps为18左右，如果去掉音视频编码推流，帧率在20左右。用4090显卡可以达到40多帧/秒。  
 优化：新开一个线程运行音视频编码推流  
 2. 延时  
-整体延时5s多  
-（1）tts延时2s左右，目前用的edgetts，需要将每句话转完后一次性输入，可以优化tts改成流式输入  
-（2）wav2vec延时1s多，需要缓存50帧音频做计算，可以通过-m设置context_size来减少延时  
+整体延时3s左右  
+（1）tts延时1.7s左右，目前用的edgetts，需要将每句话转完后一次性输入，可以优化tts改成流式输入  
+（2）wav2vec延时0.4s，需要缓存18帧音频做计算 
 （3）srs转发延时，设置srs服务器减少缓冲延时。具体配置可看 https://ossrs.net/lts/zh-cn/docs/v5/doc/low-latency, 配置了一个低延时版本 
 ```python
 docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 registry.cn-hangzhou.aliyuncs.com/lipku/srs:v1.1

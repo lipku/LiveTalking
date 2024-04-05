@@ -1,7 +1,7 @@
 import torch
 import argparse
 
-from nerf_triplane.provider import NeRFDataset
+from nerf_triplane.provider import NeRFDataset,NeRFDataset_Test
 from nerf_triplane.utils import *
 from nerf_triplane.network import NeRFNetwork
 
@@ -23,6 +23,9 @@ if __name__ == '__main__':
     parser.add_argument('--data_range', type=int, nargs='*', default=[0, -1], help="data range to use")
     parser.add_argument('--workspace', type=str, default='workspace')
     parser.add_argument('--seed', type=int, default=0)
+
+    parser.add_argument('--pose', type=str, default="data/data_kf.json", help="transforms.json, pose source")
+    parser.add_argument('--au', type=str, default="data/au.csv", help="eye blink area")
 
     ### training options
     parser.add_argument('--iters', type=int, default=200000, help="training iters")
@@ -47,7 +50,7 @@ if __name__ == '__main__':
     ### network backbone options
     parser.add_argument('--fp16', action='store_true', help="use amp mixed precision training")
     
-    parser.add_argument('--bg_img', type=str, default='', help="background image")
+    parser.add_argument('--bg_img', type=str, default='white', help="background image")
     parser.add_argument('--fbg', action='store_true', help="frame-wise bg")
     parser.add_argument('--exp_eye', action='store_true', help="explicitly control the eyes")
     parser.add_argument('--fix_eye', type=float, default=-1, help="fixed eye area, negative to disable, set to 0-0.3 for a reasonable eye")
@@ -182,7 +185,7 @@ if __name__ == '__main__':
         trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, criterion=criterion, fp16=opt.fp16, metrics=metrics, use_checkpoint=opt.ckpt)
 
         if opt.test_train:
-            test_set = NeRFDataset(opt, device=device, type='train')
+            test_set = NeRFDataset(opt, device=device, type='train') 
             # a manual fix to test on the training dataset
             test_set.training = False 
             test_set.num_rays = -1
