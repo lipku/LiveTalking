@@ -133,9 +133,9 @@ srs和nginx的运行同2.1和2.3
 在Tesla T4显卡上测试整体fps为18左右，如果去掉音视频编码推流，帧率在20左右。用4090显卡可以达到40多帧/秒。  
 优化：新开一个线程运行音视频编码推流  
 2. 延时  
-整体延时5s多  
-（1）tts延时2s左右，目前用的edgetts，需要将每句话转完后一次性输入，可以优化tts改成流式输入  
-（2）wav2vec延时1s多，需要缓存50帧音频做计算，可以通过-m设置context_size来减少延时  
+整体延时3s左右  
+（1）tts延时1.7s左右，目前用的edgetts，需要将每句话转完后一次性输入，可以优化tts改成流式输入  
+（2）wav2vec延时0.4s，需要缓存18帧音频做计算 
 （3）srs转发延时，设置srs服务器减少缓冲延时。具体配置可看 https://ossrs.net/lts/zh-cn/docs/v5/doc/low-latency, 配置了一个低延时版本 
 ```python
 docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 registry.cn-hangzhou.aliyuncs.com/lipku/srs:v1.1

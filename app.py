@@ -37,7 +37,11 @@ async def main(voicename: str, text: str, render):
     communicate = edge_tts.Communicate(text, voicename)
 
     #with open(OUTPUT_FILE, "wb") as file:
+    first = True
     async for chunk in communicate.stream():
+        if first:
+            #render.before_push_audio()
+            first = False
         if chunk["type"] == "audio":
             render.push_audio(chunk["data"])
             #file.write(chunk["data"])
@@ -258,7 +262,7 @@ if __name__ == '__main__':
     parser.add_argument('--fps', type=int, default=50)
     # sliding window left-middle-right length (unit: 20ms)
     parser.add_argument('-l', type=int, default=10)
-    parser.add_argument('-m', type=int, default=50)
+    parser.add_argument('-m', type=int, default=8)
     parser.add_argument('-r', type=int, default=10)
 
     parser.add_argument('--fullbody', action='store_true', help="fullbody human")

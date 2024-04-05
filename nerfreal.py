@@ -108,6 +108,9 @@ class NeRFReal:
 
     def push_audio(self,chunk):
         self.asr.push_audio(chunk)   
+    
+    def before_push_audio(self):
+        self.asr.before_push_audio()   
 
     def prepare_buffer(self, outputs):
         if self.mode == 'image':
