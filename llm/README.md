@@ -10,6 +10,14 @@ python -m vllm.entrypoints.openai.api_server --tensor-parallel-size=1  --trust-r
 
 python -m vllm.entrypoints.openai.api_server --port 8101 --tensor-parallel-size=1  --trust-remote-code --max-model-len 1024 --model THUDM/chatglm3-6b
 
+CUDA_VISIBLE_DEVICES=6,7 python -m vllm.entrypoints.openai.api_server \
+--model="/data/mnt/ShareFolder/common_models/Ziya-Reader-13B-v1.0" \
+--max-model-len=8192 \
+--tensor-parallel-size=2 \
+--trust-remote-code \
+--port=8101
+
+
 3、测试
 curl http://127.0.0.1:8101/v1/completions \
     -H "Content-Type: application/json" \
