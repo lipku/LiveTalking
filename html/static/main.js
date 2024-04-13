@@ -362,8 +362,10 @@ function getJsonMessage( jsonMsg ) {
 		rec_text=rec_text+rectxt; //.replace(/ +/g,"");
 	}
 	var varArea=document.getElementById('varArea');
+	var varArea_message=document.getElementById('message');
 	
 	varArea.value=rec_text;
+	varArea_message.value=rec_text;
 	console.log( "offline_text: " + asrmodel+","+offline_text);
 	console.log( "rec_text: " + rec_text);
 	if (isfilemode==true && is_final==false){

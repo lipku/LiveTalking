@@ -17,7 +17,7 @@
       <div class="form-group">
         <p>input text</p>
 
-		<textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message">test</textarea>
+		<textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message"></textarea>
       </div>
       <button type="submit" class="btn btn-default">Send</button>
     </form>
@@ -33,9 +33,9 @@
 	<div class="div_class_recordControl">
 		asr服务器地址(必填):
 		<br>
-		<input id="wssip" type="text" onchange="addresschange()" style="width: 500px;" value="wss://127.0.0.1:10197/"/>
+		<input id="wssip" type="text" onchange="addresschange()" style="width: 500px;" value="wss://127.0.0.1:10095/"/>
 		<br>
-		<a id="wsslink" style="display: block;"  href="#" onclick="window.open('https://127.0.0.1:10197/', '_blank')"><div id="info_wslink">点此处手工授权wss://127.0.0.1:10095/</div></a>
+		<a id="wsslink" style="display: none;"  href="#" onclick="window.open('https://127.0.0.1:10095/', '_blank')"><div id="info_wslink">点此处手工授权wss://127.0.0.1:10095/</div></a>
 		<br>
 	<br>  
 	<div  style="border:2px solid #ccc;display: none;">
@@ -46,7 +46,7 @@
 
 		</div>
 		
-		<br>
+		
 		 <div id="mic_mode_div" style="border:2px solid #ccc;display:none;">
 		选择asr模型模式:<br/>
 
@@ -62,17 +62,17 @@
 		  <input type="file" id="upfile">
 
 		</div>
-		<br>
+		
 		<div  style="border:2px solid #ccc;display: none;">
 			热词设置(一行一个关键字，空格隔开权重,如"阿里巴巴 20")：
-			<br>
-			<textarea rows="3"  id="varHot"  style=" width: 100%;height:100%" >阿里巴巴 20&#13;hello world 40</textarea>
-			<br>
+			
+			<textarea rows="1"  id="varHot"  style=" width: 100%;height:auto" >阿里巴巴 20&#13;hello world 40</textarea>
+			
 			</div>
-		语音识别结果显示：
+		<div style="display: none;">语音识别结果显示：</div>
 		<br>
 		
-		<textarea rows="10"  id="varArea" readonly="true" style=" width: 100%;height:100%" ></textarea>
+		<textarea rows="10"  id="varArea" readonly="true" style=" width: 100%;height:auto;display: none;" ></textarea>
 		<br>
 		<div id="info_div">请点击开始</div>
 		<div class="div_class_buttons">
@@ -82,7 +82,7 @@
 
 		</div>
 		
-		<audio id="audio_record" type="audio/wav" controls style="margin-top: 12px; width: 100%;"></audio>
+		<audio id="audio_record" type="audio/wav" controls style="margin-top: 2px; width: 100%;display: none;"></audio>
 	</div>
 </div>
 
@@ -92,37 +92,37 @@
 </body>
 <script type="text/javascript" charset="utf-8">
 
-	// $(document).ready(function() {
-	//   var host = window.location.hostname
-	//   var ws = new WebSocket("ws://"+host+":8000/humanecho");
-	//   //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
-	//   ws.onopen = function() {
-	// 	console.log('Connected');
-	//   };
-	//   ws.onmessage = function(e) {
-	// 	console.log('Received: ' + e.data);
-	// 	data = e
-	// 	var vid = JSON.parse(data.data); 
-	// 	console.log(typeof(vid),vid)
-	// 	//document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
+	$(document).ready(function() {
+	  var host = window.location.hostname
+	  var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	  //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
+	  ws.onopen = function() {
+		console.log('Connected');
+	  };
+	  ws.onmessage = function(e) {
+		console.log('Received: ' + e.data);
+		data = e
+		var vid = JSON.parse(data.data); 
+		console.log(typeof(vid),vid)
+		//document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
 		
-	//   };
-	//   ws.onclose = function(e) {
-	// 	console.log('Closed');
-	//   };
+	  };
+	  ws.onclose = function(e) {
+		console.log('Closed');
+	  };
 
-	//   flvPlayer = mpegts.createPlayer({type: 'flv', url: "http://"+host+":8080/live/livestream.flv", isLive: true, enableStashBuffer: false});
-	//   flvPlayer.attachMediaElement(document.getElementById('video_player'));
-	//   flvPlayer.load();
-	//   flvPlayer.play();
+	  flvPlayer = mpegts.createPlayer({type: 'flv', url: "http://"+host+":8080/live/livestream.flv", isLive: true, enableStashBuffer: false});
+	  flvPlayer.attachMediaElement(document.getElementById('video_player'));
+	  flvPlayer.load();
+	  flvPlayer.play();
 
-	//   $('#echo-form').on('submit', function(e) {
-	// 	e.preventDefault();
-	// 	var message = $('#message').val();
-	// 	console.log('Sending: ' + message);
-	// 	ws.send(message);
-	// 	$('#message').val('');
-	//   });
-	// });
+	  $('#echo-form').on('submit', function(e) {
+		e.preventDefault();
+		var message = $('#message').val();
+		console.log('Sending: ' + message);
+		ws.send(message);
+		$('#message').val('');
+	  });
+	});
 </script>
  </html>
