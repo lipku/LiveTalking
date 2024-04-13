@@ -54,10 +54,10 @@ var totalsend=0;
 var now_ipaddress=window.location.href;
 now_ipaddress=now_ipaddress.replace("https://","wss://");
 now_ipaddress=now_ipaddress.replace("static/index.html","");
-var localport=window.location.port;
-now_ipaddress=now_ipaddress.replace(localport,"10095");
-document.getElementById('wssip').value=now_ipaddress;
-addresschange();
+// var localport=window.location.port;
+// now_ipaddress=now_ipaddress.replace(localport,"10095");
+// document.getElementById('wssip').value=now_ipaddress;
+// addresschange();
 function addresschange()
 {   
 	
