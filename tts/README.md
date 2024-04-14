@@ -1,4 +1,7 @@
 一、采用gpt-sovits方案，bert-sovits适合长音频训练，gpt-sovits运行短音频快速推理
+下载tts服务端代码
+https://github.com/yanyuxiyangzk/GPT-SoVITS/tree/fast_inference_
+api_v2.py即启动的服务端代码，也可以打开声音克隆界面进行训练，可以训练带感情语气等
 
 1、启动
 python api_v2.py -a 127.0.0.1 -p 9880 -c GPT_SoVITS/configs/tts_infer.yaml 
