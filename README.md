@@ -47,25 +47,16 @@ python app.py
 export HF_ENDPOINT=https://hf-mirror.com
 ```
 
-运行成功后，用vlc访问rtmp://serverip/live/livestream
+运行成功后，用vlc访问rtmp://serverip/live/livestream  
 
-### 2.3 网页端数字人播报输入文字
-安装并启动nginx
-```
-apt install nginx
-nginx
-```
-将echo.html和mpegts-1.7.3.min.js拷到/var/www/html下  
-
-用浏览器打开http://serverip/echo.html, 在文本框输入任意文字，提交。数字人播报该段文字  
+用浏览器打开http://serverip:8010/echo.html, 在文本框输入任意文字，提交。数字人播报该段文字  
 
 ## 3. More Usage
 ### 3.1 使用LLM模型进行数字人对话
 
-目前借鉴数字人对话系统[LinlyTalker](https://github.com/Kedreamix/Linly-Talker)的方式，LLM模型支持Chatgpt,Qwen和GeminiPro。需要在app.py中填入自己的api_key。  
-安装并启动nginx，将chat.html和mpegts-1.7.3.min.js拷到/var/www/html下  
+目前借鉴数字人对话系统[LinlyTalker](https://github.com/Kedreamix/Linly-Talker)的方式，LLM模型支持Chatgpt,Qwen和GeminiPro。需要在app.py中填入自己的api_key。    
 
-用浏览器打开http://serverip/chat.html
+用浏览器打开http://serverip:8010/chat.html
 
 ### 3.2 使用本地tts服务,支持声音克隆
 运行xtts服务，参照 https://github.com/coqui-ai/xtts-streaming-server
@@ -105,13 +96,20 @@ python app.py --fullbody --fullbody_img data/fullbody/img --fullbody_offset_x 10
 - --fullbody_width、--fullbody_height 全身视频的宽、高
 - --W、--H 训练视频的宽、高  
 - ernerf训练第三步torso如果训练的不好，在拼接处会有接缝。可以在上面的命令加上--torso_imgs data/xxx/torso_imgs，torso不用模型推理，直接用训练数据集里的torso图片。这种方式可能头颈处会有些人工痕迹。
+
+### 3.6 webrtc
+```
+python app.py --transport webrtc
+```
+用浏览器打开http://serverip:8010/webrtc.html
+
   
 ## 4. Docker Run  
 不需要第1步的安装，直接运行。
 ```
 docker run --gpus all -it --network=host --rm  registry.cn-hangzhou.aliyuncs.com/lipku/nerfstream:v1.3
 ```
-srs和nginx的运行同2.1和2.3
+srs的运行同2.1
 
 ## 5. Data flow
 ![](/assets/dataflow.png)
