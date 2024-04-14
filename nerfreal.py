@@ -10,7 +10,9 @@ import torch.nn.functional as F
 import cv2
 
 from asrreal import ASR
+import asyncio
 from rtmp_streaming import StreamerConfig, Streamer
+from av import AudioFrame, VideoFrame
 
 class NeRFReal:
     def __init__(self, opt, trainer, data_loader, debug=True):
@@ -118,7 +120,7 @@ class NeRFReal:
         else:
             return np.expand_dims(outputs['depth'], -1).repeat(3, -1)
 
-    def test_step(self):
+    def test_step(self,loop=None,audio_track=None,video_track=None):
         
         #starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
         #starter.record()
@@ -140,7 +142,11 @@ class NeRFReal:
             #print(f'[INFO] outputs shape ',outputs['image'].shape)
             image = (outputs['image'] * 255).astype(np.uint8)
             if not self.opt.fullbody:
-                self.streamer.stream_frame(image)
+                if self.opt.transport=='rtmp':
+                    self.streamer.stream_frame(image)
+                else:
+                    new_frame = VideoFrame.from_ndarray(image, format="rgb24")
+                    asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
             else: #fullbody human
                 #print("frame index:",data['index'])
                 image_fullbody = cv2.imread(os.path.join(self.opt.fullbody_img, str(data['index'][0])+'.jpg'))
@@ -148,12 +154,23 @@ class NeRFReal:
                 start_x = self.opt.fullbody_offset_x  # 合并后小图片的起始x坐标
                 start_y = self.opt.fullbody_offset_y  # 合并后小图片的起始y坐标
                 image_fullbody[start_y:start_y+image.shape[0], start_x:start_x+image.shape[1]] = image
-                self.streamer.stream_frame(image_fullbody)
+                if self.opt.transport=='rtmp':
+                    self.streamer.stream_frame(image_fullbody)
+                else:
+                    new_frame = VideoFrame.from_ndarray(image, format="rgb24")
+                    asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
             #self.pipe.stdin.write(image.tostring())
             for _ in range(2):
                 frame = self.asr.get_audio_out()
                 #print(f'[INFO] get_audio_out shape ',frame.shape)
-                self.streamer.stream_frame_audio(frame)
+                if self.opt.transport=='rtmp':
+                    self.streamer.stream_frame_audio(frame)
+                else:
+                    frame = (frame * 32767).astype(np.int16)
+                    new_frame = AudioFrame(format='s16', layout='mono', samples=320)
+                    new_frame.planes[0].update(frame.tobytes())
+                    new_frame.sample_rate=16000
+                    asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop)
             #     frame = (frame * 32767).astype(np.int16).tobytes()
             #     self.fifo_audio.write(frame)           
         else:
@@ -167,35 +184,36 @@ class NeRFReal:
         #torch.cuda.synchronize()
         #t = starter.elapsed_time(ender)
             
-    def render(self):
+    def render(self,quit_event,loop=None,audio_track=None,video_track=None):
         if self.opt.asr:
              self.asr.warm_up()
         count=0
         totaltime=0
 
-        fps=25
-        #push_url='rtmp://localhost/live/livestream' #'data/video/output_0.mp4'
-        sc = StreamerConfig()
-        sc.source_width = self.W
-        sc.source_height = self.H
-        sc.stream_width = self.W
-        sc.stream_height = self.H
-        if self.opt.fullbody:
-            sc.source_width = self.opt.fullbody_width
-            sc.source_height = self.opt.fullbody_height
-            sc.stream_width = self.opt.fullbody_width
-            sc.stream_height = self.opt.fullbody_height
-        sc.stream_fps = fps
-        sc.stream_bitrate = 1000000
-        sc.stream_profile = 'baseline' #'high444' # 'main'
-        sc.audio_channel = 1
-        sc.sample_rate = 16000
-        sc.stream_server = self.opt.push_url
-        self.streamer = Streamer()
-        self.streamer.init(sc)
-        #self.streamer.enable_av_debug_log()
+        if self.opt.transport=='rtmp':
+            fps=25
+            #push_url='rtmp://localhost/live/livestream' #'data/video/output_0.mp4'
+            sc = StreamerConfig()
+            sc.source_width = self.W
+            sc.source_height = self.H
+            sc.stream_width = self.W
+            sc.stream_height = self.H
+            if self.opt.fullbody:
+                sc.source_width = self.opt.fullbody_width
+                sc.source_height = self.opt.fullbody_height
+                sc.stream_width = self.opt.fullbody_width
+                sc.stream_height = self.opt.fullbody_height
+            sc.stream_fps = fps
+            sc.stream_bitrate = 1000000
+            sc.stream_profile = 'baseline' #'high444' # 'main'
+            sc.audio_channel = 1
+            sc.sample_rate = 16000
+            sc.stream_server = self.opt.push_url
+            self.streamer = Streamer()
+            self.streamer.init(sc)
+            #self.streamer.enable_av_debug_log()
 
-        while True: #todo
+        while not quit_event.is_set(): #todo
             # update texture every frame
             # audio stream thread...
             t = time.time()
@@ -203,14 +221,14 @@ class NeRFReal:
                 # run 2 ASR steps (audio is at 50FPS, video is at 25FPS)
                 for _ in range(2):
                     self.asr.run_step()
-            self.test_step()
+            self.test_step(loop,audio_track,video_track)
             totaltime += (time.time() - t)
             count += 1
             if count==100:
                 print(f"------actual avg fps:{count/totaltime:.4f}")
                 count=0
                 totaltime=0
-            # delay = 0.04 - (time.time() - t) #40ms
-            # if delay > 0:
-            #     time.sleep(delay)
+            delay = 0.04 - (time.time() - t) #40ms
+            if delay > 0:
+                time.sleep(delay)
             

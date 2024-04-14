@@ -1,5 +1,5 @@
 # server.py
-from flask import Flask, request, jsonify
+from flask import Flask, render_template,send_from_directory,request, jsonify
 from flask_sockets import Sockets
 import base64
 import time
@@ -10,8 +10,12 @@ from geventwebsocket.handler import WebSocketHandler
 import os
 import re
 import numpy as np
-from threading import Thread
+from threading import Thread,Event
 import multiprocessing
+
+from aiohttp import web
+from aiortc import RTCPeerConnection, RTCSessionDescription
+from webrtc import HumanPlayer
 
 import argparse
 from nerf_triplane.provider import NeRFDataset_Test
@@ -153,11 +157,51 @@ def chat_socket(ws):
                 return '输入信息为空'
             else:
                 res=llm_response(message)                           
-                txt_to_audio(res)                        
+                txt_to_audio(res) 
 
-def render():
-    nerfreal.render()                  
-               
+#####webrtc###############################
+pcs = set()
+
+#@app.route('/offer', methods=['POST'])
+async def offer(request):
+    params = await request.json()
+    offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
+
+    pc = RTCPeerConnection()
+    pcs.add(pc)
+
+    @pc.on("connectionstatechange")
+    async def on_connectionstatechange():
+        print("Connection state is %s" % pc.connectionState)
+        if pc.connectionState == "failed":
+            await pc.close()
+            pcs.discard(pc)
+
+    player = HumanPlayer(nerfreal)
+    audio_sender = pc.addTrack(player.audio)
+    video_sender = pc.addTrack(player.video)
+
+    await pc.setRemoteDescription(offer)
+
+    answer = await pc.createAnswer()
+    await pc.setLocalDescription(answer)
+
+    #return jsonify({"sdp": pc.localDescription.sdp, "type": pc.localDescription.type})
+
+    return web.Response(
+        content_type="application/json",
+        text=json.dumps(
+            {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}
+        ),
+    )
+
+
+async def on_shutdown(app):
+    # close peer connections
+    coros = [pc.close() for pc in pcs]
+    await asyncio.gather(*coros)
+    pcs.clear()
+##########################################                                                    
 
 if __name__ == '__main__':
 
@@ -257,6 +301,7 @@ if __name__ == '__main__':
     # parser.add_argument('--asr_model', type=str, default='facebook/wav2vec2-large-960h-lv60-self')
     # parser.add_argument('--asr_model', type=str, default='facebook/hubert-large-ls960-ft')
 
+    parser.add_argument('--transport', type=str, default='rtmp') #rtmp webrtc
     parser.add_argument('--push_url', type=str, default='rtmp://localhost/live/livestream')
 
     parser.add_argument('--asr_save_feats', action='store_true')
@@ -330,12 +375,29 @@ if __name__ == '__main__':
     # we still need test_loader to provide audio features for testing.
     nerfreal = NeRFReal(opt, trainer, test_loader)
     #txt_to_audio('我是中国人,我来自北京')
-    rendthrd = Thread(target=render)
-    rendthrd.start()
+    if opt.transport=='rtmp':
+        thread_quit = Event()
+        rendthrd = Thread(target=nerfreal.render,args=(thread_quit,))
+        rendthrd.start()
 
     #############################################################################
-    print('start websocket server')
+    appasync = web.Application()
+    appasync.on_shutdown.append(on_shutdown)
+    appasync.router.add_post("/offer", offer)
+    appasync.router.add_static('/',path='web')
 
+    def run_server(runner):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(runner.setup())
+        site = web.TCPSite(runner, '0.0.0.0', 8010)
+        loop.run_until_complete(site.start())
+        loop.run_forever()    
+    Thread(target=run_server, args=(web.AppRunner(appasync),)).start()
+
+    print('start websocket server')
+    #app.on_shutdown.append(on_shutdown)
+    #app.router.add_post("/offer", offer)
     server = pywsgi.WSGIServer(('0.0.0.0', 8000), app, handler_class=WebSocketHandler)
     server.serve_forever()
     
