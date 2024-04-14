@@ -50,7 +50,7 @@ var file_data_array;  // array to save file data
  
 var totalsend=0;
 
-const startTime = Date.now();
+var startTime = Date.now();
 
 var now_ipaddress=window.location.href;
 now_ipaddress=now_ipaddress.replace("https://","wss://");
@@ -347,21 +347,28 @@ function handleWithTimestamp(tmptext,tmptime)
 
 // 语音识别结果; 对jsonMsg数据解析,将识别结果附加到编辑框中
 function getJsonMessage( jsonMsg ) {
-	const currentTime = Date.now();
-	res_time = startTime-currentTime;
+	if(!recive_msg) return;
+	var currentTime = Date.now();
+	res_time = currentTime-startTime;
+	console.log(res_time)
 	//时间之差在4秒则发送消息
-	let waitTime = 5000; 
-	if(res_time>=waitTime){
+	let waitTime = 15000;
+	if(res_time>waitTime){
 		//自动发送消息
-		('#echo-form').on('submit', function(e) {
+		var f = document.getElementById("echo-form");
+		f.submit = function(e){
 			e.preventDefault();
-			var message = $('#message').val();
+			var message=document.getElementById('message').value;
 			console.log('Sending: ' + message);
 			ws.send(message);
-			$('#message').val('');
-		  });
-		
+			document.getElementById('message').value='';
+		}
+
+		recive_msg = false;
 		startTime = currentTime;
+		// rec_text="";
+		// var varArea_message=document.getElementById('message');
+		// varArea_message.value="";
 		return;
 	}
 
@@ -371,6 +378,8 @@ function getJsonMessage( jsonMsg ) {
 	//console.log(jsonMsg);
 	console.log( "message: " + JSON.parse(jsonMsg.data)['text'] );
 	var rectxt=""+JSON.parse(jsonMsg.data)['text'];
+
+
 	var asrmodel=JSON.parse(jsonMsg.data)['mode'];
 	var is_final=JSON.parse(jsonMsg.data)['is_final'];
 	var timestamp=JSON.parse(jsonMsg.data)['timestamp'];
@@ -592,7 +601,7 @@ function recProcess( buffer, powerLevel, bufferDuration, bufferSampleRate,newBuf
 	}
 
 }
-
+var recive_msg = true;
 $(document).ready(function() {
 	var host = window.location.hostname
 	var ws = new WebSocket("ws://"+host+":8000/humanecho");
@@ -602,6 +611,7 @@ $(document).ready(function() {
 	};
 	ws.onmessage = function(e) {
 	  console.log('Received: ' + e.data);
+	  recive_msg = true;
 	  data = e
 	  var vid = JSON.parse(data.data); 
 	  console.log(typeof(vid),vid)
