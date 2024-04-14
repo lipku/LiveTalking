@@ -50,6 +50,7 @@ var file_data_array;  // array to save file data
  
 var totalsend=0;
 
+const startTime = Date.now();
 
 var now_ipaddress=window.location.href;
 now_ipaddress=now_ipaddress.replace("https://","wss://");
@@ -343,8 +344,30 @@ function handleWithTimestamp(tmptext,tmptime)
 	
 
 }
+
 // 语音识别结果; 对jsonMsg数据解析,将识别结果附加到编辑框中
 function getJsonMessage( jsonMsg ) {
+	const currentTime = Date.now();
+	res_time = startTime-currentTime;
+	//时间之差在4秒则发送消息
+	let waitTime = 5000; 
+	if(res_time>=waitTime){
+		//自动发送消息
+		('#echo-form').on('submit', function(e) {
+			e.preventDefault();
+			var message = $('#message').val();
+			console.log('Sending: ' + message);
+			ws.send(message);
+			$('#message').val('');
+		  });
+		
+		startTime = currentTime;
+		return;
+	}
+
+	
+
+
 	//console.log(jsonMsg);
 	console.log( "message: " + JSON.parse(jsonMsg.data)['text'] );
 	var rectxt=""+JSON.parse(jsonMsg.data)['text'];
@@ -368,6 +391,8 @@ function getJsonMessage( jsonMsg ) {
 	varArea_message.value=rec_text;
 	console.log( "offline_text: " + asrmodel+","+offline_text);
 	console.log( "rec_text: " + rec_text);
+	console.log( "isfilemode: " + isfilemode);
+	console.log( "is_final: " + is_final);
 	if (isfilemode==true && is_final==false){
 		console.log("call stop ws!");
 		play_file();
@@ -565,4 +590,38 @@ function recProcess( buffer, powerLevel, bufferDuration, bufferSampleRate,newBuf
  
 		
 	}
+
 }
+
+$(document).ready(function() {
+	var host = window.location.hostname
+	var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	//document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
+	ws.onopen = function() {
+	  console.log('Connected');
+	};
+	ws.onmessage = function(e) {
+	  console.log('Received: ' + e.data);
+	  data = e
+	  var vid = JSON.parse(data.data); 
+	  console.log(typeof(vid),vid)
+	  //document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
+	  
+	};
+	ws.onclose = function(e) {
+	  console.log('Closed');
+	};
+
+	flvPlayer = mpegts.createPlayer({type: 'flv', url: "http://"+host+":8080/live/livestream.flv", isLive: true, enableStashBuffer: false});
+	flvPlayer.attachMediaElement(document.getElementById('video_player'));
+	flvPlayer.load();
+	flvPlayer.play();
+
+	$('#echo-form').on('submit', function(e) {
+	  e.preventDefault();
+	  var message = $('#message').val();
+	  console.log('Sending: ' + message);
+	  ws.send(message);
+	  $('#message').val('');
+	});
+  });

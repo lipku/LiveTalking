@@ -51,7 +51,8 @@
 		选择asr模型模式:<br/>
 
 <label><input name="asr_mode" type="radio" value="2pass" />2pass </label>&nbsp;&nbsp;
-<label><input name="asr_mode" type="radio" value="online" checked="true"/>online </label>&nbsp;&nbsp;
+<label><input name="asr_mode" type="radio" value="online"  checked="true"/>online </label>&nbsp;&nbsp;
+<label><input name="asr_mode" type="radio" value="2pass-offline" />2pass-offline </label>&nbsp;&nbsp;
 <label><input name="asr_mode" type="radio" value="offline" />offline </label>
 
 		</div>
@@ -92,37 +93,37 @@
 </body>
 <script type="text/javascript" charset="utf-8">
 
-	$(document).ready(function() {
-	  var host = window.location.hostname
-	  var ws = new WebSocket("ws://"+host+":8000/humanecho");
-	  //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
-	  ws.onopen = function() {
-		console.log('Connected');
-	  };
-	  ws.onmessage = function(e) {
-		console.log('Received: ' + e.data);
-		data = e
-		var vid = JSON.parse(data.data); 
-		console.log(typeof(vid),vid)
-		//document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
+	// $(document).ready(function() {
+	//   var host = window.location.hostname
+	//   var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	//   //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
+	//   ws.onopen = function() {
+	// 	console.log('Connected');
+	//   };
+	//   ws.onmessage = function(e) {
+	// 	console.log('Received: ' + e.data);
+	// 	data = e
+	// 	var vid = JSON.parse(data.data); 
+	// 	console.log(typeof(vid),vid)
+	// 	//document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
 		
-	  };
-	  ws.onclose = function(e) {
-		console.log('Closed');
-	  };
+	//   };
+	//   ws.onclose = function(e) {
+	// 	console.log('Closed');
+	//   };
 
-	  flvPlayer = mpegts.createPlayer({type: 'flv', url: "http://"+host+":8080/live/livestream.flv", isLive: true, enableStashBuffer: false});
-	  flvPlayer.attachMediaElement(document.getElementById('video_player'));
-	  flvPlayer.load();
-	  flvPlayer.play();
+	//   flvPlayer = mpegts.createPlayer({type: 'flv', url: "http://"+host+":8080/live/livestream.flv", isLive: true, enableStashBuffer: false});
+	//   flvPlayer.attachMediaElement(document.getElementById('video_player'));
+	//   flvPlayer.load();
+	//   flvPlayer.play();
 
-	  $('#echo-form').on('submit', function(e) {
-		e.preventDefault();
-		var message = $('#message').val();
-		console.log('Sending: ' + message);
-		ws.send(message);
-		$('#message').val('');
-	  });
-	});
+	//   $('#echo-form').on('submit', function(e) {
+	// 	e.preventDefault();
+	// 	var message = $('#message').val();
+	// 	console.log('Sending: ' + message);
+	// 	ws.send(message);
+	// 	$('#message').val('');
+	//   });
+	// });
 </script>
  </html>
