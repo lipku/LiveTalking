@@ -188,6 +188,25 @@ def chat_socket(ws):
                 res=llm_response(message)                           
                 txt_to_audio(res)                        
 
+@sockets.route('/chat')
+def chat_socket(ws):
+    # 获取WebSocket对象
+    #ws = request.environ.get('wsgi.websocket')
+    # 如果没有获取到，返回错误信息
+    if not ws:
+        print('未建立连接！')
+        return 'Please use WebSocket'
+    # 否则，循环接收和发送消息
+    else:
+        print('建立连接！')
+        while True:
+            message = ws.receive()           
+            
+            if len(message)==0:
+                return '输入信息为空'
+            else:                        
+                txt_to_audio(message)
+
 def render():
     nerfreal.render()                  
                
