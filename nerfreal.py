@@ -157,7 +157,7 @@ class NeRFReal:
                 if self.opt.transport=='rtmp':
                     self.streamer.stream_frame(image_fullbody)
                 else:
-                    new_frame = VideoFrame.from_ndarray(image, format="rgb24")
+                    new_frame = VideoFrame.from_ndarray(image_fullbody, format="rgb24")
                     asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
             #self.pipe.stdin.write(image.tostring())
             for _ in range(2):
