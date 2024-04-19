@@ -18,7 +18,7 @@ class Qwen:
         self.local = True
 
         # api_base和api_key不为空时使用openapi的方式
-        if api_key is not None and base_url is not None:
+        if api_key is not None and api_base is not None:
             openai.api_base = api_base
             openai.api_key = api_key
             self.local = False
