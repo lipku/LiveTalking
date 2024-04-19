@@ -85,6 +85,30 @@ def xtts(text, speaker, language, server_url, stream_chunk_size) -> Iterator[byt
 
     print("xtts response.elapsed:", res.elapsed)
 
+def gpt_sovits(text, speaker, language, server_url, stream_chunk_size) -> Iterator[bytes]:
+    start = time.perf_counter()
+    speaker["text"] = text
+    speaker["language"] = language
+    speaker["stream_chunk_size"] = stream_chunk_size  # you can reduce it to get faster response, but degrade quality
+    res = requests.get(f"{server_url}&text="+text,stream=True)
+    end = time.perf_counter()
+    print(f"gpt_sovits Time to make POST: {end-start}s")
+
+    if res.status_code != 200:
+        print("Error:", res.text)
+        return
+
+    first = True
+    for chunk in res.iter_content(chunk_size=960):
+        if first:
+            end = time.perf_counter()
+            print(f"gpt_sovits Time to first chunk: {end-start}s")
+            first = False
+        if chunk:
+            yield chunk
+
+    print("gpt_sovits response.elapsed:", res.elapsed)
+
 def stream_xtts(audio_stream,render):
     for chunk in audio_stream:
         if chunk is not None:
@@ -97,6 +121,17 @@ def txt_to_audio(text_):
         t = time.time()
         asyncio.get_event_loop().run_until_complete(main(voicename,text,nerfreal))
         print(f'-------edge tts time:{time.time()-t:.4f}s')
+    elif tts_type == "gpt": #gpt_sovits
+        stream_xtts(
+            gpt_sovits(
+                text_,
+                gspeaker,
+                "zh-cn", #en args.language,
+                "http://127.0.0.1:9880/tts_ava?ava=maimai&streaming_mode=true", #args.server_url,
+                "20" #args.stream_chunk_size
+            ),
+            nerfreal
+        )
     else: #xtts
         stream_xtts(
             xtts(
