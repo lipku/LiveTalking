@@ -26,7 +26,7 @@ class LLM:
         elif model_name == 'ChatGPT':
             llm = ChatGPT(model_path, api_key=api_key)
         elif model_name == 'Qwen':
-            llm = Qwen(model_path)
+            llm = Qwen(model_path=model_path, api_key=api_key, api_base=proxy_url)
         elif model_name == 'VllmGPT':
             llm = VllmGPT()
         return llm
