@@ -46,18 +46,22 @@ class PlayerStreamTrack(MediaStreamTrack):
 
         if self.kind == 'video':
             if hasattr(self, "_timestamp"):
-                self._timestamp += int(VIDEO_PTIME * VIDEO_CLOCK_RATE)
-                wait = self._start + (self._timestamp / VIDEO_CLOCK_RATE) - time.time()
-                await asyncio.sleep(wait)
+                self._timestamp = (time.time()-self._start) * VIDEO_CLOCK_RATE
+                # self._timestamp += int(VIDEO_PTIME * VIDEO_CLOCK_RATE)
+                # wait = self._start + (self._timestamp / VIDEO_CLOCK_RATE) - time.time()
+                # if wait>0:
+                #     await asyncio.sleep(wait)
             else:
                 self._start = time.time()
                 self._timestamp = 0
             return self._timestamp, VIDEO_TIME_BASE
         else: #audio
             if hasattr(self, "_timestamp"):
-                self._timestamp += int(AUDIO_PTIME * SAMPLE_RATE)
-                wait = self._start + (self._timestamp / SAMPLE_RATE) - time.time()
-                await asyncio.sleep(wait)
+                self._timestamp = (time.time()-self._start) * SAMPLE_RATE
+                # self._timestamp += int(AUDIO_PTIME * SAMPLE_RATE)
+                # wait = self._start + (self._timestamp / SAMPLE_RATE) - time.time()
+                # if wait>0:
+                #     await asyncio.sleep(wait)
             else:
                 self._start = time.time()
                 self._timestamp = 0
