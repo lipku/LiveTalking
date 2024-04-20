@@ -61,6 +61,7 @@ class NeRFReal:
         # build asr
         if self.opt.asr:
             self.asr = ASR(opt)
+            self.asr.warm_up()
         
         '''
         video_path = 'video_stream'
@@ -185,8 +186,8 @@ class NeRFReal:
         #t = starter.elapsed_time(ender)
             
     def render(self,quit_event,loop=None,audio_track=None,video_track=None):
-        if self.opt.asr:
-             self.asr.warm_up()
+        #if self.opt.asr:
+        #     self.asr.warm_up()
         count=0
         totaltime=0
 
@@ -216,19 +217,19 @@ class NeRFReal:
         while not quit_event.is_set(): #todo
             # update texture every frame
             # audio stream thread...
-            t = time.time()
+            t = time.perf_counter()
             if self.opt.asr and self.playing:
                 # run 2 ASR steps (audio is at 50FPS, video is at 25FPS)
                 for _ in range(2):
                     self.asr.run_step()
             self.test_step(loop,audio_track,video_track)
-            totaltime += (time.time() - t)
+            totaltime += (time.perf_counter() - t)
             count += 1
             if count==100:
                 print(f"------actual avg fps:{count/totaltime:.4f}")
                 count=0
                 totaltime=0
-            delay = 0.04 - (time.time() - t) #40ms
+            delay = 0.04 - (time.perf_counter() - t) #40ms
             if delay > 0:
                 time.sleep(delay)
             
