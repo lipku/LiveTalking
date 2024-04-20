@@ -161,17 +161,20 @@ class NeRFReal:
                     new_frame = VideoFrame.from_ndarray(image_fullbody, format="rgb24")
                     asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
             #self.pipe.stdin.write(image.tostring())
-            for _ in range(2):
-                frame = self.asr.get_audio_out()
-                #print(f'[INFO] get_audio_out shape ',frame.shape)
-                if self.opt.transport=='rtmp':
+            if self.opt.transport=='rtmp':
+                for _ in range(2):
+                    frame = self.asr.get_audio_out()
+                    #print(f'[INFO] get_audio_out shape ',frame.shape)                
                     self.streamer.stream_frame_audio(frame)
-                else:
-                    frame = (frame * 32767).astype(np.int16)
-                    new_frame = AudioFrame(format='s16', layout='mono', samples=320)
-                    new_frame.planes[0].update(frame.tobytes())
-                    new_frame.sample_rate=16000
-                    asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop)
+            else:
+                frame1 = self.asr.get_audio_out()
+                frame2 = self.asr.get_audio_out()
+                frame = np.concatenate((frame1,frame2))
+                frame = (frame * 32767).astype(np.int16)
+                new_frame = AudioFrame(format='s16', layout='mono', samples=frame.shape[0])
+                new_frame.planes[0].update(frame.tobytes())
+                new_frame.sample_rate=16000
+                asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop)
             #     frame = (frame * 32767).astype(np.int16).tobytes()
             #     self.fifo_audio.write(frame)           
         else:
