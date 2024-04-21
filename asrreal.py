@@ -314,10 +314,13 @@ class ASR:
 
     def push_audio(self,buffer): #push audio pcm from tts
         print(f'[INFO] push_audio {len(buffer)}')
-        if self.opt.tts == "xtts":
+        if self.opt.tts == "xtts" or self.opt.tts == "gpt-sovits":
             if len(buffer)>0:            
                 stream = np.frombuffer(buffer, dtype=np.int16).astype(np.float32) / 32767
-                stream = resampy.resample(x=stream, sr_orig=24000, sr_new=self.sample_rate)
+                if self.opt.tts == "xtts":
+                    stream = resampy.resample(x=stream, sr_orig=24000, sr_new=self.sample_rate)
+                else:
+                    stream = resampy.resample(x=stream, sr_orig=32000, sr_new=self.sample_rate)
                 #byte_stream=BytesIO(buffer)
                 #stream = self.__create_bytes_stream(byte_stream)
                 streamlen = stream.shape[0]
