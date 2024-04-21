@@ -8,6 +8,7 @@ A streaming digital human based on the Ernerf model， realize audio video synch
 2. 支持大模型对话
 3. 支持多种音频特征驱动：wav2vec、hubert
 4. 支持全身视频拼接
+5. 支持rtmp和webrtc
 
 ## 1. Installation
 
@@ -58,14 +59,22 @@ export HF_ENDPOINT=https://hf-mirror.com
 
 用浏览器打开http://serverip:8010/chat.html
 
-### 3.2 使用本地tts服务,支持声音克隆
+### 3.2 声音克隆
+可以任意选用下面两种服务，推荐用gpt-sovits
+#### 3.2.1 gpt-sovits
+服务部署参照[gpt-sovits](/tts/README.md)  
+运行
+```
+python app.py --tts gpt-sovits --TTS_SERVER http://127.0.0.1:5000 --CHARACTER test --EMOTION default
+```
+#### 3.2.2 xtts
 运行xtts服务，参照 https://github.com/coqui-ai/xtts-streaming-server
 ```
 docker run --gpus=all -e COQUI_TOS_AGREED=1 --rm -p 9000:80 ghcr.io/coqui-ai/xtts-streaming-server:latest
 ```
 然后运行，其中ref.wav为需要克隆的声音文件
 ```
-python app.py --tts xtts --ref_file data/ref.wav
+python app.py --tts xtts --REF_FILE data/ref.wav --TTS_SERVER http://localhost:9000
 ```
 
 ### 3.3 音频特征用hubert

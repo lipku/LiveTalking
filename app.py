@@ -85,13 +85,13 @@ def xtts(text, speaker, language, server_url, stream_chunk_size) -> Iterator[byt
 
     print("xtts response.elapsed:", res.elapsed)
 
-def gpt_sovits(text, character, language, server_url, stream_chunk_size) -> Iterator[bytes]:
+def gpt_sovits(text, character, language, server_url, emotion) -> Iterator[bytes]:
     start = time.perf_counter()
     req={}
     req["text"] = text
     req["text_language"] = language
     req["character"] = character
-    #req["emotion"] = emotion
+    req["emotion"] = emotion
     #req["stream_chunk_size"] = stream_chunk_size  # you can reduce it to get faster response, but degrade quality
     req["stream"] = True
     res = requests.post(
@@ -133,10 +133,10 @@ def txt_to_audio(text_):
         stream_tts(
             gpt_sovits(
                 text_,
-                "test", #character
+                app.config['CHARACTER'], #"test", #character
                 "zh", #en args.language,
-                "http://127.0.0.1:5000", #args.server_url,
-                "20" #args.stream_chunk_size
+                app.config['TTS_SERVER'], #"http://127.0.0.1:5000", #args.server_url,
+                app.config['EMOTION'], #emotion 
             ),
             nerfreal
         )
@@ -146,7 +146,7 @@ def txt_to_audio(text_):
                 text_,
                 gspeaker,
                 "zh-cn", #en args.language,
-                "http://localhost:9000", #args.server_url,
+                app.config['TTS_SERVER'], #"http://localhost:9000", #args.server_url,
                 "20" #args.stream_chunk_size
             ),
             nerfreal
@@ -363,17 +363,19 @@ if __name__ == '__main__':
     parser.add_argument('--fullbody_offset_y', type=int, default=0)
 
     parser.add_argument('--tts', type=str, default='edgetts') #xtts gpt-sovits
-    parser.add_argument('--ref_file', type=str, default=None)
-    parser.add_argument('--tts_server', type=str, default='http://localhost:9000')
+    parser.add_argument('--REF_FILE', type=str, default=None)
+    parser.add_argument('--TTS_SERVER', type=str, default='http://localhost:9000') #http://127.0.0.1:5000
+    parser.add_argument('--CHARACTER', type=str, default='test')
+    parser.add_argument('--EMOTION', type=str, default='default')
 
     opt = parser.parse_args()
     app.config.from_object(opt)
-    #print(app.config['tts_server'])
+    print(app.config)
 
     tts_type = opt.tts
     if tts_type == "xtts":
         print("Computing the latents for a new reference...")
-        gspeaker = get_speaker(opt.ref_file, opt.tts_server)
+        gspeaker = get_speaker(opt.REF_FILE, opt.tts_server)
 
     # assert test mode
     opt.test = True
