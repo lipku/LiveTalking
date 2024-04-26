@@ -122,7 +122,7 @@ class ASR:
         self.att_feats = [torch.zeros(self.audio_dim, 16, dtype=torch.float32, device=self.device)] * 4 # 4 zero padding...
 
         # warm up steps needed: mid + right + window_size + attention_size
-        self.warm_up_steps = self.context_size + self.stride_right_size #+ self.stride_left_size   #+ 8 + 2 * 3
+        self.warm_up_steps = self.context_size + self.stride_left_size + self.stride_right_size #+ self.stride_left_size   #+ 8 + 2 * 3
 
         self.listening = False
         self.playing = False
@@ -385,8 +385,8 @@ class ASR:
         self.inwarm = True
         print(f'[INFO] warm up ASR live model, expected latency = {self.warm_up_steps / self.fps:.6f}s')
         t = time.time()
-        for _ in range(self.stride_left_size):
-            self.frames.append(np.zeros(self.chunk, dtype=np.float32))
+        #for _ in range(self.stride_left_size):
+        #    self.frames.append(np.zeros(self.chunk, dtype=np.float32))
         for _ in range(self.warm_up_steps):
             self.run_step()
         #if torch.cuda.is_available():
