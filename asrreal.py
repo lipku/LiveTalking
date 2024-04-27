@@ -191,7 +191,7 @@ class ASR:
         if not self.terminated:
             self.frames = self.frames[-(self.stride_left_size + self.stride_right_size):]
 
-        print(f'[INFO] frame_to_text... ')
+        #print(f'[INFO] frame_to_text... ')
         #t = time.time()
         logits, labels, text = self.__frame_to_text(inputs)
         #print(f'-------wav2vec time:{time.time()-t:.4f}s')

@@ -107,18 +107,34 @@ python app.py --fullbody --fullbody_img data/fullbody/img --fullbody_offset_x 10
 - ernerf训练第三步torso如果训练的不好，在拼接处会有接缝。可以在上面的命令加上--torso_imgs data/xxx/torso_imgs，torso不用模型推理，直接用训练数据集里的torso图片。这种方式可能头颈处会有些人工痕迹。
 
 ### 3.6 webrtc
+#### 3.6.1 p2p模式
+此种模式不需要srs
 ```
 python app.py --transport webrtc
 ```
 用浏览器打开http://serverip:8010/webrtc.html
 
+#### 3.6.2 通过srs一对多
+启动srs
+```
+export CANDIDATE='<服务器外网ip>'
+docker run --rm --env CANDIDATE=$CANDIDATE \
+  -p 1935:1935 -p 8080:8080 -p 1985:1985 -p 8000:8000/udp \
+  registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5 \
+  objs/srs -c conf/rtc.conf
+```
+然后运行
+```
+python app.py --transport rtcpush --push_url 'http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream'
+```
+用浏览器打开http://serverip:8010/rtcpush.html
   
 ## 4. Docker Run  
 不需要第1步的安装，直接运行。
 ```
 docker run --gpus all -it --network=host --rm  registry.cn-hangzhou.aliyuncs.com/lipku/nerfstream:v1.3
 ```
-srs的运行同2.1
+docker版本已经不是最新代码，可以作为一个空环境，把最新代码拷进去运行。
 
 ## 5. Data flow
 ![](/assets/dataflow.png)

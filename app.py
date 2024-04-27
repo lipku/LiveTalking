@@ -14,6 +14,7 @@ from threading import Thread,Event
 import multiprocessing
 
 from aiohttp import web
+import aiohttp
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from webrtc import HumanPlayer
 
@@ -244,6 +245,33 @@ async def on_shutdown(app):
     coros = [pc.close() for pc in pcs]
     await asyncio.gather(*coros)
     pcs.clear()
+
+async def post(url,data):
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url,data=data) as response:
+                return await response.text()
+    except aiohttp.ClientError as e:
+        print(f'Error: {e}')
+
+async def run(push_url):
+    pc = RTCPeerConnection()
+    pcs.add(pc)
+
+    @pc.on("connectionstatechange")
+    async def on_connectionstatechange():
+        print("Connection state is %s" % pc.connectionState)
+        if pc.connectionState == "failed":
+            await pc.close()
+            pcs.discard(pc)
+
+    player = HumanPlayer(nerfreal)
+    audio_sender = pc.addTrack(player.audio)
+    video_sender = pc.addTrack(player.video)
+
+    await pc.setLocalDescription(await pc.createOffer())
+    answer = await post(push_url,pc.localDescription.sdp)
+    await pc.setRemoteDescription(RTCSessionDescription(sdp=answer,type='answer'))
 ##########################################                                                    
 
 if __name__ == '__main__':
@@ -344,8 +372,8 @@ if __name__ == '__main__':
     # parser.add_argument('--asr_model', type=str, default='facebook/wav2vec2-large-960h-lv60-self')
     # parser.add_argument('--asr_model', type=str, default='facebook/hubert-large-ls960-ft')
 
-    parser.add_argument('--transport', type=str, default='rtmp') #rtmp webrtc
-    parser.add_argument('--push_url', type=str, default='rtmp://localhost/live/livestream')
+    parser.add_argument('--transport', type=str, default='rtmp') #rtmp webrtc rtcpush
+    parser.add_argument('--push_url', type=str, default='rtmp://localhost/live/livestream') #http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream
 
     parser.add_argument('--asr_save_feats', action='store_true')
     # audio FPS
@@ -437,6 +465,8 @@ if __name__ == '__main__':
         loop.run_until_complete(runner.setup())
         site = web.TCPSite(runner, '0.0.0.0', 8010)
         loop.run_until_complete(site.start())
+        if opt.transport=='rtcpush':
+            loop.run_until_complete(run(opt.push_url))
         loop.run_forever()    
     Thread(target=run_server, args=(web.AppRunner(appasync),)).start()
 
