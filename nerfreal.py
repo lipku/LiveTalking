@@ -11,7 +11,6 @@ import cv2
 
 from asrreal import ASR
 import asyncio
-from rtmp_streaming import StreamerConfig, Streamer
 from av import AudioFrame, VideoFrame
 
 class NeRFReal:
@@ -202,6 +201,7 @@ class NeRFReal:
         totaltime=0
 
         if self.opt.transport=='rtmp':
+            from rtmp_streaming import StreamerConfig, Streamer
             fps=25
             #push_url='rtmp://localhost/live/livestream' #'data/video/output_0.mp4'
             sc = StreamerConfig()
@@ -236,7 +236,7 @@ class NeRFReal:
             totaltime += (time.perf_counter() - t)
             count += 1
             if count==100:
-                print(f"------actual avg fps:{count/totaltime:.4f}")
+                print(f"------actual avg infer fps:{count/totaltime:.4f}")
                 count=0
                 totaltime=0
             delay = 0.04 - (time.perf_counter() - t) #40ms

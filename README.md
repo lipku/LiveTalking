@@ -26,15 +26,16 @@ pip install tensorflow-gpu==2.8.0
 ```
 linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/674972886
 
-### 1.2 安装rtmpstream库  
-参照 https://github.com/lipku/python_rtmpstream
 
-
-## 2. Run
-
+## 2. Quick Start
+默认采用webrtc推流到srs  
 ### 2.1 运行rtmpserver (srs)
 ```
-docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5
+export CANDIDATE='<服务器外网ip>'
+docker run --rm --env CANDIDATE=$CANDIDATE \
+  -p 1935:1935 -p 8080:8080 -p 1985:1985 -p 8000:8000/udp \
+  registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5 \
+  objs/srs -c conf/rtc.conf
 ```
 
 ### 2.2 启动数字人：
@@ -48,16 +49,15 @@ python app.py
 export HF_ENDPOINT=https://hf-mirror.com
 ```
 
-运行成功后，用vlc访问rtmp://serverip/live/livestream  
-
-用浏览器打开http://serverip:8010/echo.html, 在文本框输入任意文字，提交。数字人播报该段文字  
+用浏览器打开http://serverip:8010/rtcpush.html, 在文本框输入任意文字，提交。数字人播报该段文字  
+备注：服务端需要开放端口 tcp:8000,8010,1985; udp:8000
 
 ## 3. More Usage
 ### 3.1 使用LLM模型进行数字人对话
 
 目前借鉴数字人对话系统[LinlyTalker](https://github.com/Kedreamix/Linly-Talker)的方式，LLM模型支持Chatgpt,Qwen和GeminiPro。需要在app.py中填入自己的api_key。    
 
-用浏览器打开http://serverip:8010/chat.html
+用浏览器打开http://serverip:8010/rtcpushchat.html
 
 ### 3.2 声音克隆
 可以任意选用下面两种服务，推荐用gpt-sovits
@@ -106,28 +106,26 @@ python app.py --fullbody --fullbody_img data/fullbody/img --fullbody_offset_x 10
 - --W、--H 训练视频的宽、高  
 - ernerf训练第三步torso如果训练的不好，在拼接处会有接缝。可以在上面的命令加上--torso_imgs data/xxx/torso_imgs，torso不用模型推理，直接用训练数据集里的torso图片。这种方式可能头颈处会有些人工痕迹。
 
-### 3.6 webrtc
-#### 3.6.1 p2p模式
+### 3.6 webrtc p2p
 此种模式不需要srs
 ```
 python app.py --transport webrtc
 ```
 用浏览器打开http://serverip:8010/webrtc.html
 
-#### 3.6.2 通过srs一对多
-启动srs
+### 3.7 rtmp推送到srs
+- 安装rtmpstream库  
+参照 https://github.com/lipku/python_rtmpstream
+
+- 启动srs
 ```
-export CANDIDATE='<服务器外网ip>'
-docker run --rm --env CANDIDATE=$CANDIDATE \
-  -p 1935:1935 -p 8080:8080 -p 1985:1985 -p 8000:8000/udp \
-  registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5 \
-  objs/srs -c conf/rtc.conf
+docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5
 ```
-然后运行
+- 然后运行
+```python
+python app.py --transport rtmp --push_url 'rtmp://localhost/live/livestream'
 ```
-python app.py --transport rtcpush --push_url 'http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream'
-```
-用浏览器打开http://serverip:8010/rtcpush.html
+用浏览器打开http://serverip:8010/echo.html
   
 ## 4. Docker Run  
 不需要第1步的安装，直接运行。
@@ -159,10 +157,7 @@ docker版本已经不是最新代码，可以作为一个空环境，把最新�
 整体延时3s左右  
 （1）tts延时1.7s左右，目前用的edgetts，需要将每句话转完后一次性输入，可以优化tts改成流式输入  
 （2）wav2vec延时0.4s，需要缓存18帧音频做计算 
-（3）srs转发延时，设置srs服务器减少缓冲延时。具体配置可看 https://ossrs.net/lts/zh-cn/docs/v5/doc/low-latency, 配置了一个低延时版本 
-```python
-docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 registry.cn-hangzhou.aliyuncs.com/lipku/srs:v1.1
-```
+（3）srs转发延时，设置srs服务器减少缓冲延时。具体配置可看 https://ossrs.net/lts/zh-cn/docs/v5/doc/low-latency
 
 ## 8. TODO
 - [x] 添加chatgpt实现数字人对话

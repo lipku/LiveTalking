@@ -372,8 +372,8 @@ if __name__ == '__main__':
     # parser.add_argument('--asr_model', type=str, default='facebook/wav2vec2-large-960h-lv60-self')
     # parser.add_argument('--asr_model', type=str, default='facebook/hubert-large-ls960-ft')
 
-    parser.add_argument('--transport', type=str, default='rtmp') #rtmp webrtc rtcpush
-    parser.add_argument('--push_url', type=str, default='rtmp://localhost/live/livestream') #http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream
+    parser.add_argument('--transport', type=str, default='rtcpush') #rtmp webrtc rtcpush
+    parser.add_argument('--push_url', type=str, default='http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream') #rtmp://localhost/live/livestream
 
     parser.add_argument('--asr_save_feats', action='store_true')
     # audio FPS
@@ -403,7 +403,7 @@ if __name__ == '__main__':
     tts_type = opt.tts
     if tts_type == "xtts":
         print("Computing the latents for a new reference...")
-        gspeaker = get_speaker(opt.REF_FILE, opt.tts_server)
+        gspeaker = get_speaker(opt.REF_FILE, opt.TTS_SERVER)
 
     # assert test mode
     opt.test = True

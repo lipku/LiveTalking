@@ -36,6 +36,10 @@ class PlayerStreamTrack(MediaStreamTrack):
         self.kind = kind
         self._player = player
         self._queue = asyncio.Queue()
+        if self.kind == 'video':
+            self.framecount = 0
+            self.lasttime = time.perf_counter()
+            self.totaltime = 0
     
     _start: float
     _timestamp: int
@@ -68,7 +72,7 @@ class PlayerStreamTrack(MediaStreamTrack):
             return self._timestamp, AUDIO_TIME_BASE
 
     async def recv(self) -> Union[Frame, Packet]:
-        # frame = self.frames[self.counter % 30]
+        # frame = self.frames[self.counter % 30]            
         self._player._start(self)
         frame = await self._queue.get()
         pts, time_base = await self.next_timestamp()
@@ -77,6 +81,14 @@ class PlayerStreamTrack(MediaStreamTrack):
         if frame is None:
             self.stop()
             raise Exception
+        if self.kind == 'video':
+            self.totaltime += (time.perf_counter() - self.lasttime)
+            self.framecount += 1
+            self.lasttime = time.perf_counter()
+            if self.framecount==100:
+                print(f"------actual avg final fps:{self.framecount/self.totaltime:.4f}")
+                self.framecount = 0
+                self.totaltime=0
         return frame
     
     def stop(self):
