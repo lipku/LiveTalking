@@ -1,0 +1,14 @@
+[INFO] Trainer: ngp | 2023-09-23_17-52-22 | cuda | fp16 | workspace
+[INFO] #parameters: 1789121
+[INFO] Loading data/pretrained/ngp_kf.pth ...
+[INFO] Trainer: ngp | 2023-09-23_18-58-25 | cuda | fp16 | workspace
+[INFO] #parameters: 1789121
+[INFO] Loading data/pretrained/ngp_kf.pth ...
+[INFO] Trainer: ngp | 2023-09-23_19-01-54 | cuda | fp16 | workspace
+[INFO] #parameters: 1787681
+[INFO] Loading data/pretrained/ngp_kf.pth ...
+[INFO] loaded model.
+[INFO] load at epoch 14, global step 51226
+[WARN] Failed to load optimizer.
+[INFO] loaded scheduler.
+[INFO] loaded scaler.

@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import raymarching
+from .. import raymarching
 from .utils import custom_meshgrid, get_audio_features, euler_angles_to_matrix, convert_poses
 
 def sample_pdf(bins, weights, n_samples, det=False):

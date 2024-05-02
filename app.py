@@ -19,9 +19,9 @@ from aiortc import RTCPeerConnection, RTCSessionDescription
 from webrtc import HumanPlayer
 
 import argparse
-from nerf_triplane.provider import NeRFDataset_Test
-from nerf_triplane.utils import *
-from nerf_triplane.network import NeRFNetwork
+from ernerf.nerf_triplane.provider import NeRFDataset_Test
+from ernerf.nerf_triplane.utils import *
+from ernerf.nerf_triplane.network import NeRFNetwork
 from nerfreal import NeRFReal
 
 import shutil

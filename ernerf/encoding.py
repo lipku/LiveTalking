@@ -13,23 +13,23 @@ def get_encoder(encoding, input_dim=3,
         return lambda x, **kwargs: x, input_dim
     
     elif encoding == 'frequency':
-        from freqencoder import FreqEncoder
+        from .freqencoder import FreqEncoder
         encoder = FreqEncoder(input_dim=input_dim, degree=multires)
 
     elif encoding == 'spherical_harmonics':
-        from shencoder import SHEncoder
+        from .shencoder import SHEncoder
         encoder = SHEncoder(input_dim=input_dim, degree=degree)
 
     elif encoding == 'hashgrid':
-        from gridencoder import GridEncoder
+        from .gridencoder import GridEncoder
         encoder = GridEncoder(input_dim=input_dim, num_levels=num_levels, level_dim=level_dim, base_resolution=base_resolution, log2_hashmap_size=log2_hashmap_size, desired_resolution=desired_resolution, gridtype='hash', align_corners=align_corners)
     
     elif encoding == 'tiledgrid':
-        from gridencoder import GridEncoder
+        from .gridencoder import GridEncoder
         encoder = GridEncoder(input_dim=input_dim, num_levels=num_levels, level_dim=level_dim, base_resolution=base_resolution, log2_hashmap_size=log2_hashmap_size, desired_resolution=desired_resolution, gridtype='tiled', align_corners=align_corners)
     
     elif encoding == 'ash':
-        from ashencoder import AshEncoder
+        from .ashencoder import AshEncoder
         encoder = AshEncoder(input_dim=input_dim, output_dim=16, log2_hashmap_size=log2_hashmap_size, resolution=desired_resolution)
 
     else:

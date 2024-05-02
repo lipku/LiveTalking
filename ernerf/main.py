@@ -1,9 +1,9 @@
 import torch
 import argparse
 
-from nerf_triplane.provider import NeRFDataset,NeRFDataset_Test
-from nerf_triplane.utils import *
-from nerf_triplane.network import NeRFNetwork
+from .nerf_triplane.provider import NeRFDataset,NeRFDataset_Test
+from .nerf_triplane.utils import *
+from .nerf_triplane.network import NeRFNetwork
 
 # torch.autograd.set_detect_anomaly(True)
 # Close tf32 features. Fix low numerical accuracy on rtx30xx gpu.

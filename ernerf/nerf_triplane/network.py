@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from encoding import get_encoder
+from ..encoding import get_encoder
 from .renderer import NeRFRenderer
 
 # Audio feature extractor
