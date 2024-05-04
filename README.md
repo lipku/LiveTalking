@@ -9,6 +9,7 @@ A streaming digital human based on the Ernerf model， realize audio video synch
 3. 支持多种音频特征驱动：wav2vec、hubert
 4. 支持全身视频拼接
 5. 支持rtmp和webrtc
+6. 支持视频编排：不说话时播放自定义视频
 
 ## 1. Installation
 
@@ -106,14 +107,24 @@ python app.py --fullbody --fullbody_img data/fullbody/img --fullbody_offset_x 10
 - --W、--H 训练视频的宽、高  
 - ernerf训练第三步torso如果训练的不好，在拼接处会有接缝。可以在上面的命令加上--torso_imgs data/xxx/torso_imgs，torso不用模型推理，直接用训练数据集里的torso图片。这种方式可能头颈处会有些人工痕迹。
 
-### 3.6 webrtc p2p
+### 3.6 不说话时用自定义视频替代
+- 提取自定义视频图片
+```
+ffmpeg -i silence.mp4 -vf fps=25 -qmin 1 -q:v 1 -start_number 0 data/customvideo/img/%d.png
+```
+- 运行数字人
+```
+python app.py --customvideo --customvideo_img data/customvideo/img --customvideo_imgnum 100
+```
+
+### 3.7 webrtc p2p
 此种模式不需要srs
 ```
 python app.py --transport webrtc
 ```
 用浏览器打开http://serverip:8010/webrtc.html
 
-### 3.7 rtmp推送到srs
+### 3.8 rtmp推送到srs
 - 安装rtmpstream库  
 参照 https://github.com/lipku/python_rtmpstream
 
@@ -121,7 +132,7 @@ python app.py --transport webrtc
 ```
 docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5
 ```
-- 然后运行
+- 运行数字人
 ```python
 python app.py --transport rtmp --push_url 'rtmp://localhost/live/livestream'
 ```
@@ -162,7 +173,7 @@ docker版本已经不是最新代码，可以作为一个空环境，把最新�
 ## 8. TODO
 - [x] 添加chatgpt实现数字人对话
 - [x] 声音克隆
-- [ ] 数字人静音时用一段视频代替
+- [x] 数字人静音时用一段视频代替
 
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目。  
 Email: lipku@foxmail.com  

@@ -171,7 +171,7 @@ class ASR:
             return
 
         # get a frame of audio
-        frame = self.__get_audio_frame()
+        frame,type = self.__get_audio_frame()
         
         # the last frame
         if frame is None:
@@ -180,7 +180,7 @@ class ASR:
         else:
             self.frames.append(frame)
             # put to output
-            self.output_queue.put(frame)
+            self.output_queue.put((frame,type))
             # context not enough, do not run network.
             if len(self.frames) < self.stride_left_size + self.context_size + self.stride_right_size:
                 return
@@ -236,25 +236,27 @@ class ASR:
     
     def __get_audio_frame(self): 
         if self.inwarm: # warm up
-            return np.zeros(self.chunk, dtype=np.float32)
+            return np.zeros(self.chunk, dtype=np.float32),1
         
         if self.mode == 'file':
             if self.idx < self.file_stream.shape[0]:
                 frame = self.file_stream[self.idx: self.idx + self.chunk]
                 self.idx = self.idx + self.chunk
-                return frame
+                return frame,0
             else:
-                return None        
+                return None,0        
         else:
             try:
                 frame = self.queue.get(block=False)
+                type = 0
                 print(f'[INFO] get frame {frame.shape}')
             except queue.Empty:
                 frame = np.zeros(self.chunk, dtype=np.float32)
+                type = 1
 
             self.idx = self.idx + self.chunk
 
-            return frame
+            return frame,type
 
         
     def __frame_to_text(self, frame):
