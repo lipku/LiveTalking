@@ -400,6 +400,8 @@ if __name__ == '__main__':
     parser.add_argument('--CHARACTER', type=str, default='test')
     parser.add_argument('--EMOTION', type=str, default='default')
 
+    parser.add_argument('--listenport', type=int, default=8000)
+
     opt = parser.parse_args()
     app.config.from_object(opt)
     print(app.config)
@@ -477,7 +479,7 @@ if __name__ == '__main__':
     print('start websocket server')
     #app.on_shutdown.append(on_shutdown)
     #app.router.add_post("/offer", offer)
-    server = pywsgi.WSGIServer(('0.0.0.0', 8000), app, handler_class=WebSocketHandler)
+    server = pywsgi.WSGIServer(('0.0.0.0', opt.listenport), app, handler_class=WebSocketHandler)
     server.serve_forever()
     
     
