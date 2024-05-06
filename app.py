@@ -206,6 +206,37 @@ def chat_socket(ws):
 #####webrtc###############################
 pcs = set()
 
+async def txt_to_audio_async(text_):
+    if tts_type == "edgetts":
+        voicename = "zh-CN-YunxiaNeural"
+        text = text_
+        t = time.time()
+        #asyncio.get_event_loop().run_until_complete(main(voicename,text,nerfreal))
+        await main(voicename,text,nerfreal)
+        print(f'-------edge tts time:{time.time()-t:.4f}s')
+    elif tts_type == "gpt-sovits": #gpt_sovits
+        stream_tts(
+            gpt_sovits(
+                text_,
+                app.config['CHARACTER'], #"test", #character
+                "zh", #en args.language,
+                app.config['TTS_SERVER'], #"http://127.0.0.1:5000", #args.server_url,
+                app.config['EMOTION'], #emotion 
+            ),
+            nerfreal
+        )
+    else: #xtts
+        stream_tts(
+            xtts(
+                text_,
+                gspeaker,
+                "zh-cn", #en args.language,
+                app.config['TTS_SERVER'], #"http://localhost:9000", #args.server_url,
+                "20" #args.stream_chunk_size
+            ),
+            nerfreal
+        )
+
 #@app.route('/offer', methods=['POST'])
 async def offer(request):
     params = await request.json()
@@ -239,6 +270,21 @@ async def offer(request):
         ),
     )
 
+async def human(request):
+    params = await request.json()
+
+    if params['type']=='echo':
+        await txt_to_audio_async(params['text'])
+    elif params['type']=='chat':
+        res=llm_response(params['text'])                           
+        await txt_to_audio_async(res)
+
+    return web.Response(
+        content_type="application/json",
+        text=json.dumps(
+            {"code": 0, "data":"ok"}
+        ),
+    )
 
 async def on_shutdown(app):
     # close peer connections
@@ -400,7 +446,7 @@ if __name__ == '__main__':
     parser.add_argument('--CHARACTER', type=str, default='test')
     parser.add_argument('--EMOTION', type=str, default='default')
 
-    parser.add_argument('--listenport', type=int, default=8000)
+    parser.add_argument('--listenport', type=int, default=8010)
 
     opt = parser.parse_args()
     app.config.from_object(opt)
@@ -463,13 +509,14 @@ if __name__ == '__main__':
     appasync = web.Application()
     appasync.on_shutdown.append(on_shutdown)
     appasync.router.add_post("/offer", offer)
+    appasync.router.add_post("/human", human)
     appasync.router.add_static('/',path='web')
 
     def run_server(runner):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(runner.setup())
-        site = web.TCPSite(runner, '0.0.0.0', 8010)
+        site = web.TCPSite(runner, '0.0.0.0', opt.listenport)
         loop.run_until_complete(site.start())
         if opt.transport=='rtcpush':
             loop.run_until_complete(run(opt.push_url))
@@ -479,7 +526,7 @@ if __name__ == '__main__':
     print('start websocket server')
     #app.on_shutdown.append(on_shutdown)
     #app.router.add_post("/offer", offer)
-    server = pywsgi.WSGIServer(('0.0.0.0', opt.listenport), app, handler_class=WebSocketHandler)
+    server = pywsgi.WSGIServer(('0.0.0.0', 8000), app, handler_class=WebSocketHandler)
     server.serve_forever()
     
     
