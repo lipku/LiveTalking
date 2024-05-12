@@ -162,6 +162,8 @@ class NeRFReal:
                     new_frame = AudioFrame(format='s16', layout='mono', samples=frame.shape[0])
                     new_frame.planes[0].update(frame.tobytes())
                     new_frame.sample_rate=16000
+                    # if audio_track._queue.qsize()>10:
+                    #     time.sleep(0.1)
                     asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop)  
             #t = time.time()
             if self.opt.customvideo and audiotype!=0:
@@ -215,9 +217,7 @@ class NeRFReal:
     def render(self,quit_event,loop=None,audio_track=None,video_track=None):
         #if self.opt.asr:
         #     self.asr.warm_up()
-        count=0
-        totaltime=0
-
+        
         if self.opt.transport=='rtmp':
             from rtmp_streaming import StreamerConfig, Streamer
             fps=25
@@ -242,6 +242,10 @@ class NeRFReal:
             self.streamer.init(sc)
             #self.streamer.enable_av_debug_log()
 
+        count=0
+        totaltime=0
+        _starttime=time.perf_counter()
+        _totalframe=0
         while not quit_event.is_set(): #todo
             # update texture every frame
             # audio stream thread...
@@ -253,11 +257,12 @@ class NeRFReal:
             self.test_step(loop,audio_track,video_track)
             totaltime += (time.perf_counter() - t)
             count += 1
+            _totalframe += 1
             if count==100:
                 print(f"------actual avg infer fps:{count/totaltime:.4f}")
                 count=0
                 totaltime=0
-            delay = 0.04 - (time.perf_counter() - t) #40ms
+            delay = _starttime+_totalframe*0.04-time.perf_counter() #40ms
             if delay > 0:
                 time.sleep(delay)
             

@@ -15,6 +15,7 @@ import multiprocessing
 
 from aiohttp import web
 import aiohttp
+import aiohttp_cors
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from webrtc import HumanPlayer
 
@@ -106,9 +107,9 @@ def gpt_sovits(text, character, language, server_url, emotion) -> Iterator[bytes
     if res.status_code != 200:
         print("Error:", res.text)
         return
-
+        
     first = True
-    for chunk in res.iter_content(chunk_size=1280): #32K*20ms*2
+    for chunk in res.iter_content(chunk_size=32000): # 1280 32K*20ms*2
         if first:
             end = time.perf_counter()
             print(f"gpt_sovits Time to first chunk: {end-start}s")
@@ -511,6 +512,18 @@ if __name__ == '__main__':
     appasync.router.add_post("/offer", offer)
     appasync.router.add_post("/human", human)
     appasync.router.add_static('/',path='web')
+
+    # Configure default CORS settings.
+    cors = aiohttp_cors.setup(appasync, defaults={
+            "*": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+            )
+        })
+    # Configure CORS on all routes.
+    for route in list(appasync.router.routes()):
+        cors.add(route)
 
     def run_server(runner):
         loop = asyncio.new_event_loop()
