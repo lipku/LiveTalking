@@ -1,7 +1,7 @@
 A streaming digital human based on the Ernerf model， realize audio video synchronous dialogue. It can basically achieve commercial effects.  
 基于ernerf模型的流式数字人，实现音视频同步对话。基本可以达到商用效果
 
-[![Watch the video]](/assets/demo.mp4)
+[效果演示](https://www.bilibili.com/video/BV1PM4m1y7Q2/)
 
 ## Features
 1. 支持声音克隆
@@ -19,12 +19,14 @@ Tested on Ubuntu 20.04, Python3.10, Pytorch 1.12 and CUDA 11.3
 
 ```bash
 conda create -n nerfstream python=3.10
-conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
 conda activate nerfstream
+conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
 pip install -r requirements.txt
 pip install "git+https://github.com/facebookresearch/pytorch3d.git"
 pip install tensorflow-gpu==2.8.0
+pip install --upgrade "protobuf<=3.20.1"
 ```
+安装常见问题[FAQ](/assets/faq.md)  
 linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/674972886
 
 
@@ -143,7 +145,8 @@ python app.py --transport rtmp --push_url 'rtmp://localhost/live/livestream'
 ```
 docker run --gpus all -it --network=host --rm  registry.cn-hangzhou.aliyuncs.com/lipku/nerfstream:v1.3
 ```
-docker版本已经不是最新代码，可以作为一个空环境，把最新代码拷进去运行。
+docker版本已经不是最新代码，可以作为一个空环境，把最新代码拷进去运行。  
+另外提供autodl镜像：https://www.codewithgpu.com/i/lipku/metahuman-stream/base
 
 ## 5. Data flow
 ![](/assets/dataflow.png)
@@ -174,8 +177,10 @@ docker版本已经不是最新代码，可以作为一个空环境，把最新�
 - [x] 添加chatgpt实现数字人对话
 - [x] 声音克隆
 - [x] 数字人静音时用一段视频代替
+- [ ] MuseTalk
 
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目。  
 Email: lipku@foxmail.com  
+知识星球: https://t.zsxq.com/7NMyO  
 微信公众号：数字人技术  
 ![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyfaiaLZGuMGQXnhLWxibpJUS2gfs8Dje6JuMY8zu2tVyU9n8Zx1yaNncvKHBMibX0ocehoITy5qQEZg/640?wxfrom=12&tp=wxpic&usePicPrefetch=1&wx_fmt=jpeg&amp;from=appmsg)
