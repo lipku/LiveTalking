@@ -27,9 +27,14 @@ lpips
 imageio-ffmpeg
 
 transformers
-edge_tts
+edge_tts==6.1.11
 flask
 flask_sockets
 opencv-python-headless
 aiortc
 aiohttp_cors
+
+ffmpeg-python
+omegaconf
+diffusers
+accelerate

@@ -88,7 +88,7 @@ python app.py --asr_model facebook/hubert-large-ls960-ft
 
 ### 3.4 设置背景图片
 ```
-python app.py --bg_img bg.jpg 
+python app.py --bg_img bc.jpg 
 ```
 
 ### 3.5 全身视频拼接
@@ -139,6 +139,34 @@ docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 registry.cn-hangzhou.
 python app.py --transport rtmp --push_url 'rtmp://localhost/live/livestream'
 ```
 用浏览器打开http://serverip:8010/echo.html
+
+### 3.9 模型用musetalk
+暂不支持rtmp推送
+- 安装依赖库
+```bash
+conda install ffmpeg
+pip install --no-cache-dir -U openmim 
+mim install mmengine 
+mim install "mmcv>=2.0.1" 
+mim install "mmdet>=3.1.0" 
+mim install "mmpose>=1.1.0"
+```
+- 下载模型  
+下载MuseTalk运行需要的模型，提供一个下载地址 https://caiyun.139.com/m/i?2eAjs2nXXnRgr  提取码:qdg2
+解压后，将models下文件拷到本项目的models下  
+下载数字人模型，链接: https://caiyun.139.com/m/i?2eAjs8optksop  提取码:3mkt, 解压后将整个文件夹拷到本项目的data/avatars下
+- 运行  
+python app.py --model musetalk --transport webrtc  
+用浏览器打开http://serverip:8010/webrtc.html  
+可以设置--batch_size 提高显卡利用率，设置--avatar_id 运行不同的数字人
+#### 替换成自己的数字人
+```bash
+git clone https://github.com/TMElyralab/MuseTalk.git
+cd MuseTalk
+修改configs/inference/realtime.yaml，将preparation改为True
+python -m scripts.realtime_inference --inference_config configs/inference/realtime.yaml
+运行后将results/avatars下文件拷到本项目的data/avatars下
+```
   
 ## 4. Docker Run  
 不需要第1步的安装，直接运行。

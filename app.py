@@ -419,9 +419,6 @@ if __name__ == '__main__':
     # parser.add_argument('--asr_model', type=str, default='facebook/wav2vec2-large-960h-lv60-self')
     # parser.add_argument('--asr_model', type=str, default='facebook/hubert-large-ls960-ft')
 
-    parser.add_argument('--transport', type=str, default='rtcpush') #rtmp webrtc rtcpush
-    parser.add_argument('--push_url', type=str, default='http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream') #rtmp://localhost/live/livestream
-
     parser.add_argument('--asr_save_feats', action='store_true')
     # audio FPS
     parser.add_argument('--fps', type=int, default=50)
@@ -437,6 +434,11 @@ if __name__ == '__main__':
     parser.add_argument('--fullbody_offset_x', type=int, default=0)
     parser.add_argument('--fullbody_offset_y', type=int, default=0)
 
+    #musetalk opt
+    parser.add_argument('--avatar_id', type=str, default='avator_1')
+    parser.add_argument('--bbox_shift', type=int, default=5)
+    parser.add_argument('--batch_size', type=int, default=4)
+
     parser.add_argument('--customvideo', action='store_true', help="custom video")
     parser.add_argument('--customvideo_img', type=str, default='data/customvideo/img')
     parser.add_argument('--customvideo_imgnum', type=int, default=1)
@@ -447,59 +449,70 @@ if __name__ == '__main__':
     parser.add_argument('--CHARACTER', type=str, default='test')
     parser.add_argument('--EMOTION', type=str, default='default')
 
+    parser.add_argument('--model', type=str, default='ernerf') #musetalk
+
+    parser.add_argument('--transport', type=str, default='rtcpush') #rtmp webrtc rtcpush
+    parser.add_argument('--push_url', type=str, default='http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream') #rtmp://localhost/live/livestream
+
     parser.add_argument('--listenport', type=int, default=8010)
 
     opt = parser.parse_args()
     app.config.from_object(opt)
-    print(app.config)
+    #print(app.config)
 
     tts_type = opt.tts
     if tts_type == "xtts":
         print("Computing the latents for a new reference...")
         gspeaker = get_speaker(opt.REF_FILE, opt.TTS_SERVER)
 
-    # assert test mode
-    opt.test = True
-    opt.test_train = False
-    #opt.train_camera =True
-    # explicit smoothing
-    opt.smooth_path = True
-    opt.smooth_lips = True
+    if opt.model == 'ernerf':
+        # assert test mode
+        opt.test = True
+        opt.test_train = False
+        #opt.train_camera =True
+        # explicit smoothing
+        opt.smooth_path = True
+        opt.smooth_lips = True
 
-    assert opt.pose != '', 'Must provide a pose source'
+        assert opt.pose != '', 'Must provide a pose source'
 
-    # if opt.O:
-    opt.fp16 = True
-    opt.cuda_ray = True
-    opt.exp_eye = True
-    opt.smooth_eye = True
+        # if opt.O:
+        opt.fp16 = True
+        opt.cuda_ray = True
+        opt.exp_eye = True
+        opt.smooth_eye = True
 
-    if opt.torso_imgs=='': #no img,use model output
-        opt.torso = True
+        if opt.torso_imgs=='': #no img,use model output
+            opt.torso = True
 
-    # assert opt.cuda_ray, "Only support CUDA ray mode."
-    opt.asr = True
+        # assert opt.cuda_ray, "Only support CUDA ray mode."
+        opt.asr = True
 
-    if opt.patch_size > 1:
-        # assert opt.patch_size > 16, "patch_size should > 16 to run LPIPS loss."
-        assert opt.num_rays % (opt.patch_size ** 2) == 0, "patch_size ** 2 should be dividable by num_rays."
-    seed_everything(opt.seed)
-    print(opt)
+        if opt.patch_size > 1:
+            # assert opt.patch_size > 16, "patch_size should > 16 to run LPIPS loss."
+            assert opt.num_rays % (opt.patch_size ** 2) == 0, "patch_size ** 2 should be dividable by num_rays."
+        seed_everything(opt.seed)
+        print(opt)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = NeRFNetwork(opt)
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model = NeRFNetwork(opt)
 
-    criterion = torch.nn.MSELoss(reduction='none')
-    metrics = [] # use no metric in GUI for faster initialization...
-    print(model)
-    trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, criterion=criterion, fp16=opt.fp16, metrics=metrics, use_checkpoint=opt.ckpt)
+        criterion = torch.nn.MSELoss(reduction='none')
+        metrics = [] # use no metric in GUI for faster initialization...
+        print(model)
+        trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, criterion=criterion, fp16=opt.fp16, metrics=metrics, use_checkpoint=opt.ckpt)
 
-    test_loader = NeRFDataset_Test(opt, device=device).dataloader()
-    model.aud_features = test_loader._data.auds
-    model.eye_areas = test_loader._data.eye_area
+        test_loader = NeRFDataset_Test(opt, device=device).dataloader()
+        model.aud_features = test_loader._data.auds
+        model.eye_areas = test_loader._data.eye_area
 
-    # we still need test_loader to provide audio features for testing.
-    nerfreal = NeRFReal(opt, trainer, test_loader)
+        # we still need test_loader to provide audio features for testing.
+        nerfreal = NeRFReal(opt, trainer, test_loader)
+    elif opt.model == 'musetalk':
+        from musereal import MuseReal
+        print(opt)
+        nerfreal = MuseReal(opt)
+
     #txt_to_audio('我是中国人,我来自北京')
     if opt.transport=='rtmp':
         thread_quit = Event()
