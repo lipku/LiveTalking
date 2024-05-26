@@ -1,15 +1,16 @@
 A streaming digital human based on the Ernerf model， realize audio video synchronous dialogue. It can basically achieve commercial effects.  
 基于ernerf模型的流式数字人，实现音视频同步对话。基本可以达到商用效果
 
-[效果演示](https://www.bilibili.com/video/BV1PM4m1y7Q2/)
+[ernerf效果](https://www.bilibili.com/video/BV1PM4m1y7Q2/)  [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)
 
 ## Features
-1. 支持声音克隆
-2. 支持大模型对话
+1. 支持多种数字人模型: ernerf、musetalk
+2. 支持声音克隆
 3. 支持多种音频特征驱动：wav2vec、hubert
 4. 支持全身视频拼接
 5. 支持rtmp和webrtc
 6. 支持视频编排：不说话时播放自定义视频
+7. 支持大模型对话
 
 ## 1. Installation
 
@@ -205,7 +206,8 @@ docker版本已经不是最新代码，可以作为一个空环境，把最新�
 - [x] 添加chatgpt实现数字人对话
 - [x] 声音克隆
 - [x] 数字人静音时用一段视频代替
-- [ ] MuseTalk
+- [x] MuseTalk
+- [ ] SyncTalk
 
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目。  
 Email: lipku@foxmail.com  

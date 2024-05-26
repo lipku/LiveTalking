@@ -101,59 +101,73 @@ class MuseReal:
         #               self.batch_size)
         self.asr.run_step()
         whisper_chunks = self.asr.get_next_feat()
-        whisper_batch = np.stack(whisper_chunks)
-        latent_batch = []
-        for i in range(self.batch_size):
-            idx = self.__mirror_index(self.idx+i)
-            latent = self.input_latent_list_cycle[idx]
-            latent_batch.append(latent)
-        latent_batch = torch.cat(latent_batch, dim=0)
-        
-        # for i, (whisper_batch,latent_batch) in enumerate(gen):
-        audio_feature_batch = torch.from_numpy(whisper_batch)
-        audio_feature_batch = audio_feature_batch.to(device=self.unet.device,
-                                                        dtype=self.unet.model.dtype)
-        audio_feature_batch = self.pe(audio_feature_batch)
-        latent_batch = latent_batch.to(dtype=self.unet.model.dtype)
+        is_all_silence=True
+        audio_frames = []
+        for _ in range(self.batch_size*2):
+            frame,type = self.asr.get_audio_out()
+            audio_frames.append((frame,type))
+            if type==0:
+                is_all_silence=False
+        if is_all_silence:
+            for i in range(self.batch_size):
+                self.res_frame_queue.put((None,self.__mirror_index(self.idx),audio_frames[i*2:i*2+2]))
+                self.idx = self.idx + 1
+        else:
+            print('infer=======')
+            whisper_batch = np.stack(whisper_chunks)
+            latent_batch = []
+            for i in range(self.batch_size):
+                idx = self.__mirror_index(self.idx+i)
+                latent = self.input_latent_list_cycle[idx]
+                latent_batch.append(latent)
+            latent_batch = torch.cat(latent_batch, dim=0)
+            
+            # for i, (whisper_batch,latent_batch) in enumerate(gen):
+            audio_feature_batch = torch.from_numpy(whisper_batch)
+            audio_feature_batch = audio_feature_batch.to(device=self.unet.device,
+                                                            dtype=self.unet.model.dtype)
+            audio_feature_batch = self.pe(audio_feature_batch)
+            latent_batch = latent_batch.to(dtype=self.unet.model.dtype)
 
-        pred_latents = self.unet.model(latent_batch, 
-                                    self.timesteps, 
-                                    encoder_hidden_states=audio_feature_batch).sample
-        recon = self.vae.decode_latents(pred_latents)
-        #print('diffusion len=',len(recon))
-        for res_frame in recon:
-            #self.__pushmedia(res_frame,loop,audio_track,video_track)
-            self.res_frame_queue.put((res_frame,self.__mirror_index(self.idx)))
-            self.idx = self.idx + 1
+            pred_latents = self.unet.model(latent_batch, 
+                                        self.timesteps, 
+                                        encoder_hidden_states=audio_feature_batch).sample
+            recon = self.vae.decode_latents(pred_latents)
+            #print('diffusion len=',len(recon))
+            for i,res_frame in enumerate(recon):
+                #self.__pushmedia(res_frame,loop,audio_track,video_track)
+                self.res_frame_queue.put((res_frame,self.__mirror_index(self.idx),audio_frames[i*2:i*2+2]))
+                self.idx = self.idx + 1
       
 
     def process_frames(self,quit_event,loop=None,audio_track=None,video_track=None):
         
         while not quit_event.is_set():
             try:
-                res_frame,idx = self.res_frame_queue.get(block=True, timeout=1)
+                res_frame,idx,audio_frames = self.res_frame_queue.get(block=True, timeout=1)
             except queue.Empty:
                 continue
-            bbox = self.coord_list_cycle[idx]
-            ori_frame = copy.deepcopy(self.frame_list_cycle[idx])
-            x1, y1, x2, y2 = bbox
-            try:
-                res_frame = cv2.resize(res_frame.astype(np.uint8),(x2-x1,y2-y1))
-            except:
-                continue
-            mask = self.mask_list_cycle[idx]
-            mask_crop_box = self.mask_coords_list_cycle[idx]
-            #combine_frame = get_image(ori_frame,res_frame,bbox)
-            combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
+            if audio_frames[0][1]==1 and audio_frames[1][1]==1: #全为静音数据，只需要取fullimg
+                combine_frame = self.frame_list_cycle[idx]
+            else:
+                bbox = self.coord_list_cycle[idx]
+                ori_frame = copy.deepcopy(self.frame_list_cycle[idx])
+                x1, y1, x2, y2 = bbox
+                try:
+                    res_frame = cv2.resize(res_frame.astype(np.uint8),(x2-x1,y2-y1))
+                except:
+                    continue
+                mask = self.mask_list_cycle[idx]
+                mask_crop_box = self.mask_coords_list_cycle[idx]
+                #combine_frame = get_image(ori_frame,res_frame,bbox)
+                combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
 
             image = combine_frame #(outputs['image'] * 255).astype(np.uint8)
             new_frame = VideoFrame.from_ndarray(image, format="bgr24")
             asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop) 
 
-            audiotype = 0
-            for _ in range(2):
-                frame,type = self.asr.get_audio_out()
-                audiotype += type
+            for audio_frame in audio_frames:
+                frame,type = audio_frame
                 frame = (frame * 32767).astype(np.int16)
                 new_frame = AudioFrame(format='s16', layout='mono', samples=frame.shape[0])
                 new_frame.planes[0].update(frame.tobytes())
@@ -185,9 +199,10 @@ class MuseReal:
                 print(f"------actual avg infer fps:{count/totaltime:.4f}")
                 count=0
                 totaltime=0
-            if self.res_frame_queue.qsize()>2*self.opt.batch_size:
-                time.sleep(0.1)
-                #print('sleep')
+            if video_track._queue.qsize()>=2*self.opt.batch_size:
+                #print('sleep qsize=',video_track._queue.qsize())
+                time.sleep(0.04*self.opt.batch_size*1.5)
+                
             # delay = _starttime+_totalframe*0.04-time.perf_counter() #40ms
             # if delay > 0:
             #     time.sleep(delay)
