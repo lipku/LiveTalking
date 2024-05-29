@@ -26,6 +26,7 @@ pip install -r requirements.txt
 pip install "git+https://github.com/facebookresearch/pytorch3d.git"
 pip install tensorflow-gpu==2.8.0
 pip install --upgrade "protobuf<=3.20.1"
+pip install --upgrade "edge-tts<=6.1.11"
 ```
 安装常见问题[FAQ](/assets/faq.md)  
 linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/674972886
