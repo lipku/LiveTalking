@@ -10,6 +10,20 @@ bash install.sh
 ```
 从 [GPT-SoVITS Models](https://huggingface.co/lj1995/GPT-SoVITS) 下载预训练模型，并将它们放置在 `GPT_SoVITS\pretrained_models` 中
 
+注意
+```
+是将 GPT-SoVITS  的模型文件放入 pretrained_models目录中
+```
+如下
+```
+pretrained_models/
+--chinese-hubert-base
+--chinese-roberta-wwm-ext-large
+s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt
+s2D488k.pth
+s2G488k.pth
+```
+
 ## 2. Model Folder Format
 模型文件下载地址 https://www.yuque.com/xter/zibxlp/gsximn7ditzgispg  
 下载的模型文件放到trained目录下, 如 `trained/Character1/`  
@@ -25,15 +39,18 @@ trained
 ```
 
 ## 3. 启动
-### 3.1 后端服务: 
-python Inference/src/tts_backend.py  
-如果有错误提示找不到cmudict，从这下载https://github.com/nltk/nltk_data，将packages改名为nltk_data放到home目录下
-### 3.2 管理character: 
-python Inference/src/Character_Manager.py  
-浏览器打开可以管理character和emotion
-### 3.3 测试tts功能: 
-python Inference/src/TTS_Webui.py  
+### 3.1 启动webui界面
+python webuis/character_manager/webui.py
+可以设置上传的模型数据
+### 3.2 启动api服务: 
+python app.py
 
+如果有错误提示找不到cmudict，从这下载https://github.com/nltk/nltk_data，将packages改名为nltk_data放到home目录下
+### 3.3 tts测试
+访问 http://127.0.0.1:5000 地址即可测试
+
+### 3.4 api测试
+访问 http://127.0.0.1:5000/character_list 查看是否正常
 
 ## 4. 接口说明  
 ### 4.1 Character and Emotion List  
@@ -97,3 +114,26 @@ To obtain the supported characters and their corresponding emotions, please visi
 ## 部署tts训练
 https://github.com/RVC-Boss/GPT-SoVITS  
 根据文档说明部署，将训练后的模型拷到推理服务的trained目录下
+
+## 如果你需要使用autodl 进行部署 
+请使用  https://www.codewithgpu.com/i/RVC-Boss/GPT-SoVITS/GPT-SoVITS 作为基础镜像你能快速进行部署
+### 下载
+```
+https://github.com/X-T-E-R/GPT-SoVITS-Inference
+```
+### 安装
+```
+cd GPT-SoVITS-Inference 
+pip3 install -r requirements.txt
+cp -r GPT_SoVITS/pretrained_models/ ./GPT_SoVITS/pretrained_models
+```
+
+### 启动api
+```
+python3 app.py
+```
+
+### 启动webui
+```
+python3  webuis/character_manager/webui.py
+```
