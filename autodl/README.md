@@ -54,4 +54,5 @@ var url = "http://公网ip:1985/rtc/v1/whep/?app=live&stream=livestream"
 1.autodl 如果是个人用户需要使用官方的ssh代理工具进行端口代理，才可以访问6006
 2.基础环境镜像中如果想使用musetalk环境，还需要自己操作
 3.声音延迟需要后台优化srs的功能
-4.musetalk 暂不支持rtmp 推流
+4.musetalk 暂不支持rtmp推流 但是支持rtcpush
+5.musetalk 教程即将更新
