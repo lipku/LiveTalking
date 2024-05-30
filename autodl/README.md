@@ -32,7 +32,7 @@ python app.py --listenport 6006 --transport rtcpush --push_url 'http://<阿里�
 ### 访问 
 访问的是静态的rtcpushapi.html
 http://<autodl外网地址>/rtcpushapi.html
-你需要修改 项目目录中的  web/rtcpushapi 
+你需要修改 项目目录中的  web/rtcpushapi.html
 
 将 
 ```
