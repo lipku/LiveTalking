@@ -175,9 +175,10 @@ python -m scripts.realtime_inference --inference_config configs/inference/realti
 ```
 docker run --gpus all -it --network=host --rm  registry.cn-hangzhou.aliyuncs.com/lipku/nerfstream:v1.3
 ```
-docker版本已经不是最新代码，可以作为一个空环境，把最新代码拷进去运行。  
-另外提供autodl镜像：https://www.codewithgpu.com/i/lipku/metahuman-stream/base
+docker版本已经不是最新代码，可以作为一个空环境，把最新代码拷进去运行。 
 
+另外提供autodl教程：
+[autodl教程](autodl/README.md)
 ## 5. Data flow
 ![](/assets/dataflow.png)
 
