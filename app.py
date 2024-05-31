@@ -20,10 +20,6 @@ from aiortc import RTCPeerConnection, RTCSessionDescription
 from webrtc import HumanPlayer
 
 import argparse
-from ernerf.nerf_triplane.provider import NeRFDataset_Test
-from ernerf.nerf_triplane.utils import *
-from ernerf.nerf_triplane.network import NeRFNetwork
-from nerfreal import NeRFReal
 
 import shutil
 import asyncio
@@ -437,7 +433,7 @@ if __name__ == '__main__':
     #musetalk opt
     parser.add_argument('--avatar_id', type=str, default='avator_1')
     parser.add_argument('--bbox_shift', type=int, default=5)
-    parser.add_argument('--batch_size', type=int, default=4)
+    parser.add_argument('--batch_size', type=int, default=16)
 
     parser.add_argument('--customvideo', action='store_true', help="custom video")
     parser.add_argument('--customvideo_img', type=str, default='data/customvideo/img')
@@ -466,6 +462,10 @@ if __name__ == '__main__':
         gspeaker = get_speaker(opt.REF_FILE, opt.TTS_SERVER)
 
     if opt.model == 'ernerf':
+        from ernerf.nerf_triplane.provider import NeRFDataset_Test
+        from ernerf.nerf_triplane.utils import *
+        from ernerf.nerf_triplane.network import NeRFNetwork
+        from nerfreal import NeRFReal
         # assert test mode
         opt.test = True
         opt.test_train = False

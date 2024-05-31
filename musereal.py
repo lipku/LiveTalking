@@ -26,6 +26,7 @@ from museasr import MuseASR
 import asyncio
 from av import AudioFrame, VideoFrame
 
+@torch.no_grad()
 class MuseReal:
     def __init__(self, opt):
         self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.

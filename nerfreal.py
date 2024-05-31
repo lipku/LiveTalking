@@ -262,7 +262,10 @@ class NeRFReal:
                 print(f"------actual avg infer fps:{count/totaltime:.4f}")
                 count=0
                 totaltime=0
-            delay = _starttime+_totalframe*0.04-time.perf_counter() #40ms
-            if delay > 0:
-                time.sleep(delay)
+            if video_track._queue.qsize()>=5:
+                #print('sleep qsize=',video_track._queue.qsize())
+                time.sleep(0.1)
+            # delay = _starttime+_totalframe*0.04-time.perf_counter() #40ms
+            # if delay > 0:
+            #     time.sleep(delay)
             
