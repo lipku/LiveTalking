@@ -26,36 +26,36 @@ class NeRFReal:
         self.data_loader = data_loader
 
         # use dataloader's bg
-        bg_img = data_loader._data.bg_img #.view(1, -1, 3)
-        if self.H != bg_img.shape[0] or self.W != bg_img.shape[1]:
-            bg_img = F.interpolate(bg_img.permute(2, 0, 1).unsqueeze(0).contiguous(), (self.H, self.W), mode='bilinear').squeeze(0).permute(1, 2, 0).contiguous()
-        self.bg_color = bg_img.view(1, -1, 3)
+        #bg_img = data_loader._data.bg_img #.view(1, -1, 3)
+        #if self.H != bg_img.shape[0] or self.W != bg_img.shape[1]:
+        #    bg_img = F.interpolate(bg_img.permute(2, 0, 1).unsqueeze(0).contiguous(), (self.H, self.W), mode='bilinear').squeeze(0).permute(1, 2, 0).contiguous()
+        #self.bg_color = bg_img.view(1, -1, 3)
 
         # audio features (from dataloader, only used in non-playing mode)
-        self.audio_features = data_loader._data.auds # [N, 29, 16]
-        self.audio_idx = 0
+        #self.audio_features = data_loader._data.auds # [N, 29, 16]
+        #self.audio_idx = 0
 
         #self.frame_total_num = data_loader._data.end_index
         #print("frame_total_num:",self.frame_total_num)
 
         # control eye
-        self.eye_area = None if not self.opt.exp_eye else data_loader._data.eye_area.mean().item()
+        #self.eye_area = None if not self.opt.exp_eye else data_loader._data.eye_area.mean().item()
 
         # playing seq from dataloader, or pause.
         self.playing = True #False todo
         self.loader = iter(data_loader)
 
-        self.render_buffer = np.zeros((self.W, self.H, 3), dtype=np.float32)
-        self.need_update = True # camera moved, should reset accumulation
-        self.spp = 1 # sample per pixel
-        self.mode = 'image' # choose from ['image', 'depth']
+        #self.render_buffer = np.zeros((self.W, self.H, 3), dtype=np.float32)
+        #self.need_update = True # camera moved, should reset accumulation
+        #self.spp = 1 # sample per pixel
+        #self.mode = 'image' # choose from ['image', 'depth']
 
-        self.dynamic_resolution = False # assert False!
-        self.downscale = 1
-        self.train_steps = 16
+        #self.dynamic_resolution = False # assert False!
+        #self.downscale = 1
+        #self.train_steps = 16
 
-        self.ind_index = 0
-        self.ind_num = trainer.model.individual_codes.shape[0]
+        #self.ind_index = 0
+        #self.ind_num = trainer.model.individual_codes.shape[0]
 
         self.customimg_index = 0
 
@@ -113,8 +113,6 @@ class NeRFReal:
     def push_audio(self,chunk):
         self.asr.push_audio(chunk)   
     
-    def before_push_audio(self):
-        self.asr.before_push_audio()
 
     def mirror_index(self, index):
         size = self.opt.customvideo_imgnum
@@ -125,91 +123,78 @@ class NeRFReal:
         else:
             return size - res - 1   
 
-    def prepare_buffer(self, outputs):
-        if self.mode == 'image':
-            return outputs['image']
-        else:
-            return np.expand_dims(outputs['depth'], -1).repeat(3, -1)
-
     def test_step(self,loop=None,audio_track=None,video_track=None):
         
         #starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
         #starter.record()
 
-        if self.playing:
-            try:
-                data = next(self.loader)
-            except StopIteration:
-                self.loader = iter(self.data_loader)
-                data = next(self.loader)
-            
-            if self.opt.asr:
-                # use the live audio stream
-                data['auds'] = self.asr.get_next_feat()
+        try:
+            data = next(self.loader)
+        except StopIteration:
+            self.loader = iter(self.data_loader)
+            data = next(self.loader)
+        
+        if self.opt.asr:
+            # use the live audio stream
+            data['auds'] = self.asr.get_next_feat()
 
-            audiotype = 0
+        audiotype = 0
+        if self.opt.transport=='rtmp':
+            for _ in range(2):
+                frame,type = self.asr.get_audio_out()
+                audiotype += type
+                #print(f'[INFO] get_audio_out shape ',frame.shape)                
+                self.streamer.stream_frame_audio(frame)
+        else:
+            for _ in range(2):
+                frame,type = self.asr.get_audio_out()
+                audiotype += type
+                frame = (frame * 32767).astype(np.int16)
+                new_frame = AudioFrame(format='s16', layout='mono', samples=frame.shape[0])
+                new_frame.planes[0].update(frame.tobytes())
+                new_frame.sample_rate=16000
+                # if audio_track._queue.qsize()>10:
+                #     time.sleep(0.1)
+                asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop)  
+        #t = time.time()
+        if self.opt.customvideo and audiotype!=0:
+            self.loader = iter(self.data_loader) #init
+            imgindex  = self.mirror_index(self.customimg_index)
+            #print('custom img index:',imgindex)
+            image = cv2.imread(os.path.join(self.opt.customvideo_img, str(int(imgindex))+'.png'))
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             if self.opt.transport=='rtmp':
-                for _ in range(2):
-                    frame,type = self.asr.get_audio_out()
-                    audiotype += type
-                    #print(f'[INFO] get_audio_out shape ',frame.shape)                
-                    self.streamer.stream_frame_audio(frame)
+                self.streamer.stream_frame(image)
             else:
-                for _ in range(2):
-                    frame,type = self.asr.get_audio_out()
-                    audiotype += type
-                    frame = (frame * 32767).astype(np.int16)
-                    new_frame = AudioFrame(format='s16', layout='mono', samples=frame.shape[0])
-                    new_frame.planes[0].update(frame.tobytes())
-                    new_frame.sample_rate=16000
-                    # if audio_track._queue.qsize()>10:
-                    #     time.sleep(0.1)
-                    asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop)  
-            #t = time.time()
-            if self.opt.customvideo and audiotype!=0:
-                self.loader = iter(self.data_loader) #init
-                imgindex  = self.mirror_index(self.customimg_index)
-                #print('custom img index:',imgindex)
-                image = cv2.imread(os.path.join(self.opt.customvideo_img, str(int(imgindex))+'.png'))
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                new_frame = VideoFrame.from_ndarray(image, format="rgb24")
+                asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
+            self.customimg_index += 1
+        else:
+            self.customimg_index = 0
+            outputs = self.trainer.test_gui_with_data(data, self.W, self.H)
+            #print('-------ernerf time: ',time.time()-t)
+            #print(f'[INFO] outputs shape ',outputs['image'].shape)
+            image = (outputs['image'] * 255).astype(np.uint8)
+            if not self.opt.fullbody:
                 if self.opt.transport=='rtmp':
                     self.streamer.stream_frame(image)
                 else:
                     new_frame = VideoFrame.from_ndarray(image, format="rgb24")
                     asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
-                self.customimg_index += 1
-            else:
-                self.customimg_index = 0
-                outputs = self.trainer.test_gui_with_data(data, self.W, self.H)
-                #print('-------ernerf time: ',time.time()-t)
-                #print(f'[INFO] outputs shape ',outputs['image'].shape)
-                image = (outputs['image'] * 255).astype(np.uint8)
-                if not self.opt.fullbody:
-                    if self.opt.transport=='rtmp':
-                        self.streamer.stream_frame(image)
-                    else:
-                        new_frame = VideoFrame.from_ndarray(image, format="rgb24")
-                        asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
-                else: #fullbody human
-                    #print("frame index:",data['index'])
-                    image_fullbody = cv2.imread(os.path.join(self.opt.fullbody_img, str(data['index'][0])+'.jpg'))
-                    image_fullbody = cv2.cvtColor(image_fullbody, cv2.COLOR_BGR2RGB)
-                    start_x = self.opt.fullbody_offset_x  # 合并后小图片的起始x坐标
-                    start_y = self.opt.fullbody_offset_y  # 合并后小图片的起始y坐标
-                    image_fullbody[start_y:start_y+image.shape[0], start_x:start_x+image.shape[1]] = image
-                    if self.opt.transport=='rtmp':
-                        self.streamer.stream_frame(image_fullbody)
-                    else:
-                        new_frame = VideoFrame.from_ndarray(image_fullbody, format="rgb24")
-                        asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
+            else: #fullbody human
+                #print("frame index:",data['index'])
+                image_fullbody = cv2.imread(os.path.join(self.opt.fullbody_img, str(data['index'][0])+'.jpg'))
+                image_fullbody = cv2.cvtColor(image_fullbody, cv2.COLOR_BGR2RGB)
+                start_x = self.opt.fullbody_offset_x  # 合并后小图片的起始x坐标
+                start_y = self.opt.fullbody_offset_y  # 合并后小图片的起始y坐标
+                image_fullbody[start_y:start_y+image.shape[0], start_x:start_x+image.shape[1]] = image
+                if self.opt.transport=='rtmp':
+                    self.streamer.stream_frame(image_fullbody)
+                else:
+                    new_frame = VideoFrame.from_ndarray(image_fullbody, format="rgb24")
+                    asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
             #self.pipe.stdin.write(image.tostring())        
-        else:
-            if self.audio_features is not None:
-                auds = get_audio_features(self.audio_features, self.opt.att, self.audio_idx)
-            else:
-                auds = None
-            outputs = self.trainer.test_gui(self.cam.pose, self.cam.intrinsics, self.W, self.H, auds, self.eye_area, self.ind_index, self.bg_color, self.spp, self.downscale)
-
+       
         #ender.record()
         #torch.cuda.synchronize()
         #t = starter.elapsed_time(ender)

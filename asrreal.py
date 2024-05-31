@@ -14,27 +14,6 @@ from queue import Queue
 from threading import Thread, Event
 from io import BytesIO
 
-
-def _read_frame(stream, exit_event, queue, chunk):
-
-    while True:
-        if exit_event.is_set():
-            print(f'[INFO] read frame thread ends')
-            break
-        frame = stream.read(chunk, exception_on_overflow=False)
-        frame = np.frombuffer(frame, dtype=np.int16).astype(np.float32) / 32767 # [chunk]
-        queue.put(frame)
-
-def _play_frame(stream, exit_event, queue, chunk):
-
-    while True:
-        if exit_event.is_set():
-            print(f'[INFO] play frame thread ends')
-            break
-        frame = queue.get()
-        frame = (frame * 32767).astype(np.int16).tobytes()
-        stream.write(frame, chunk)
-
 class ASR:
     def __init__(self, opt):
 
@@ -76,23 +55,14 @@ class ASR:
         #self.audio_instance = pyaudio.PyAudio()  #not need
 
         # create input stream
-        if self.mode == 'file':  #live mode
-            self.file_stream = self.create_file_stream()
-        else:
-            self.queue = Queue()
-            self.input_stream = BytesIO()
-            self.output_queue = Queue()
-            # start a background process to read frames
-            #self.input_stream = self.audio_instance.open(format=pyaudio.paInt16, channels=1, rate=self.sample_rate, input=True, output=False, frames_per_buffer=self.chunk)
-            #self.queue = Queue()
-            #self.process_read_frame = Thread(target=_read_frame, args=(self.input_stream, self.exit_event, self.queue, self.chunk))
+        self.queue = Queue()
+        self.input_stream = BytesIO()
+        self.output_queue = Queue()
+        # start a background process to read frames
+        #self.input_stream = self.audio_instance.open(format=pyaudio.paInt16, channels=1, rate=self.sample_rate, input=True, output=False, frames_per_buffer=self.chunk)
+        #self.queue = Queue()
+        #self.process_read_frame = Thread(target=_read_frame, args=(self.input_stream, self.exit_event, self.queue, self.chunk))
         
-        # play out the audio too...?
-        if self.play:
-            self.output_stream = self.audio_instance.open(format=pyaudio.paInt16, channels=1, rate=self.sample_rate, input=False, output=True, frames_per_buffer=self.chunk)
-            self.output_queue = Queue()
-            self.process_play_frame = Thread(target=_play_frame, args=(self.output_stream, self.exit_event, self.output_queue, self.chunk))
-
         # current location of audio
         self.idx = 0
 
@@ -212,51 +182,43 @@ class ASR:
         #    self.text = self.text + ' ' + text
 
         # will only run once at ternimation
-        if self.terminated:
-            self.text += '\n[END]'
-            print(self.text)
-            if self.opt.asr_save_feats:
-                print(f'[INFO] save all feats for training purpose... ')
-                feats = torch.cat(self.all_feats, dim=0) # [N, C]
-                # print('[INFO] before unfold', feats.shape)
-                window_size = 16
-                padding = window_size // 2
-                feats = feats.view(-1, self.audio_dim).permute(1, 0).contiguous() # [C, M]
-                feats = feats.view(1, self.audio_dim, -1, 1) # [1, C, M, 1]
-                unfold_feats = F.unfold(feats, kernel_size=(window_size, 1), padding=(padding, 0), stride=(2, 1)) # [1, C * window_size, M / 2 + 1]
-                unfold_feats = unfold_feats.view(self.audio_dim, window_size, -1).permute(2, 1, 0).contiguous() # [C, window_size, M / 2 + 1] --> [M / 2 + 1, window_size, C]
-                # print('[INFO] after unfold', unfold_feats.shape)
-                # save to a npy file
-                if 'esperanto' in self.opt.asr_model:
-                    output_path = self.opt.asr_wav.replace('.wav', '_eo.npy')
-                else:
-                    output_path = self.opt.asr_wav.replace('.wav', '.npy')
-                np.save(output_path, unfold_feats.cpu().numpy())
-                print(f"[INFO] saved logits to {output_path}")
+        # if self.terminated:
+        #     self.text += '\n[END]'
+        #     print(self.text)
+        #     if self.opt.asr_save_feats:
+        #         print(f'[INFO] save all feats for training purpose... ')
+        #         feats = torch.cat(self.all_feats, dim=0) # [N, C]
+        #         # print('[INFO] before unfold', feats.shape)
+        #         window_size = 16
+        #         padding = window_size // 2
+        #         feats = feats.view(-1, self.audio_dim).permute(1, 0).contiguous() # [C, M]
+        #         feats = feats.view(1, self.audio_dim, -1, 1) # [1, C, M, 1]
+        #         unfold_feats = F.unfold(feats, kernel_size=(window_size, 1), padding=(padding, 0), stride=(2, 1)) # [1, C * window_size, M / 2 + 1]
+        #         unfold_feats = unfold_feats.view(self.audio_dim, window_size, -1).permute(2, 1, 0).contiguous() # [C, window_size, M / 2 + 1] --> [M / 2 + 1, window_size, C]
+        #         # print('[INFO] after unfold', unfold_feats.shape)
+        #         # save to a npy file
+        #         if 'esperanto' in self.opt.asr_model:
+        #             output_path = self.opt.asr_wav.replace('.wav', '_eo.npy')
+        #         else:
+        #             output_path = self.opt.asr_wav.replace('.wav', '.npy')
+        #         np.save(output_path, unfold_feats.cpu().numpy())
+        #         print(f"[INFO] saved logits to {output_path}")
     
     def __get_audio_frame(self): 
         if self.inwarm: # warm up
             return np.zeros(self.chunk, dtype=np.float32),1
         
-        if self.mode == 'file':
-            if self.idx < self.file_stream.shape[0]:
-                frame = self.file_stream[self.idx: self.idx + self.chunk]
-                self.idx = self.idx + self.chunk
-                return frame,0
-            else:
-                return None,0        
-        else:
-            try:
-                frame = self.queue.get(block=False)
-                type = 0
-                print(f'[INFO] get frame {frame.shape}')
-            except queue.Empty:
-                frame = np.zeros(self.chunk, dtype=np.float32)
-                type = 1
+        try:
+            frame = self.queue.get(block=False)
+            type = 0
+            print(f'[INFO] get frame {frame.shape}')
+        except queue.Empty:
+            frame = np.zeros(self.chunk, dtype=np.float32)
+            type = 1
 
-            self.idx = self.idx + self.chunk
+        self.idx = self.idx + self.chunk
 
-            return frame,type
+        return frame,type
 
         
     def __frame_to_text(self, frame):
@@ -360,10 +322,6 @@ class ASR:
         self.tail = 8
         # attention window...
         self.att_feats = [torch.zeros(self.audio_dim, 16, dtype=torch.float32, device=self.device)] * 4
-
-    def before_push_audio(self):
-        self.__init_queue()
-        self.warm_up()
         
     def run(self):
 
@@ -399,53 +357,6 @@ class ASR:
 
         #self.clear_queue()
 
-    '''
-    def create_file_stream(self):
-    
-        stream, sample_rate = sf.read(self.opt.asr_wav) # [T*sample_rate,] float64
-        stream = stream.astype(np.float32)
-
-        if stream.ndim > 1:
-            print(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
-            stream = stream[:, 0]
-    
-        if sample_rate != self.sample_rate:
-            print(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
-            stream = resampy.resample(x=stream, sr_orig=sample_rate, sr_new=self.sample_rate)
-
-        print(f'[INFO] loaded audio stream {self.opt.asr_wav}: {stream.shape}')
-
-        return stream
-
-
-    def create_pyaudio_stream(self):
-
-        import pyaudio
-
-        print(f'[INFO] creating live audio stream ...')
-
-        audio = pyaudio.PyAudio()
-        
-        # get devices
-        info = audio.get_host_api_info_by_index(0)
-        n_devices = info.get('deviceCount')
-
-        for i in range(0, n_devices):
-            if (audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
-                name = audio.get_device_info_by_host_api_device_index(0, i).get('name')
-                print(f'[INFO] choose audio device {name}, id {i}')
-                break
-        
-        # get stream
-        stream = audio.open(input_device_index=i,
-                            format=pyaudio.paInt16,
-                            channels=1,
-                            rate=self.sample_rate,
-                            input=True,
-                            frames_per_buffer=self.chunk)
-        
-        return audio, stream
-    '''
     #####not used function#####################################
     def listen(self):
         # start
@@ -489,6 +400,25 @@ class ASR:
             # live mode: also print the result text.        
             self.text += '\n[END]'
             print(self.text)
+
+def _read_frame(stream, exit_event, queue, chunk):
+    while True:
+        if exit_event.is_set():
+            print(f'[INFO] read frame thread ends')
+            break
+        frame = stream.read(chunk, exception_on_overflow=False)
+        frame = np.frombuffer(frame, dtype=np.int16).astype(np.float32) / 32767 # [chunk]
+        queue.put(frame)
+
+def _play_frame(stream, exit_event, queue, chunk):
+
+    while True:
+        if exit_event.is_set():
+            print(f'[INFO] play frame thread ends')
+            break
+        frame = queue.get()
+        frame = (frame * 32767).astype(np.int16).tobytes()
+        stream.write(frame, chunk)
      #########################################################
 
 if __name__ == '__main__':

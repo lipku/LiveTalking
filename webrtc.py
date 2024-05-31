@@ -60,6 +60,7 @@ class PlayerStreamTrack(MediaStreamTrack):
             else:
                 self._start = time.time()
                 self._timestamp = 0
+                print('video start:',self._start)
             return self._timestamp, VIDEO_TIME_BASE
         else: #audio
             if hasattr(self, "_timestamp"):
@@ -71,6 +72,7 @@ class PlayerStreamTrack(MediaStreamTrack):
             else:
                 self._start = time.time()
                 self._timestamp = 0
+                print('audio start:',self._start)
             return self._timestamp, AUDIO_TIME_BASE
 
     async def recv(self) -> Union[Frame, Packet]:
