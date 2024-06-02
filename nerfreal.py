@@ -10,6 +10,8 @@ import torch.nn.functional as F
 import cv2
 
 from asrreal import ASR
+from ttsreal import EdgeTTS,VoitsTTS,XTTS
+
 import asyncio
 from av import AudioFrame, VideoFrame
 
@@ -63,6 +65,12 @@ class NeRFReal:
         if self.opt.asr:
             self.asr = ASR(opt)
             self.asr.warm_up()
+        if opt.tts == "edgetts":
+            self.tts = EdgeTTS(opt,self)
+        elif opt.tts == "gpt-sovits":
+            self.tts = VoitsTTS(opt,self)
+        elif opt.tts == "xtts":
+            self.tts = XTTS(opt,self)
         
         '''
         video_path = 'video_stream'
@@ -110,8 +118,11 @@ class NeRFReal:
         if self.opt.asr:
             self.asr.stop()
 
-    def push_audio(self,chunk):
-        self.asr.push_audio(chunk)   
+    def put_msg_txt(self,msg):
+        self.tts.put_msg_txt(msg)
+
+    def put_audio_frame(self,audio_chunk): #16khz 20ms pcm
+        self.asr.put_audio_frame(audio_chunk)   
     
 
     def mirror_index(self, index):
@@ -231,6 +242,8 @@ class NeRFReal:
         totaltime=0
         _starttime=time.perf_counter()
         _totalframe=0
+
+        self.tts.render(quit_event)
         while not quit_event.is_set(): #todo
             # update texture every frame
             # audio stream thread...
@@ -255,5 +268,6 @@ class NeRFReal:
                 if video_track._queue.qsize()>=5:
                     #print('sleep qsize=',video_track._queue.qsize())
                     time.sleep(0.1)
+        print('nerfreal thread stop')
             
             

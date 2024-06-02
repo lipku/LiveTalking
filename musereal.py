@@ -21,6 +21,7 @@ from musetalk.utils.utils import get_file_type,get_video_fps,datagen
 from musetalk.utils.preprocessing import get_landmark_and_bbox,read_imgs,coord_placeholder
 from musetalk.utils.blending import get_image,get_image_prepare_material,get_image_blending
 from musetalk.utils.utils import load_all_model
+from ttsreal import EdgeTTS,VoitsTTS,XTTS
 
 from museasr import MuseASR
 import asyncio
@@ -59,6 +60,13 @@ class MuseReal:
         self.__loadavatar()
 
         self.asr = MuseASR(opt,self.audio_processor)
+        if opt.tts == "edgetts":
+            self.tts = EdgeTTS(opt,self)
+        elif opt.tts == "gpt-sovits":
+            self.tts = VoitsTTS(opt,self)
+        elif opt.tts == "xtts":
+            self.tts = XTTS(opt,self)
+        #self.__warm_up()
 
     def __loadmodels(self):
         # load model weights
@@ -83,8 +91,11 @@ class MuseReal:
         self.mask_list_cycle = read_imgs(input_mask_list)
         
     
-    def push_audio(self,buffer):
-        self.asr.push_audio(buffer)
+    def put_msg_txt(self,msg):
+        self.tts.put_msg_txt(msg)
+    
+    def put_audio_frame(self,audio_chunk): #16khz 20ms pcm
+        self.asr.put_audio_frame(audio_chunk)
 
     def __mirror_index(self, index):
         size = len(self.coord_list_cycle)
@@ -93,13 +104,37 @@ class MuseReal:
         if turn % 2 == 0:
             return res
         else:
-            return size - res - 1   
+            return size - res - 1  
+
+    def __warm_up(self): 
+        self.asr.run_step()
+        whisper_chunks = self.asr.get_next_feat()
+        whisper_batch = np.stack(whisper_chunks)
+        latent_batch = []
+        for i in range(self.batch_size):
+            idx = self.__mirror_index(self.idx+i)
+            latent = self.input_latent_list_cycle[idx]
+            latent_batch.append(latent)
+        latent_batch = torch.cat(latent_batch, dim=0)
+        print('infer=======')
+        # for i, (whisper_batch,latent_batch) in enumerate(gen):
+        audio_feature_batch = torch.from_numpy(whisper_batch)
+        audio_feature_batch = audio_feature_batch.to(device=self.unet.device,
+                                                        dtype=self.unet.model.dtype)
+        audio_feature_batch = self.pe(audio_feature_batch)
+        latent_batch = latent_batch.to(dtype=self.unet.model.dtype)
+
+        pred_latents = self.unet.model(latent_batch, 
+                                    self.timesteps, 
+                                    encoder_hidden_states=audio_feature_batch).sample
+        recon = self.vae.decode_latents(pred_latents)
 
     def test_step(self,loop=None,audio_track=None,video_track=None):
         
         # gen = datagen(whisper_chunks,
         #               self.input_latent_list_cycle, 
         #               self.batch_size)
+        starttime=time.perf_counter()
         self.asr.run_step()
         whisper_chunks = self.asr.get_next_feat()
         is_all_silence=True
@@ -114,7 +149,8 @@ class MuseReal:
                 self.res_frame_queue.put((None,self.__mirror_index(self.idx),audio_frames[i*2:i*2+2]))
                 self.idx = self.idx + 1
         else:
-            print('infer=======')
+            # print('infer=======')
+            t=time.perf_counter()
             whisper_batch = np.stack(whisper_chunks)
             latent_batch = []
             for i in range(self.batch_size):
@@ -129,16 +165,22 @@ class MuseReal:
                                                             dtype=self.unet.model.dtype)
             audio_feature_batch = self.pe(audio_feature_batch)
             latent_batch = latent_batch.to(dtype=self.unet.model.dtype)
+            # print('prepare time:',time.perf_counter()-t)
+            # t=time.perf_counter()
 
             pred_latents = self.unet.model(latent_batch, 
                                         self.timesteps, 
                                         encoder_hidden_states=audio_feature_batch).sample
+            # print('unet time:',time.perf_counter()-t)
+            # t=time.perf_counter()
             recon = self.vae.decode_latents(pred_latents)
+            # print('vae time:',time.perf_counter()-t)
             #print('diffusion len=',len(recon))
             for i,res_frame in enumerate(recon):
                 #self.__pushmedia(res_frame,loop,audio_track,video_track)
                 self.res_frame_queue.put((res_frame,self.__mirror_index(self.idx),audio_frames[i*2:i*2+2]))
                 self.idx = self.idx + 1
+            print('total batch time:',time.perf_counter()-starttime)
       
 
     def process_frames(self,quit_event,loop=None,audio_track=None,video_track=None):
@@ -175,12 +217,14 @@ class MuseReal:
                 new_frame.sample_rate=16000
                 # if audio_track._queue.qsize()>10:
                 #     time.sleep(0.1)
-                asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop) 
+                asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop)
+        print('musereal process_frames thread stop') 
             
     def render(self,quit_event,loop=None,audio_track=None,video_track=None):
         #if self.opt.asr:
         #     self.asr.warm_up()
 
+        self.tts.render(quit_event)
         process_thread = Thread(target=self.process_frames, args=(quit_event,loop,audio_track,video_track))
         process_thread.start()
 
@@ -207,4 +251,5 @@ class MuseReal:
             # delay = _starttime+_totalframe*0.04-time.perf_counter() #40ms
             # if delay > 0:
             #     time.sleep(delay)
+        print('musereal thread stop')
             

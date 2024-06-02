@@ -23,132 +23,11 @@ import argparse
 
 import shutil
 import asyncio
-import edge_tts
-from typing import Iterator
 
-import requests
 
 app = Flask(__name__)
 sockets = Sockets(app)
 global nerfreal
-global tts_type
-global gspeaker
-
-
-async def main(voicename: str, text: str, render):
-    communicate = edge_tts.Communicate(text, voicename)
-
-    #with open(OUTPUT_FILE, "wb") as file:
-    first = True
-    async for chunk in communicate.stream():
-        if first:
-            #render.before_push_audio()
-            first = False
-        if chunk["type"] == "audio":
-            render.push_audio(chunk["data"])
-            #file.write(chunk["data"])
-        elif chunk["type"] == "WordBoundary":
-            pass                
-
-def get_speaker(ref_audio,server_url):
-    files = {"wav_file": ("reference.wav", open(ref_audio, "rb"))}
-    response = requests.post(f"{server_url}/clone_speaker", files=files)
-    return response.json()
-
-def xtts(text, speaker, language, server_url, stream_chunk_size) -> Iterator[bytes]:
-    start = time.perf_counter()
-    speaker["text"] = text
-    speaker["language"] = language
-    speaker["stream_chunk_size"] = stream_chunk_size  # you can reduce it to get faster response, but degrade quality
-    res = requests.post(
-        f"{server_url}/tts_stream",
-        json=speaker,
-        stream=True,
-    )
-    end = time.perf_counter()
-    print(f"xtts Time to make POST: {end-start}s")
-
-    if res.status_code != 200:
-        print("Error:", res.text)
-        return
-
-    first = True
-    for chunk in res.iter_content(chunk_size=960): #24K*20ms*2
-        if first:
-            end = time.perf_counter()
-            print(f"xtts Time to first chunk: {end-start}s")
-            first = False
-        if chunk:
-            yield chunk
-
-    print("xtts response.elapsed:", res.elapsed)
-
-def gpt_sovits(text, character, language, server_url, emotion) -> Iterator[bytes]:
-    start = time.perf_counter()
-    req={}
-    req["text"] = text
-    req["text_language"] = language
-    req["character"] = character
-    req["emotion"] = emotion
-    #req["stream_chunk_size"] = stream_chunk_size  # you can reduce it to get faster response, but degrade quality
-    req["stream"] = True
-    res = requests.post(
-        f"{server_url}/tts",
-        json=req,
-        stream=True,
-    )
-    end = time.perf_counter()
-    print(f"gpt_sovits Time to make POST: {end-start}s")
-
-    if res.status_code != 200:
-        print("Error:", res.text)
-        return
-        
-    first = True
-    for chunk in res.iter_content(chunk_size=32000): # 1280 32K*20ms*2
-        if first:
-            end = time.perf_counter()
-            print(f"gpt_sovits Time to first chunk: {end-start}s")
-            first = False
-        if chunk:
-            yield chunk
-
-    print("gpt_sovits response.elapsed:", res.elapsed)
-
-def stream_tts(audio_stream,render):
-    for chunk in audio_stream:
-        if chunk is not None:
-            render.push_audio(chunk)
-
-def txt_to_audio(text_):
-    if tts_type == "edgetts":
-        voicename = "zh-CN-YunxiaNeural"
-        text = text_
-        t = time.time()
-        asyncio.get_event_loop().run_until_complete(main(voicename,text,nerfreal))
-        print(f'-------edge tts time:{time.time()-t:.4f}s')
-    elif tts_type == "gpt-sovits": #gpt_sovits
-        stream_tts(
-            gpt_sovits(
-                text_,
-                app.config['CHARACTER'], #"test", #character
-                "zh", #en args.language,
-                app.config['TTS_SERVER'], #"http://127.0.0.1:5000", #args.server_url,
-                app.config['EMOTION'], #emotion 
-            ),
-            nerfreal
-        )
-    else: #xtts
-        stream_tts(
-            xtts(
-                text_,
-                gspeaker,
-                "zh-cn", #en args.language,
-                app.config['TTS_SERVER'], #"http://localhost:9000", #args.server_url,
-                "20" #args.stream_chunk_size
-            ),
-            nerfreal
-        )
 
     
 @sockets.route('/humanecho')
@@ -168,7 +47,7 @@ def echo_socket(ws):
             if not message or len(message)==0:
                 return '输入信息为空'
             else:                                
-                txt_to_audio(message)
+                nerfreal.put_msg_txt(message)
 
 
 def llm_response(message):
@@ -198,41 +77,10 @@ def chat_socket(ws):
                 return '输入信息为空'
             else:
                 res=llm_response(message)                           
-                txt_to_audio(res) 
+                nerfreal.put_msg_txt(res)
 
 #####webrtc###############################
 pcs = set()
-
-async def txt_to_audio_async(text_):
-    if tts_type == "edgetts":
-        voicename = "zh-CN-YunxiaNeural"
-        text = text_
-        t = time.time()
-        #asyncio.get_event_loop().run_until_complete(main(voicename,text,nerfreal))
-        await main(voicename,text,nerfreal)
-        print(f'-------edge tts time:{time.time()-t:.4f}s')
-    elif tts_type == "gpt-sovits": #gpt_sovits
-        stream_tts(
-            gpt_sovits(
-                text_,
-                app.config['CHARACTER'], #"test", #character
-                "zh", #en args.language,
-                app.config['TTS_SERVER'], #"http://127.0.0.1:5000", #args.server_url,
-                app.config['EMOTION'], #emotion 
-            ),
-            nerfreal
-        )
-    else: #xtts
-        stream_tts(
-            xtts(
-                text_,
-                gspeaker,
-                "zh-cn", #en args.language,
-                app.config['TTS_SERVER'], #"http://localhost:9000", #args.server_url,
-                "20" #args.stream_chunk_size
-            ),
-            nerfreal
-        )
 
 #@app.route('/offer', methods=['POST'])
 async def offer(request):
@@ -271,10 +119,10 @@ async def human(request):
     params = await request.json()
 
     if params['type']=='echo':
-        await txt_to_audio_async(params['text'])
+        nerfreal.put_msg_txt(params['text'])
     elif params['type']=='chat':
-        res=llm_response(params['text'])                           
-        await txt_to_audio_async(res)
+        res=await asyncio.get_event_loop().run_in_executor(None, llm_response(params['text']))                          
+        nerfreal.put_msg_txt(res)
 
     return web.Response(
         content_type="application/json",
@@ -453,13 +301,8 @@ if __name__ == '__main__':
     parser.add_argument('--listenport', type=int, default=8010)
 
     opt = parser.parse_args()
-    app.config.from_object(opt)
+    #app.config.from_object(opt)
     #print(app.config)
-
-    tts_type = opt.tts
-    if tts_type == "xtts":
-        print("Computing the latents for a new reference...")
-        gspeaker = get_speaker(opt.REF_FILE, opt.TTS_SERVER)
 
     if opt.model == 'ernerf':
         from ernerf.nerf_triplane.provider import NeRFDataset_Test

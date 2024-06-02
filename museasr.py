@@ -18,7 +18,7 @@ class MuseASR:
         self.sample_rate = 16000
         self.chunk = self.sample_rate // self.fps # 320 samples per chunk (20ms * 16000 / 1000)
         self.queue = Queue()
-        self.input_stream = BytesIO()
+        # self.input_stream = BytesIO()
         self.output_queue = Queue()
 
         self.audio_processor = audio_processor
@@ -29,62 +29,14 @@ class MuseASR:
 
         self.warm_up()
 
-    def __create_bytes_stream(self,byte_stream):
-        #byte_stream=BytesIO(buffer)
-        stream, sample_rate = sf.read(byte_stream) # [T*sample_rate,] float64
-        print(f'[INFO]tts audio stream {sample_rate}: {stream.shape}')
-        stream = stream.astype(np.float32)
-
-        if stream.ndim > 1:
-            print(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
-            stream = stream[:, 0]
-    
-        if sample_rate != self.sample_rate and stream.shape[0]>0:
-            print(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
-            stream = resampy.resample(x=stream, sr_orig=sample_rate, sr_new=self.sample_rate)
-
-        return stream
-
-    def push_audio(self,buffer):
-        print(f'[INFO] push_audio {len(buffer)}')
-        if self.opt.tts == "xtts" or self.opt.tts == "gpt-sovits":
-            if len(buffer)>0:            
-                stream = np.frombuffer(buffer, dtype=np.int16).astype(np.float32) / 32767
-                if self.opt.tts == "xtts":
-                    stream = resampy.resample(x=stream, sr_orig=24000, sr_new=self.sample_rate)
-                else:
-                    stream = resampy.resample(x=stream, sr_orig=32000, sr_new=self.sample_rate)
-                #byte_stream=BytesIO(buffer)
-                #stream = self.__create_bytes_stream(byte_stream)
-                streamlen = stream.shape[0]
-                idx=0
-                while streamlen >= self.chunk:
-                    self.queue.put(stream[idx:idx+self.chunk])
-                    streamlen -= self.chunk
-                    idx += self.chunk
-                # if streamlen>0: #skip last frame(not 20ms)
-                #     self.queue.put(stream[idx:])
-        else: #edge tts
-            self.input_stream.write(buffer)
-            if len(buffer)<=0:
-                self.input_stream.seek(0)
-                stream = self.__create_bytes_stream(self.input_stream)
-                streamlen = stream.shape[0]
-                idx=0
-                while streamlen >= self.chunk:
-                    self.queue.put(stream[idx:idx+self.chunk])
-                    streamlen -= self.chunk
-                    idx += self.chunk
-                #if streamlen>0:  #skip last frame(not 20ms)
-                #    self.queue.put(stream[idx:])
-                self.input_stream.seek(0)
-                self.input_stream.truncate()  
+    def put_audio_frame(self,audio_chunk): #16khz 20ms pcm
+        self.queue.put(audio_chunk)
 
     def __get_audio_frame(self):        
         try:
-            frame = self.queue.get(block=False)
+            frame = self.queue.get(block=True,timeout=0.02)
             type = 0
-            print(f'[INFO] get frame {frame.shape}')
+            #print(f'[INFO] get frame {frame.shape}')
         except queue.Empty:
             frame = np.zeros(self.chunk, dtype=np.float32)
             type = 1

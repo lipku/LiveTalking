@@ -1,5 +1,5 @@
-A streaming digital human based on the Ernerf model， realize audio video synchronous dialogue. It can basically achieve commercial effects.  
-基于ernerf模型的流式数字人，实现音视频同步对话。基本可以达到商用效果
+Real time interactive streaming digital human， realize audio video synchronous dialogue. It can basically achieve commercial effects.  
+实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果
 
 [ernerf效果](https://www.bilibili.com/video/BV1PM4m1y7Q2/)  [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)
 
@@ -23,17 +23,17 @@ conda create -n nerfstream python=3.10
 conda activate nerfstream
 conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
 pip install -r requirements.txt
+#如果只用musetalk模型，不需要安装下面的库
 pip install "git+https://github.com/facebookresearch/pytorch3d.git"
 pip install tensorflow-gpu==2.8.0
 pip install --upgrade "protobuf<=3.20.1"
-pip install --upgrade "edge-tts<=6.1.11"
 ```
 安装常见问题[FAQ](/assets/faq.md)  
 linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/674972886
 
 
 ## 2. Quick Start
-默认采用webrtc推流到srs  
+默认采用ernerf模型，webrtc推流到srs  
 ### 2.1 运行rtmpserver (srs)
 ```
 export CANDIDATE='<服务器外网ip>'
@@ -211,8 +211,9 @@ docker版本已经不是最新代码，可以作为一个空环境，把最新�
 - [x] MuseTalk
 - [ ] SyncTalk
 
-如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目。  
-Email: lipku@foxmail.com  
+如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目。   
 知识星球: https://t.zsxq.com/7NMyO  
 微信公众号：数字人技术  
-![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyfaiaLZGuMGQXnhLWxibpJUS2gfs8Dje6JuMY8zu2tVyU9n8Zx1yaNncvKHBMibX0ocehoITy5qQEZg/640?wxfrom=12&tp=wxpic&usePicPrefetch=1&wx_fmt=jpeg&amp;from=appmsg)
+![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyfaiaLZGuMGQXnhLWxibpJUS2gfs8Dje6JuMY8zu2tVyU9n8Zx1yaNncvKHBMibX0ocehoITy5qQEZg/640?wxfrom=12&tp=wxpic&usePicPrefetch=1&wx_fmt=jpeg&amp;from=appmsg)  
+Buy me a coffee  
+![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyEO2TDmroXibUSeFRCB3ftThHyTgVmVYyVVyvqDxronGvoU7xzkztnwQpnM5lBgx4MSaUUrnRZwCw/640?wx_fmt=jpeg&amp;from=appmsg)
