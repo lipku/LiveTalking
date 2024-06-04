@@ -112,7 +112,7 @@ class VoitsTTS(BaseTTS):
             )
         )
 
-    def gpt_sovits(text, character, language, server_url, emotion) -> Iterator[bytes]:
+    def gpt_sovits(self, text, character, language, server_url, emotion) -> Iterator[bytes]:
         start = time.perf_counter()
         req={}
         req["text"] = text
