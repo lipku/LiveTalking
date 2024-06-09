@@ -163,10 +163,11 @@ async def run(push_url):
     await pc.setLocalDescription(await pc.createOffer())
     answer = await post(push_url,pc.localDescription.sdp)
     await pc.setRemoteDescription(RTCSessionDescription(sdp=answer,type='answer'))
-##########################################                                                    
-
+##########################################
+# os.environ['MKL_SERVICE_FORCE_INTEL'] = '1'
+# os.environ['MULTIPROCESSING_METHOD'] = 'forkserver'                                                    
 if __name__ == '__main__':
-
+    multiprocessing.set_start_method('spawn')
     parser = argparse.ArgumentParser()
     parser.add_argument('--pose', type=str, default="data/data_kf.json", help="transforms.json, pose source")
     parser.add_argument('--au', type=str, default="data/au.csv", help="eye blink area")

@@ -177,12 +177,12 @@ docker run --gpus all -it --network=host --rm  registry.cn-hangzhou.aliyuncs.com
 ```
 docker版本已经不是最新代码，可以作为一个空环境，把最新代码拷进去运行。 
 
-另外提供autodl教程：
+另外提供autodl镜像： 
+https://www.codewithgpu.com/i/lipku/metahuman-stream/base  
 [autodl教程](autodl/README.md)
-## 5. Data flow
-![](/assets/dataflow.png)
 
-## 6. 数字人模型文件
+
+## 5. 数字人模型文件
 可以替换成自己训练的模型(https://github.com/Fictionarry/ER-NeRF)
 ```python
 .
@@ -194,7 +194,7 @@ docker版本已经不是最新代码，可以作为一个空环境，把最新�
 
 ```
 
-## 7. 性能分析
+## 6. 性能分析
 1. 帧率  
 在Tesla T4显卡上测试整体fps为18左右，如果去掉音视频编码推流，帧率在20左右。用4090显卡可以达到40多帧/秒。  
 优化：新开一个线程运行音视频编码推流  
@@ -204,7 +204,7 @@ docker版本已经不是最新代码，可以作为一个空环境，把最新�
 （2）wav2vec延时0.4s，需要缓存18帧音频做计算 
 （3）srs转发延时，设置srs服务器减少缓冲延时。具体配置可看 https://ossrs.net/lts/zh-cn/docs/v5/doc/low-latency
 
-## 8. TODO
+## 7. TODO
 - [x] 添加chatgpt实现数字人对话
 - [x] 声音克隆
 - [x] 数字人静音时用一段视频代替
@@ -215,5 +215,4 @@ docker版本已经不是最新代码，可以作为一个空环境，把最新�
 知识星球: https://t.zsxq.com/7NMyO  
 微信公众号：数字人技术  
 ![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyfaiaLZGuMGQXnhLWxibpJUS2gfs8Dje6JuMY8zu2tVyU9n8Zx1yaNncvKHBMibX0ocehoITy5qQEZg/640?wxfrom=12&tp=wxpic&usePicPrefetch=1&wx_fmt=jpeg&amp;from=appmsg)  
-Buy me a coffee  
-![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyEO2TDmroXibUSeFRCB3ftThHyTgVmVYyVVyvqDxronGvoU7xzkztnwQpnM5lBgx4MSaUUrnRZwCw/640?wx_fmt=jpeg&amp;from=appmsg)
+

@@ -7,6 +7,7 @@ import resampy
 import queue
 from queue import Queue
 from io import BytesIO
+import multiprocessing as mp
 
 from musetalk.whisper.audio2feature import Audio2Feature
 
@@ -19,13 +20,14 @@ class MuseASR:
         self.chunk = self.sample_rate // self.fps # 320 samples per chunk (20ms * 16000 / 1000)
         self.queue = Queue()
         # self.input_stream = BytesIO()
-        self.output_queue = Queue()
+        self.output_queue = mp.Queue()
 
         self.audio_processor = audio_processor
         self.batch_size = opt.batch_size
 
         self.stride_left_size = self.stride_right_size = 6
         self.audio_feats = []
+        self.feat_queue = mp.Queue(5)
 
         self.warm_up()
 
@@ -34,7 +36,7 @@ class MuseASR:
 
     def __get_audio_frame(self):        
         try:
-            frame = self.queue.get(block=True,timeout=0.02)
+            frame = self.queue.get(block=True,timeout=0.018)
             type = 0
             #print(f'[INFO] get frame {frame.shape}')
         except queue.Empty:
@@ -71,12 +73,12 @@ class MuseASR:
         inputs = np.concatenate(frames) # [N * chunk]
         whisper_feature = self.audio_processor.audio2feat(inputs)
         for feature in whisper_feature:
-            self.audio_feats.append(feature)
-        
+            self.audio_feats.append(feature)        
         #print(f"processing audio costs {(time.time() - start_time) * 1000}ms, inputs shape:{inputs.shape} whisper_feature len:{len(whisper_feature)}")
-
-    def get_next_feat(self):
         whisper_chunks = self.audio_processor.feature2chunks(feature_array=self.audio_feats,fps=self.fps/2,batch_size=self.batch_size,start=self.stride_left_size/2 )
         #print(f"whisper_chunks len:{len(whisper_chunks)},self.audio_feats len:{len(self.audio_feats)},self.output_queue len:{self.output_queue.qsize()}")
         self.audio_feats = self.audio_feats[-(self.stride_left_size + self.stride_right_size):]
-        return whisper_chunks
+        self.feat_queue.put(whisper_chunks)
+
+    def get_next_feat(self,block,timeout):        
+        return self.feat_queue.get(block,timeout)

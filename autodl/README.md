@@ -30,8 +30,8 @@ python app.py --listenport 6006 --transport rtcpush --push_url 'http://<阿里�
 ```
 
 ### 访问 
-访问的是静态的rtcpushapi.html
-http://<autodl外网地址>/rtcpushapi.html
+访问的是静态的rtcpushapi.html  
+http://<autodl外网地址>/rtcpushapi.html  
 你需要修改 项目目录中的  web/rtcpushapi.html
 
 将 
@@ -51,8 +51,7 @@ var url = "http://公网ip:1985/rtc/v1/whep/?app=live&stream=livestream"
 ![img.png](./img/success.png)
 
 ## 注意事项
-1.autodl 如果是个人用户需要使用官方的ssh代理工具进行端口代理，才可以访问6006
-2.基础环境镜像中如果想使用musetalk环境，还需要自己操作
-3.声音延迟需要后台优化srs的功能
-4.musetalk 暂不支持rtmp推流 但是支持rtcpush
-5.musetalk 教程即将更新
+1. autodl 如果是个人用户需要使用官方的ssh代理工具进行端口代理，才可以访问6006
+2. 声音延迟需要后台优化srs的功能
+3. musetalk 暂不支持rtmp推流 但是支持rtcpush
+4. musetalk 教程即将更新
