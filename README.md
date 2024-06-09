@@ -70,8 +70,10 @@ export HF_ENDPOINT=https://hf-mirror.com
 服务部署参照[gpt-sovits](/tts/README.md)  
 运行
 ```
-python app.py --tts gpt-sovits --TTS_SERVER http://127.0.0.1:5000 --CHARACTER test --EMOTION default
+python app.py --tts gpt-sovits --TTS_SERVER http://127.0.0.1:9880 --REF_FILE data/ref.wav --REF_TEXT xxx
 ```
+REF_TEXT为REF_FILE中语音内容，时长不宜过长
+
 #### 3.2.2 xtts
 运行xtts服务，参照 https://github.com/coqui-ai/xtts-streaming-server
 ```

@@ -290,9 +290,10 @@ if __name__ == '__main__':
 
     parser.add_argument('--tts', type=str, default='edgetts') #xtts gpt-sovits
     parser.add_argument('--REF_FILE', type=str, default=None)
-    parser.add_argument('--TTS_SERVER', type=str, default='http://localhost:9000') #http://127.0.0.1:5000
-    parser.add_argument('--CHARACTER', type=str, default='test')
-    parser.add_argument('--EMOTION', type=str, default='default')
+    parser.add_argument('--REF_TEXT', type=str, default=None)
+    parser.add_argument('--TTS_SERVER', type=str, default='http://127.0.0.1:9880') # http://localhost:9000
+    # parser.add_argument('--CHARACTER', type=str, default='test')
+    # parser.add_argument('--EMOTION', type=str, default='default')
 
     parser.add_argument('--model', type=str, default='ernerf') #musetalk
 

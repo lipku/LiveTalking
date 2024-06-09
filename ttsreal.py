@@ -105,22 +105,30 @@ class VoitsTTS(BaseTTS):
         self.stream_tts(
             self.gpt_sovits(
                 msg,
-                self.opt.CHARACTER, #"test", #character
+                self.opt.REF_FILE,  
+                self.opt.REF_TEXT,
                 "zh", #en args.language,
                 self.opt.TTS_SERVER, #"http://127.0.0.1:5000", #args.server_url,
-                self.opt.EMOTION, #emotion 
             )
         )
 
-    def gpt_sovits(self, text, character, language, server_url, emotion) -> Iterator[bytes]:
+    def gpt_sovits(self, text, reffile, reftext,language, server_url) -> Iterator[bytes]:
         start = time.perf_counter()
-        req={}
-        req["text"] = text
-        req["text_language"] = language
-        req["character"] = character
-        req["emotion"] = emotion
-        #req["stream_chunk_size"] = stream_chunk_size  # you can reduce it to get faster response, but degrade quality
-        req["stream"] = True
+        req={
+            'text':text,
+            'text_lang':language,
+            'ref_audio_path':reffile,
+            'prompt_text':reftext,
+            'prompt_lang':language,
+            'media_type':'raw',
+            'streaming_mode':True
+        }
+        # req["text"] = text
+        # req["text_language"] = language
+        # req["character"] = character
+        # req["emotion"] = emotion
+        # #req["stream_chunk_size"] = stream_chunk_size  # you can reduce it to get faster response, but degrade quality
+        # req["streaming_mode"] = True
         res = requests.post(
             f"{server_url}/tts",
             json=req,
