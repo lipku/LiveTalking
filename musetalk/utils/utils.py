@@ -62,3 +62,14 @@ def datagen(whisper_chunks,
         latent_batch = torch.cat(latent_batch, dim=0)
 
         yield whisper_batch, latent_batch
+
+def load_audio_model():
+    audio_processor = Audio2Feature(model_path="./models/whisper/tiny.pt")
+    return audio_processor
+
+def load_diffusion_model():
+    vae = VAE(model_path = "./models/sd-vae-ft-mse/")
+    unet = UNet(unet_config="./models/musetalk/musetalk.json",
+                model_path ="./models/musetalk/pytorch_model.bin")
+    pe = PositionalEncoding(d_model=384)
+    return vae,unet,pe

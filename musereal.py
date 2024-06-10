@@ -21,7 +21,7 @@ import multiprocessing as mp
 from musetalk.utils.utils import get_file_type,get_video_fps,datagen
 #from musetalk.utils.preprocessing import get_landmark_and_bbox,read_imgs,coord_placeholder
 from musetalk.utils.blending import get_image,get_image_prepare_material,get_image_blending
-from musetalk.utils.utils import load_all_model
+from musetalk.utils.utils import load_all_model,load_diffusion_model,load_audio_model
 from ttsreal import EdgeTTS,VoitsTTS,XTTS
 
 from museasr import MuseASR
@@ -46,17 +46,17 @@ def __mirror_index(size, index):
     else:
         return size - res - 1 
 
-def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,audio_out_queue,res_frame_queue,
-              vae, unet, pe,timesteps):
+def inference(render_event,batch_size,latents_out_path,audio_feat_queue,audio_out_queue,res_frame_queue,
+              ): #vae, unet, pe,timesteps
     
-    # _, vae, unet, pe = load_all_model()
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # timesteps = torch.tensor([0], device=device)
-    # pe = pe.half()
-    # vae.vae = vae.vae.half()
-    # unet.model = unet.model.half()
+    vae, unet, pe = load_diffusion_model()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    timesteps = torch.tensor([0], device=device)
+    pe = pe.half()
+    vae.vae = vae.vae.half()
+    unet.model = unet.model.half()
     
-    #input_latent_list_cycle = torch.load(latents_out_path)
+    input_latent_list_cycle = torch.load(latents_out_path)
     length = len(input_latent_list_cycle)
     index = 0
     count=0
@@ -119,7 +119,7 @@ def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,a
                     #self.__pushmedia(res_frame,loop,audio_track,video_track)
                     res_frame_queue.put((res_frame,__mirror_index(length,index),audio_frames[i*2:i*2+2]))
                     index = index + 1
-                print('total batch time:',time.perf_counter()-starttime)            
+                #print('total batch time:',time.perf_counter()-starttime)            
         else:
             time.sleep(1)
     print('musereal inference processor stop')
@@ -166,21 +166,22 @@ class MuseReal:
         #self.__warm_up()
         
         self.render_event = mp.Event()
-        mp.Process(target=inference, args=(self.render_event,self.batch_size,self.input_latent_list_cycle,
+        mp.Process(target=inference, args=(self.render_event,self.batch_size,self.latents_out_path,
                                            self.asr.feat_queue,self.asr.output_queue,self.res_frame_queue,
-                                           self.vae, self.unet, self.pe,self.timesteps)).start()
+                                           )).start() #self.vae, self.unet, self.pe,self.timesteps
 
     def __loadmodels(self):
         # load model weights
-        self.audio_processor, self.vae, self.unet, self.pe = load_all_model()
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.timesteps = torch.tensor([0], device=device)
-        self.pe = self.pe.half()
-        self.vae.vae = self.vae.vae.half()
-        self.unet.model = self.unet.model.half()
+        self.audio_processor= load_audio_model()
+        # self.audio_processor, self.vae, self.unet, self.pe = load_all_model()
+        # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # self.timesteps = torch.tensor([0], device=device)
+        # self.pe = self.pe.half()
+        # self.vae.vae = self.vae.vae.half()
+        # self.unet.model = self.unet.model.half()
 
     def __loadavatar(self):
-        self.input_latent_list_cycle = torch.load(self.latents_out_path)
+        #self.input_latent_list_cycle = torch.load(self.latents_out_path)
         with open(self.coords_path, 'rb') as f:
             self.coord_list_cycle = pickle.load(f)
         input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))

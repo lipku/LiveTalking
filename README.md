@@ -54,7 +54,7 @@ python app.py
 export HF_ENDPOINT=https://hf-mirror.com
 ```
 
-用浏览器打开http://serverip:8010/rtcpush.html, 在文本框输入任意文字，提交。数字人播报该段文字  
+用浏览器打开http://serverip:8010/rtcpushapi.html, 在文本框输入任意文字，提交。数字人播报该段文字  
 备注：服务端需要开放端口 tcp:8000,8010,1985; udp:8000
 
 ## 3. More Usage
@@ -128,7 +128,7 @@ python app.py --customvideo --customvideo_img data/customvideo/img --customvideo
 ```
 python app.py --transport webrtc
 ```
-用浏览器打开http://serverip:8010/webrtc.html
+用浏览器打开http://serverip:8010/webrtcapi.html
 
 ### 3.8 rtmp推送到srs
 - 安装rtmpstream库  
@@ -142,7 +142,7 @@ docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 registry.cn-hangzhou.
 ```python
 python app.py --transport rtmp --push_url 'rtmp://localhost/live/livestream'
 ```
-用浏览器打开http://serverip:8010/echo.html
+用浏览器打开http://serverip:8010/echoapi.html
 
 ### 3.9 模型用musetalk
 暂不支持rtmp推送
@@ -161,7 +161,7 @@ mim install "mmpose>=1.1.0"
 下载数字人模型，链接: https://caiyun.139.com/m/i?2eAjs8optksop  提取码:3mkt, 解压后将整个文件夹拷到本项目的data/avatars下
 - 运行  
 python app.py --model musetalk --transport webrtc  
-用浏览器打开http://serverip:8010/webrtc.html  
+用浏览器打开http://serverip:8010/webrtcapi.html  
 可以设置--batch_size 提高显卡利用率，设置--avatar_id 运行不同的数字人
 #### 替换成自己的数字人
 ```bash

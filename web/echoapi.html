@@ -1,0 +1,73 @@
+<!-- index.html -->
+<html>
+<head>
+  <script type="text/javascript" src="mpegts-1.7.3.min.js"></script>
+  <script type="text/javascript" src="http://cdn.sockjs.org/sockjs-0.3.4.js"></script>
+  <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-2.1.1.min.js"></script>
+
+
+  
+</head>
+<body>
+  <div class="container">
+    <h1>WebSocket Test</h1>
+    <form class="form-inline" id="echo-form">
+      <div class="form-group">
+        <p>input text</p>
+
+		<textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message">test</textarea>
+      </div>
+      <button type="submit" class="btn btn-default">Send</button>
+    </form>
+    <div id="log">
+		
+	</div>
+	<video id="video_player" width="40%" controls autoplay muted></video>
+  </div>
+</body>
+<script type="text/javascript" charset="utf-8">
+
+	$(document).ready(function() {
+	  var host = window.location.hostname
+	//   var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	//   //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
+	//   ws.onopen = function() {
+	// 	console.log('Connected');
+	//   };
+	//   ws.onmessage = function(e) {
+	// 	console.log('Received: ' + e.data);
+	// 	data = e
+	// 	var vid = JSON.parse(data.data); 
+	// 	console.log(typeof(vid),vid)
+	// 	//document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
+		
+	//   };
+	//   ws.onclose = function(e) {
+	// 	console.log('Closed');
+	//   };
+
+	  flvPlayer = mpegts.createPlayer({type: 'flv', url: "http://"+host+":8080/live/livestream.flv", isLive: true, enableStashBuffer: false});
+	  flvPlayer.attachMediaElement(document.getElementById('video_player'));
+	  flvPlayer.load();
+	  flvPlayer.play();
+
+	  $('#echo-form').on('submit', function(e) {
+		e.preventDefault();
+		var message = $('#message').val();
+		console.log('Sending: ' + message);
+		fetch('/human', {
+				body: JSON.stringify({
+					text: message,
+					type: 'echo',
+				}),
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				method: 'POST'
+		});
+		//ws.send(message);
+		$('#message').val('');
+		});
+	});
+</script>
+ </html>
