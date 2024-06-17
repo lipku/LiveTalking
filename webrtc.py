@@ -38,6 +38,7 @@ class PlayerStreamTrack(MediaStreamTrack):
         self.kind = kind
         self._player = player
         self._queue = asyncio.Queue()
+        self.timelist = [] #记录最近包的时间戳
         if self.kind == 'video':
             self.framecount = 0
             self.lasttime = time.perf_counter()
@@ -52,26 +53,36 @@ class PlayerStreamTrack(MediaStreamTrack):
 
         if self.kind == 'video':
             if hasattr(self, "_timestamp"):
-                # self._timestamp = (time.time()-self._start) * VIDEO_CLOCK_RATE
+                #self._timestamp = (time.time()-self._start) * VIDEO_CLOCK_RATE
                 self._timestamp += int(VIDEO_PTIME * VIDEO_CLOCK_RATE)
-                wait = self._start + (self._timestamp / VIDEO_CLOCK_RATE) - time.time()
+                # wait = self._start + (self._timestamp / VIDEO_CLOCK_RATE) - time.time()
+                wait = self.timelist[0] + len(self.timelist)*VIDEO_PTIME - time.time()               
                 if wait>0:
                     await asyncio.sleep(wait)
+                self.timelist.append(time.time())
+                if len(self.timelist)>100:
+                    self.timelist.pop(0)
             else:
                 self._start = time.time()
                 self._timestamp = 0
+                self.timelist.append(self._start)
                 print('video start:',self._start)
             return self._timestamp, VIDEO_TIME_BASE
         else: #audio
             if hasattr(self, "_timestamp"):
-                # self._timestamp = (time.time()-self._start) * SAMPLE_RATE
+                #self._timestamp = (time.time()-self._start) * SAMPLE_RATE
                 self._timestamp += int(AUDIO_PTIME * SAMPLE_RATE)
-                wait = self._start + (self._timestamp / SAMPLE_RATE) - time.time()
+                # wait = self._start + (self._timestamp / SAMPLE_RATE) - time.time()
+                wait = self.timelist[0] + len(self.timelist)*AUDIO_PTIME - time.time()
                 if wait>0:
                     await asyncio.sleep(wait)
+                self.timelist.append(time.time())
+                if len(self.timelist)>200:
+                    self.timelist.pop(0)
             else:
                 self._start = time.time()
                 self._timestamp = 0
+                self.timelist.append(self._start)
                 print('audio start:',self._start)
             return self._timestamp, AUDIO_TIME_BASE
 

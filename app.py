@@ -295,7 +295,7 @@ if __name__ == '__main__':
     # parser.add_argument('--CHARACTER', type=str, default='test')
     # parser.add_argument('--EMOTION', type=str, default='default')
 
-    parser.add_argument('--model', type=str, default='ernerf') #musetalk
+    parser.add_argument('--model', type=str, default='ernerf') #musetalk wav2lip
 
     parser.add_argument('--transport', type=str, default='rtcpush') #rtmp webrtc rtcpush
     parser.add_argument('--push_url', type=str, default='http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream') #rtmp://localhost/live/livestream
@@ -357,6 +357,10 @@ if __name__ == '__main__':
         from musereal import MuseReal
         print(opt)
         nerfreal = MuseReal(opt)
+    elif opt.model == 'wav2lip':
+        from lipreal import LipReal
+        print(opt)
+        nerfreal = LipReal(opt)
 
     #txt_to_audio('我是中国人,我来自北京')
     if opt.transport=='rtmp':

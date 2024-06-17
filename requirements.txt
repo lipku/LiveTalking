@@ -38,3 +38,5 @@ ffmpeg-python
 omegaconf
 diffusers
 accelerate
+
+librosa

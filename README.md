@@ -1,10 +1,10 @@
 Real time interactive streaming digital human， realize audio video synchronous dialogue. It can basically achieve commercial effects.  
 实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果
 
-[ernerf效果](https://www.bilibili.com/video/BV1PM4m1y7Q2/)  [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)
+[ernerf效果](https://www.bilibili.com/video/BV1PM4m1y7Q2/)  [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)  [wav2lip效果](https://www.bilibili.com/video/BV1Bw4m1e74P/)
 
 ## Features
-1. 支持多种数字人模型: ernerf、musetalk
+1. 支持多种数字人模型: ernerf、musetalk、wav2lip
 2. 支持声音克隆
 3. 支持多种音频特征驱动：wav2vec、hubert
 4. 支持全身视频拼接
@@ -23,7 +23,7 @@ conda create -n nerfstream python=3.10
 conda activate nerfstream
 conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
 pip install -r requirements.txt
-#如果只用musetalk模型，不需要安装下面的库
+#如果只用musetalk或者wav2lip模型，不需要安装下面的库
 pip install "git+https://github.com/facebookresearch/pytorch3d.git"
 pip install tensorflow-gpu==2.8.0
 pip install --upgrade "protobuf<=3.20.1"
@@ -171,13 +171,30 @@ cd MuseTalk
 python -m scripts.realtime_inference --inference_config configs/inference/realtime.yaml
 运行后将results/avatars下文件拷到本项目的data/avatars下
 ```
+
+### 3.10 模型用wav2lip
+暂不支持rtmp推送
+- 下载模型  
+下载wav2lip运行需要的模型，网盘地址 https://drive.uc.cn/s/3683da52551a4
+将s3fd.pth拷到本项目wav2lip/face_detection/detection/sfd/s3fd.pth, 将wav2lip.pth拷到本项目的models下  
+数字人模型文件 wav2lip_avatar1.tar.gz, 解压后将整个文件夹拷到本项目的data/avatars下
+- 运行  
+python app.py --transport webrtc --model wav2lip --avatar_id wav2lip_avatar1  
+用浏览器打开http://serverip:8010/webrtcapi.html  
+可以设置--batch_size 提高显卡利用率，设置--avatar_id 运行不同的数字人
+#### 替换成自己的数字人
+```bash
+cd wav2lip
+python genavatar.py --video_path xxx.mp4
+运行后将results/avatars下文件拷到本项目的data/avatars下
+```
   
 ## 4. Docker Run  
-不需要第1步的安装，直接运行。
+不需要前面的安装，直接运行。
 ```
-docker run --gpus all -it --network=host --rm  registry.cn-hangzhou.aliyuncs.com/lipku/nerfstream:v1.3
+docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/lipku-metahuman-stream:TzZGB72JKt
 ```
-docker版本已经不是最新代码，可以作为一个空环境，把最新代码拷进去运行。 
+代码在/root/metahuman-stream，先git pull拉一下最新代码，然后执行命令同第2、3步 
 
 另外提供autodl镜像： 
 https://www.codewithgpu.com/i/lipku/metahuman-stream/base  
@@ -211,10 +228,11 @@ https://www.codewithgpu.com/i/lipku/metahuman-stream/base
 - [x] 声音克隆
 - [x] 数字人静音时用一段视频代替
 - [x] MuseTalk
+- [x] Wav2Lip
 - [ ] SyncTalk
 
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目。   
-知识星球: https://t.zsxq.com/7NMyO  
+知识星球: https://t.zsxq.com/7NMyO 沉淀高质量常见问题、最佳实践经验、问题解答  
 微信公众号：数字人技术  
 ![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyfaiaLZGuMGQXnhLWxibpJUS2gfs8Dje6JuMY8zu2tVyU9n8Zx1yaNncvKHBMibX0ocehoITy5qQEZg/640?wxfrom=12&tp=wxpic&usePicPrefetch=1&wx_fmt=jpeg&amp;from=appmsg)  
 
