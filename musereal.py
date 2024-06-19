@@ -127,13 +127,14 @@ def inference(render_event,batch_size,latents_out_path,audio_feat_queue,audio_ou
 @torch.no_grad()
 class MuseReal:
     def __init__(self, opt):
+
         self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.
         self.W = opt.W
         self.H = opt.H
 
         self.fps = opt.fps # 20 ms per frame
-
         #### musetalk
+        self.static_img = opt.static_img
         self.avatar_id = opt.avatar_id
         self.video_path = '' #video_path
         self.bbox_shift = opt.bbox_shift
@@ -241,7 +242,10 @@ class MuseReal:
             except queue.Empty:
                 continue
             if audio_frames[0][1]==1 and audio_frames[1][1]==1: #全为静音数据，只需要取fullimg
-                combine_frame = self.frame_list_cycle[idx]
+                if self.static_img:
+                    combine_frame = self.frame_list_cycle[0]
+                else:
+                    combine_frame = self.frame_list_cycle[idx]
             else:
                 bbox = self.coord_list_cycle[idx]
                 ori_frame = copy.deepcopy(self.frame_list_cycle[idx])
