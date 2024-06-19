@@ -285,6 +285,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=16)
 
     parser.add_argument('--customvideo', action='store_true', help="custom video")
+    parser.add_argument('--static_img', action='store_true', help="Use the first photo as a time of rest")
     parser.add_argument('--customvideo_img', type=str, default='data/customvideo/img')
     parser.add_argument('--customvideo_imgnum', type=int, default=1)
 
