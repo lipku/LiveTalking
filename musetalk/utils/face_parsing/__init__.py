@@ -7,18 +7,18 @@ from PIL import Image
 from .model import BiSeNet
 import torchvision.transforms as transforms
 
+
 class FaceParsing():
-    def __init__(self):
-        self.net = self.model_init()
+    def __init__(self, resnet_path='./models/face-parse-bisent/resnet18-5c106cde.pth',
+                 model_pth='./models/face-parse-bisent/79999_iter.pth'):
+        self.net = self.model_init(resnet_path,model_pth)
         self.preprocess = self.image_preprocess()
 
-    def model_init(self, 
-                   resnet_path='./models/face-parse-bisent/resnet18-5c106cde.pth', 
-                   model_pth='./models/face-parse-bisent/79999_iter.pth'):
+    def model_init(self,resnet_path, model_pth):
         net = BiSeNet(resnet_path)
         if torch.cuda.is_available():
             net.cuda()
-            net.load_state_dict(torch.load(model_pth)) 
+            net.load_state_dict(torch.load(model_pth))
         else:
             net.load_state_dict(torch.load(model_pth, map_location=torch.device('cpu')))
         net.eval()
@@ -44,13 +44,13 @@ class FaceParsing():
                 img = torch.unsqueeze(img, 0)
             out = self.net(img)[0]
             parsing = out.squeeze(0).cpu().numpy().argmax(0)
-            parsing[np.where(parsing>13)] = 0
-            parsing[np.where(parsing>=1)] = 255
+            parsing[np.where(parsing > 13)] = 0
+            parsing[np.where(parsing >= 1)] = 255
         parsing = Image.fromarray(parsing.astype(np.uint8))
         return parsing
+
 
 if __name__ == "__main__":
     fp = FaceParsing()
     segmap = fp('154_small.png')
     segmap.save('res.png')
-    

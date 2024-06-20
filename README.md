@@ -172,6 +172,13 @@ python -m scripts.realtime_inference --inference_config configs/inference/realti
 运行后将results/avatars下文件拷到本项目的data/avatars下
 ```
 
+```bash
+也可以试用本地目录下的 simple_musetalk.py
+cd musetalk
+python simple_musetalk.py --avatar_id 2  --file D:\\ok\\test.mp4
+运行后将直接生成在data/avatars下
+```
+
 ### 3.10 模型用wav2lip
 暂不支持rtmp推送
 - 下载模型  
