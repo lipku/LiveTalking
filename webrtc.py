@@ -13,7 +13,7 @@ import numpy as np
 
 AUDIO_PTIME = 0.020  # 20ms audio packetization
 VIDEO_CLOCK_RATE = 90000
-VIDEO_PTIME = 1 / 25  # 30fps
+VIDEO_PTIME = 0.040  # 25fps
 VIDEO_TIME_BASE = fractions.Fraction(1, VIDEO_CLOCK_RATE)
 SAMPLE_RATE = 16000
 AUDIO_TIME_BASE = fractions.Fraction(1, SAMPLE_RATE)
@@ -38,52 +38,60 @@ class PlayerStreamTrack(MediaStreamTrack):
         self.kind = kind
         self._player = player
         self._queue = asyncio.Queue()
-        self.timelist = [] #记录最近包的时间戳
+        self.current_frame_count = 0
+        self.cumulative_wait_time = 0
         if self.kind == 'video':
             self.framecount = 0
             self.lasttime = time.perf_counter()
             self.totaltime = 0
     
-    _start: float
+    _start: float = None
     _timestamp: int
 
     async def next_timestamp(self) -> Tuple[int, fractions.Fraction]:
         if self.readyState != "live":
             raise Exception
 
+        if PlayerStreamTrack._start is None:
+            PlayerStreamTrack._start = time.time()
+
         if self.kind == 'video':
             if hasattr(self, "_timestamp"):
+                if self.current_frame_count > 0 and self.current_frame_count % 360000 == 0:
+                    print("video frame playing time: ", self._start + self.current_frame_count * VIDEO_PTIME,
+                          ", cumulative_wait_time: ", self.cumulative_wait_time)
+
                 #self._timestamp = (time.time()-self._start) * VIDEO_CLOCK_RATE
                 self._timestamp += int(VIDEO_PTIME * VIDEO_CLOCK_RATE)
                 # wait = self._start + (self._timestamp / VIDEO_CLOCK_RATE) - time.time()
-                wait = self.timelist[0] + len(self.timelist)*VIDEO_PTIME - time.time()               
+                wait = self._start + self.current_frame_count * VIDEO_PTIME - time.time()
                 if wait>0:
+                    self.cumulative_wait_time += wait
                     await asyncio.sleep(wait)
-                self.timelist.append(time.time())
-                if len(self.timelist)>100:
-                    self.timelist.pop(0)
+                self.current_frame_count += 1
             else:
-                self._start = time.time()
                 self._timestamp = 0
-                self.timelist.append(self._start)
-                print('video start:',self._start)
+                self.current_frame_count += 1
+                print("video start time: ", self._start)
             return self._timestamp, VIDEO_TIME_BASE
         else: #audio
             if hasattr(self, "_timestamp"):
+                if self.current_frame_count > 0 and self.current_frame_count % 720000 == 0:
+                    print("audio frame playing time: ", self._start + self.current_frame_count * AUDIO_PTIME,
+                          ", cumulative_wait_time: ", self.cumulative_wait_time)
                 #self._timestamp = (time.time()-self._start) * SAMPLE_RATE
                 self._timestamp += int(AUDIO_PTIME * SAMPLE_RATE)
                 # wait = self._start + (self._timestamp / SAMPLE_RATE) - time.time()
-                wait = self.timelist[0] + len(self.timelist)*AUDIO_PTIME - time.time()
+                wait = self._start + self.current_frame_count * AUDIO_PTIME - time.time()
                 if wait>0:
+                    self.cumulative_wait_time += wait
                     await asyncio.sleep(wait)
-                self.timelist.append(time.time())
-                if len(self.timelist)>200:
-                    self.timelist.pop(0)
+                self.current_frame_count += 1
             else:
                 self._start = time.time()
                 self._timestamp = 0
-                self.timelist.append(self._start)
-                print('audio start:',self._start)
+                self.current_frame_count += 1
+                print("audio start time: ", self._start)
             return self._timestamp, AUDIO_TIME_BASE
 
     async def recv(self) -> Union[Frame, Packet]:
