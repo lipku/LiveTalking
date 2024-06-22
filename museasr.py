@@ -1,12 +1,9 @@
 import time
 import torch
 import numpy as np
-import soundfile as sf
-import resampy
 
 import queue
 from queue import Queue
-from io import BytesIO
 import multiprocessing as mp
 
 from musetalk.whisper.audio2feature import Audio2Feature
@@ -25,8 +22,9 @@ class MuseASR:
         self.audio_processor = audio_processor
         self.batch_size = opt.batch_size
 
-        self.stride_left_size = self.stride_right_size = 6
-        self.audio_feats = []
+        self.frames = []
+        self.stride_left_size = opt.l
+        self.stride_right_size = opt.r
         self.feat_queue = mp.Queue(5)
 
         self.warm_up()
@@ -36,7 +34,7 @@ class MuseASR:
 
     def __get_audio_frame(self):        
         try:
-            frame = self.queue.get(block=True,timeout=0.018)
+            frame = self.queue.get(block=True,timeout=0.01)
             type = 0
             #print(f'[INFO] get frame {frame.shape}')
         except queue.Empty:
@@ -49,15 +47,10 @@ class MuseASR:
         return self.output_queue.get()
     
     def warm_up(self):
-        frames = []
         for _ in range(self.stride_left_size + self.stride_right_size):
             audio_frame,type=self.__get_audio_frame()
-            frames.append(audio_frame)
+            self.frames.append(audio_frame)
             self.output_queue.put((audio_frame,type))
-        inputs = np.concatenate(frames) # [N * chunk]
-        whisper_feature = self.audio_processor.audio2feat(inputs)
-        for feature in whisper_feature:
-            self.audio_feats.append(feature)
 
         for _ in range(self.stride_left_size):
             self.output_queue.get()
@@ -65,20 +58,25 @@ class MuseASR:
     def run_step(self):
         ############################################## extract audio feature ##############################################
         start_time = time.time()
-        frames = []
         for _ in range(self.batch_size*2):
             audio_frame,type=self.__get_audio_frame()
-            frames.append(audio_frame)
+            self.frames.append(audio_frame)
             self.output_queue.put((audio_frame,type))
-        inputs = np.concatenate(frames) # [N * chunk]
+        
+        if len(self.frames) <= self.stride_left_size + self.stride_right_size:
+            return
+        
+        inputs = np.concatenate(self.frames) # [N * chunk]
         whisper_feature = self.audio_processor.audio2feat(inputs)
-        for feature in whisper_feature:
-            self.audio_feats.append(feature)        
+        # for feature in whisper_feature:
+        #     self.audio_feats.append(feature)        
         #print(f"processing audio costs {(time.time() - start_time) * 1000}ms, inputs shape:{inputs.shape} whisper_feature len:{len(whisper_feature)}")
-        whisper_chunks = self.audio_processor.feature2chunks(feature_array=self.audio_feats,fps=self.fps/2,batch_size=self.batch_size,start=self.stride_left_size/2 )
+        whisper_chunks = self.audio_processor.feature2chunks(feature_array=whisper_feature,fps=self.fps/2,batch_size=self.batch_size,start=self.stride_left_size/2 )
         #print(f"whisper_chunks len:{len(whisper_chunks)},self.audio_feats len:{len(self.audio_feats)},self.output_queue len:{self.output_queue.qsize()}")
-        self.audio_feats = self.audio_feats[-(self.stride_left_size + self.stride_right_size):]
+        #self.audio_feats = self.audio_feats[-(self.stride_left_size + self.stride_right_size):]
         self.feat_queue.put(whisper_chunks)
+        # discard the old part to save memory
+        self.frames = self.frames[-(self.stride_left_size + self.stride_right_size):]
 
     def get_next_feat(self,block,timeout):        
         return self.feat_queue.get(block,timeout)
