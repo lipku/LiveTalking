@@ -1,12 +1,9 @@
 import time
 import torch
 import numpy as np
-import soundfile as sf
-import resampy
 
 import queue
 from queue import Queue
-from io import BytesIO
 import multiprocessing as mp
 
 from wav2lip import audio
@@ -26,9 +23,9 @@ class LipASR:
         self.batch_size = opt.batch_size
 
         self.frames = []
-        self.stride_left_size = self.stride_right_size = 10
-        self.context_size = 10
-        self.audio_feats = []
+        self.stride_left_size = opt.l
+        self.stride_right_size = opt.r
+        #self.context_size = 10
         self.feat_queue = mp.Queue(5)
 
         self.warm_up()
@@ -38,7 +35,7 @@ class LipASR:
 
     def __get_audio_frame(self):        
         try:
-            frame = self.queue.get(block=True,timeout=0.018)
+            frame = self.queue.get(block=True,timeout=0.01)
             type = 0
             #print(f'[INFO] get frame {frame.shape}')
         except queue.Empty:
@@ -67,7 +64,7 @@ class LipASR:
             # put to output
             self.output_queue.put((frame,type))
         # context not enough, do not run network.
-        if len(self.frames) < self.stride_left_size + self.context_size + self.stride_right_size:
+        if len(self.frames) <= self.stride_left_size + self.stride_right_size:
             return
         
         inputs = np.concatenate(self.frames) # [N * chunk]

@@ -55,13 +55,13 @@ class PlayerStreamTrack(MediaStreamTrack):
             if hasattr(self, "_timestamp"):
                 #self._timestamp = (time.time()-self._start) * VIDEO_CLOCK_RATE
                 self._timestamp += int(VIDEO_PTIME * VIDEO_CLOCK_RATE)
-                # wait = self._start + (self._timestamp / VIDEO_CLOCK_RATE) - time.time()
-                wait = self.timelist[0] + len(self.timelist)*VIDEO_PTIME - time.time()               
+                wait = self._start + (self._timestamp / VIDEO_CLOCK_RATE) - time.time()
+                # wait = self.timelist[0] + len(self.timelist)*VIDEO_PTIME - time.time()               
                 if wait>0:
                     await asyncio.sleep(wait)
-                self.timelist.append(time.time())
-                if len(self.timelist)>100:
-                    self.timelist.pop(0)
+                # if len(self.timelist)>=100:
+                #     self.timelist.pop(0)
+                # self.timelist.append(time.time())
             else:
                 self._start = time.time()
                 self._timestamp = 0
@@ -72,13 +72,14 @@ class PlayerStreamTrack(MediaStreamTrack):
             if hasattr(self, "_timestamp"):
                 #self._timestamp = (time.time()-self._start) * SAMPLE_RATE
                 self._timestamp += int(AUDIO_PTIME * SAMPLE_RATE)
-                # wait = self._start + (self._timestamp / SAMPLE_RATE) - time.time()
-                wait = self.timelist[0] + len(self.timelist)*AUDIO_PTIME - time.time()
+                wait = self._start + (self._timestamp / SAMPLE_RATE) - time.time()
+                # wait = self.timelist[0] + len(self.timelist)*AUDIO_PTIME - time.time()
                 if wait>0:
                     await asyncio.sleep(wait)
-                self.timelist.append(time.time())
-                if len(self.timelist)>200:
-                    self.timelist.pop(0)
+                # if len(self.timelist)>=200:
+                #     self.timelist.pop(0)
+                #     self.timelist.pop(0)
+                # self.timelist.append(time.time())
             else:
                 self._start = time.time()
                 self._timestamp = 0
