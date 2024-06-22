@@ -34,7 +34,7 @@ linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/6749
 
 ## 2. Quick Start
 默认采用ernerf模型，webrtc推流到srs  
-### 2.1 运行rtmpserver (srs)
+### 2.1 运行srs
 ```
 export CANDIDATE='<服务器外网ip>'
 docker run --rm --env CANDIDATE=$CANDIDATE \
@@ -128,6 +128,7 @@ python app.py --customvideo --customvideo_img data/customvideo/img --customvideo
 ```
 python app.py --transport webrtc
 ```
+服务端需要开放端口 tcp:8010; udp:50000~60000  
 用浏览器打开http://serverip:8010/webrtcapi.html
 
 ### 3.8 rtmp推送到srs
@@ -175,7 +176,7 @@ python -m scripts.realtime_inference --inference_config configs/inference/realti
 ### 3.10 模型用wav2lip
 暂不支持rtmp推送
 - 下载模型  
-下载wav2lip运行需要的模型，网盘地址 https://drive.uc.cn/s/3683da52551a4
+下载wav2lip运行需要的模型，网盘地址 https://drive.uc.cn/s/551be97d7cfa4
 将s3fd.pth拷到本项目wav2lip/face_detection/detection/sfd/s3fd.pth, 将wav2lip.pth拷到本项目的models下  
 数字人模型文件 wav2lip_avatar1.tar.gz, 解压后将整个文件夹拷到本项目的data/avatars下
 - 运行  
@@ -192,7 +193,7 @@ python genavatar.py --video_path xxx.mp4
 ## 4. Docker Run  
 不需要前面的安装，直接运行。
 ```
-docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/lipku-metahuman-stream:TzZGB72JKt
+docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/lipku-metahuman-stream:vjo1Y6NJ3N
 ```
 代码在/root/metahuman-stream，先git pull拉一下最新代码，然后执行命令同第2、3步 
 
