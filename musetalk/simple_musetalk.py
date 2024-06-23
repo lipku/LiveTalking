@@ -4,7 +4,6 @@ import json
 import os
 import pickle
 import shutil
-import sys
 
 import cv2
 import numpy as np
@@ -17,7 +16,10 @@ from mmpose.apis import inference_topdown, init_model
 from mmpose.structures import merge_data_samples
 from tqdm import tqdm
 
-from utils.face_parsing import FaceParsing
+try:
+    from utils.face_parsing import FaceParsing
+except ModuleNotFoundError:
+    from musetalk.utils.face_parsing import FaceParsing
 
 
 def video2imgs(vid_path, save_path, ext='.png', cut_frame=10000000):
@@ -55,6 +57,7 @@ def get_landmark_and_bbox(img_list, upperbondrange=0):
         print('get key_landmark and face bounding boxes with the default value')
     average_range_minus = []
     average_range_plus = []
+    coord_placeholder = (0.0, 0.0, 0.0, 0.0)
     for fb in tqdm(batches):
         results = inference_topdown(model, np.asarray(fb)[0])
         results = merge_data_samples(results)
@@ -235,57 +238,47 @@ def get_image_prepare_material(image, face_box, upper_boundary_ratio=0.5, expand
     return mask_array, crop_box
 
 
+##todo 简单根据文件后缀判断  要更精确的可以自己修改 使用 magic
+def is_video_file(file_path):
+    video_exts = ['.mp4', '.mkv', '.flv', '.avi', '.mov']  # 这里列出了一些常见的视频文件扩展名，可以根据需要添加更多
+    file_ext = os.path.splitext(file_path)[1].lower()  # 获取文件扩展名并转换为小写
+    return file_ext in video_exts
+
+
 def create_dir(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
-# initialize the mmpose model
-device = "cuda" if torch.cuda.is_available() else "cpu"
-fa = FaceAlignment(1, flip_input=False, device=device)
-config_file = './utils/dwpose/rtmpose-l_8xb32-270e_coco-ubody-wholebody-384x288.py'
-checkpoint_file = '../models/dwpose/dw-ll_ucoco_384.pth'
-model = init_model(config_file, checkpoint_file, device=device)
-vae = AutoencoderKL.from_pretrained("../models/sd-vae-ft-mse")
-vae.to(device)
-fp = FaceParsing()
-if __name__ == '__main__':
-    # 视频文件地址
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--file",
-                        type=str,
-                        default=r'D:\ok\test.mp4',
-                        )
-    parser.add_argument("--avatar_id",
-                        type=str,
-                        default='1',
-                        )
-    args = parser.parse_args()
-    file = args.file
+
+def create_musetalk_human(file, avatar_id):
     # 保存文件设置 可以不动
-    save_path = f'../data/avatars/avator_{args.avatar_id}'
-    save_full_path = f'../data/avatars/avator_{args.avatar_id}/full_imgs'
+    save_path = os.path.join(current_dir, f'../data/avatars/avator_{avatar_id}')
+    save_full_path = os.path.join(current_dir, f'../data/avatars/avator_{avatar_id}/full_imgs')
     create_dir(save_path)
     create_dir(save_full_path)
-    mask_out_path = f'../data/avatars/avator_{args.avatar_id}/mask'
+    mask_out_path = os.path.join(current_dir, f'../data/avatars/avator_{avatar_id}/mask')
     create_dir(mask_out_path)
 
     # 模型
-    mask_coords_path = f'{save_path}/mask_coords.pkl'
-    coords_path = f'{save_path}/coords.pkl'
-    latents_out_path = f'{save_path}/latents.pt'
+    mask_coords_path = os.path.join(current_dir, f'{save_path}/mask_coords.pkl')
+    coords_path = os.path.join(current_dir, f'{save_path}/coords.pkl')
+    latents_out_path = os.path.join(current_dir, f'{save_path}/latents.pt')
 
-    with open(f'{save_path}/avator_info.json', "w") as f:
+    with open(os.path.join(current_dir, f'{save_path}/avator_info.json'), "w") as f:
         json.dump({
-            "avatar_id": args.avatar_id,
+            "avatar_id": avatar_id,
             "video_path": file,
             "bbox_shift": 5
         }, f)
 
     if os.path.isfile(file):
-        video2imgs(file, save_full_path, ext='png')
+        if is_video_file(file):
+            video2imgs(file, save_full_path, ext='png')
+        else:
+            shutil.copyfile(file, f"{save_full_path}/{os.path.basename(file)}")
     else:
         files = os.listdir(file)
         files.sort()
@@ -316,7 +309,6 @@ if __name__ == '__main__':
     mask_list_cycle = []
     for i, frame in enumerate(tqdm(frame_list_cycle)):
         cv2.imwrite(f"{save_full_path}/{str(i).zfill(8)}.png", frame)
-
         face_box = coord_list_cycle[i]
         mask, crop_box = get_image_prepare_material(frame, face_box)
         cv2.imwrite(f"{mask_out_path}/{str(i).zfill(8)}.png", mask)
@@ -329,3 +321,28 @@ if __name__ == '__main__':
     with open(coords_path, 'wb') as f:
         pickle.dump(coord_list_cycle, f)
     torch.save(input_latent_list_cycle, os.path.join(latents_out_path))
+
+
+# initialize the mmpose model
+device = "cuda" if torch.cuda.is_available() else "cpu"
+fa = FaceAlignment(1, flip_input=False, device=device)
+config_file = os.path.join(current_dir, 'utils/dwpose/rtmpose-l_8xb32-270e_coco-ubody-wholebody-384x288.py')
+checkpoint_file = os.path.abspath(os.path.join(current_dir, '../models/dwpose/dw-ll_ucoco_384.pth'))
+model = init_model(config_file, checkpoint_file, device=device)
+vae = AutoencoderKL.from_pretrained(os.path.abspath(os.path.join(current_dir, '../models/sd-vae-ft-mse')))
+vae.to(device)
+fp = FaceParsing(os.path.abspath(os.path.join(current_dir, '../models/face-parse-bisent/resnet18-5c106cde.pth')),
+                 os.path.abspath(os.path.join(current_dir, '../models/face-parse-bisent/79999_iter.pth')))
+if __name__ == '__main__':
+    # 视频文件地址
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--file",
+                        type=str,
+                        default=r'D:\ok\00000000.png',
+                        )
+    parser.add_argument("--avatar_id",
+                        type=str,
+                        default='3',
+                        )
+    args = parser.parse_args()
+    create_musetalk_human(args.file, args.avatar_id)

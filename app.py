@@ -1,28 +1,21 @@
 # server.py
-from flask import Flask, render_template, send_from_directory, request, jsonify
-from flask_sockets import Sockets
-import base64
-import time
+import argparse
+import asyncio
 import json
-import gevent
-from gevent import pywsgi
-from geventwebsocket.handler import WebSocketHandler
-import os
-import re
-import numpy as np
-from threading import Thread, Event
 import multiprocessing
+from threading import Thread, Event
 
-from aiohttp import web
 import aiohttp
 import aiohttp_cors
+from aiohttp import web
 from aiortc import RTCPeerConnection, RTCSessionDescription
+from flask import Flask
+from flask_sockets import Sockets
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
+
+from musetalk.simple_musetalk import create_musetalk_human
 from webrtc import HumanPlayer
-
-import argparse
-
-import shutil
-import asyncio
 
 app = Flask(__name__)
 sockets = Sockets(app)
@@ -133,6 +126,27 @@ async def human(request):
             {"code": 0, "data": "ok"}
         ),
     )
+
+
+async def handle_create_musetalk(request):
+    reader = await request.multipart()
+    # 处理文件部分
+    file_part = await reader.next()
+    filename = file_part.filename
+    file_data = await file_part.read()  # 读取文件的内容
+    # 注意：确保这个文件路径是可写的
+    with open(filename, 'wb') as f:
+        f.write(file_data)
+    # 处理整数部分
+    part = await reader.next()
+    avatar_id = int(await part.text())
+    create_musetalk_human(filename, avatar_id)
+    os.remove(filename)
+    return web.json_response({
+        'status': 'success',
+        'filename': filename,
+        'int_value': avatar_id,
+    })
 
 
 async def on_shutdown(app):
@@ -405,6 +419,7 @@ if __name__ == '__main__':
     appasync.on_shutdown.append(on_shutdown)
     appasync.router.add_post("/offer", offer)
     appasync.router.add_post("/human", human)
+    appasync.router.add_post("/create_musetalk", handle_create_musetalk)
     appasync.router.add_static('/', path='web')
 
     # Configure default CORS settings.
