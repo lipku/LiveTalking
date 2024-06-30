@@ -157,6 +157,7 @@ class MuseReal:
         self.__loadavatar()
 
         self.asr = MuseASR(opt,self.audio_processor)
+        self.asr.warm_up()
         if opt.tts == "edgetts":
             self.tts = EdgeTTS(opt,self)
         elif opt.tts == "gpt-sovits":
@@ -199,6 +200,11 @@ class MuseReal:
     
     def put_audio_frame(self,audio_chunk): #16khz 20ms pcm
         self.asr.put_audio_frame(audio_chunk)
+
+    def pause_talk(self):
+        self.tts.pause_talk()
+        self.asr.pause_talk()
+    
 
     def __mirror_index(self, index):
         size = len(self.coord_list_cycle)
@@ -297,9 +303,12 @@ class MuseReal:
             #     print(f"------actual avg infer fps:{count/totaltime:.4f}")
             #     count=0
             #     totaltime=0
-            if video_track._queue.qsize()>=2*self.opt.batch_size:
+            if video_track._queue.qsize()>=1.5*self.opt.batch_size:
                 print('sleep qsize=',video_track._queue.qsize())
-                time.sleep(0.04*self.opt.batch_size*1.5)
+                time.sleep(0.04*video_track._queue.qsize()*0.8)
+            # if video_track._queue.qsize()>=5:
+            #     print('sleep qsize=',video_track._queue.qsize())
+            #     time.sleep(0.04*video_track._queue.qsize()*0.8)
                 
             # delay = _starttime+_totalframe*0.04-time.perf_counter() #40ms
             # if delay > 0:

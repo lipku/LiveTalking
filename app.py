@@ -118,6 +118,9 @@ async def offer(request):
 async def human(request):
     params = await request.json()
 
+    if params.get('interrupt'):
+        nerfreal.pause_talk()
+
     if params['type']=='echo':
         nerfreal.put_msg_txt(params['text'])
     elif params['type']=='chat':
