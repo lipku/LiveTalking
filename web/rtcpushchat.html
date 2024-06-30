@@ -51,30 +51,40 @@
 <script type="text/javascript" charset="utf-8">
 
 	$(document).ready(function() {
-	  var host = window.location.hostname
-	  var ws = new WebSocket("ws://"+host+":8000/humanchat");
-	  //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
-	  ws.onopen = function() {
-		console.log('Connected');
-	  };
-	  ws.onmessage = function(e) {
-		console.log('Received: ' + e.data);
-		data = e
-		var vid = JSON.parse(data.data); 
-		console.log(typeof(vid),vid)
-		//document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
+	  // var host = window.location.hostname
+	  // var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	  // //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
+	  // ws.onopen = function() {
+		// console.log('Connected');
+	  // };
+	  // ws.onmessage = function(e) {
+		// console.log('Received: ' + e.data);
+		// data = e
+		// var vid = JSON.parse(data.data); 
+		// console.log(typeof(vid),vid)
+		// //document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
 		
-	  };
-	  ws.onclose = function(e) {
-		console.log('Closed');
-	  };
+	  // };
+	  // ws.onclose = function(e) {
+		// console.log('Closed');
+	  // };
 
 	  $('#echo-form').on('submit', function(e) {
-		e.preventDefault();
-		var message = $('#message').val();
-		console.log('Sending: ' + message);
-		ws.send(message);
-		$('#message').val('');
+      e.preventDefault();
+      var message = $('#message').val();
+      console.log('Sending: ' + message);
+      fetch('/human', {
+            body: JSON.stringify({
+                text: message,
+                type: 'chat',
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'POST'
+      });
+      //ws.send(message);
+      $('#message').val('');
 	  });
 	});
 

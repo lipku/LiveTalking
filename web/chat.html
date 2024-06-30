@@ -29,22 +29,22 @@
 
 	$(document).ready(function() {
 	  var host = window.location.hostname
-	  var ws = new WebSocket("ws://"+host+":8000/humanchat");
-	  //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
-	  ws.onopen = function() {
-		console.log('Connected');
-	  };
-	  ws.onmessage = function(e) {
-		console.log('Received: ' + e.data);
-		data = e
-		var vid = JSON.parse(data.data); 
-		console.log(typeof(vid),vid)
-		//document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
+	//   var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	//   //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
+	//   ws.onopen = function() {
+	// 	console.log('Connected');
+	//   };
+	//   ws.onmessage = function(e) {
+	// 	console.log('Received: ' + e.data);
+	// 	data = e
+	// 	var vid = JSON.parse(data.data); 
+	// 	console.log(typeof(vid),vid)
+	// 	//document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
 		
-	  };
-	  ws.onclose = function(e) {
-		console.log('Closed');
-	  };
+	//   };
+	//   ws.onclose = function(e) {
+	// 	console.log('Closed');
+	//   };
 
 	  flvPlayer = mpegts.createPlayer({type: 'flv', url: "http://"+host+":8080/live/livestream.flv", isLive: true, enableStashBuffer: false});
 	  flvPlayer.attachMediaElement(document.getElementById('video_player'));
@@ -55,9 +55,19 @@
 		e.preventDefault();
 		var message = $('#message').val();
 		console.log('Sending: ' + message);
-		ws.send(message);
+		fetch('/human', {
+				body: JSON.stringify({
+					text: message,
+					type: 'chat',
+				}),
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				method: 'POST'
+		});
+		//ws.send(message);
 		$('#message').val('');
-	  });
+		});
 	});
 </script>
  </html>
