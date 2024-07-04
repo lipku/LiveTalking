@@ -20,9 +20,6 @@ class NeRFReal:
         self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.
         self.W = opt.W
         self.H = opt.H
-        self.debug = debug
-        self.training = False
-        self.step = 0 # training step 
 
         self.trainer = trainer
         self.data_loader = data_loader
@@ -44,7 +41,6 @@ class NeRFReal:
         #self.eye_area = None if not self.opt.exp_eye else data_loader._data.eye_area.mean().item()
 
         # playing seq from dataloader, or pause.
-        self.playing = True #False todo
         self.loader = iter(data_loader)
 
         #self.render_buffer = np.zeros((self.W, self.H, 3), dtype=np.float32)
@@ -62,9 +58,8 @@ class NeRFReal:
         self.customimg_index = 0
 
         # build asr
-        if self.opt.asr:
-            self.asr = ASR(opt)
-            self.asr.warm_up()
+        self.asr = ASR(opt)
+        self.asr.warm_up()
         if opt.tts == "edgetts":
             self.tts = EdgeTTS(opt,self)
         elif opt.tts == "gpt-sovits":
@@ -122,7 +117,11 @@ class NeRFReal:
         self.tts.put_msg_txt(msg)
 
     def put_audio_frame(self,audio_chunk): #16khz 20ms pcm
-        self.asr.put_audio_frame(audio_chunk)   
+        self.asr.put_audio_frame(audio_chunk)
+
+    def pause_talk(self):
+        self.tts.pause_talk()
+        self.asr.pause_talk()   
     
 
     def mirror_index(self, index):
@@ -248,10 +247,9 @@ class NeRFReal:
             # update texture every frame
             # audio stream thread...
             t = time.perf_counter()
-            if self.opt.asr and self.playing:
-                # run 2 ASR steps (audio is at 50FPS, video is at 25FPS)
-                for _ in range(2):
-                    self.asr.run_step()
+            # run 2 ASR steps (audio is at 50FPS, video is at 25FPS)
+            for _ in range(2):
+                self.asr.run_step()
             self.test_step(loop,audio_track,video_track)
             totaltime += (time.perf_counter() - t)
             count += 1
@@ -267,7 +265,7 @@ class NeRFReal:
             else:
                 if video_track._queue.qsize()>=5:
                     #print('sleep qsize=',video_track._queue.qsize())
-                    time.sleep(0.1)
+                    time.sleep(0.04*video_track._queue.qsize()*0.8)
         print('nerfreal thread stop')
             
             

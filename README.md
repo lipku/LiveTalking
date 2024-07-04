@@ -6,11 +6,10 @@ Real time interactive streaming digital human， realize audio video synchronous
 ## Features
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip
 2. 支持声音克隆
-3. 支持多种音频特征驱动：wav2vec、hubert
+3. 支持数字人说话被打断
 4. 支持全身视频拼接
 5. 支持rtmp和webrtc
 6. 支持视频编排：不说话时播放自定义视频
-7. 支持大模型对话
 
 ## 1. Installation
 
@@ -171,13 +170,11 @@ cd MuseTalk
 修改configs/inference/realtime.yaml，将preparation改为True
 python -m scripts.realtime_inference --inference_config configs/inference/realtime.yaml
 运行后将results/avatars下文件拷到本项目的data/avatars下
-```
-
-```bash
-也可以试用本地目录下的 simple_musetalk.py
-cd musetalk
-python simple_musetalk.py --avatar_id 2  --file D:\\ok\\test.mp4
-运行后将直接生成在data/avatars下
+方法二
+执行
+cd musetalk 
+python simple_musetalk.py --avatar_id 4  --file D:\\ok\\test.mp4
+支持视频和图片生成 会自动生成到data的avatars目录下
 ```
 
 ### 3.10 模型用wav2lip
@@ -185,7 +182,7 @@ python simple_musetalk.py --avatar_id 2  --file D:\\ok\\test.mp4
 - 下载模型  
 下载wav2lip运行需要的模型，网盘地址 https://drive.uc.cn/s/551be97d7cfa4
 将s3fd.pth拷到本项目wav2lip/face_detection/detection/sfd/s3fd.pth, 将wav2lip.pth拷到本项目的models下  
-数字人模型文件 wav2lip_avatar1.tar.gz, 解压后将整个文件夹拷到本项目的data/avatars下
+数字人模型文件 wav2lip_avatar1.tar.gz，网盘地址 https://drive.uc.cn/s/5bd0cde0b0774, 解压后将整个文件夹拷到本项目的data/avatars下
 - 运行  
 python app.py --transport webrtc --model wav2lip --avatar_id wav2lip_avatar1  
 用浏览器打开http://serverip:8010/webrtcapi.html  

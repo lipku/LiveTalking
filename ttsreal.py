@@ -13,6 +13,11 @@ import queue
 from queue import Queue
 from io import BytesIO
 from threading import Thread, Event
+from enum import Enum
+
+class State(Enum):
+    RUNNING=0
+    PAUSE=1
 
 class BaseTTS:
     def __init__(self, opt, parent):
@@ -25,6 +30,11 @@ class BaseTTS:
         self.input_stream = BytesIO()
 
         self.msgqueue = Queue()
+        self.state = State.RUNNING
+
+    def pause_talk(self):
+        self.msgqueue.queue.clear()
+        self.state = State.PAUSE
 
     def put_msg_txt(self,msg): 
         self.msgqueue.put(msg)
@@ -37,6 +47,7 @@ class BaseTTS:
         while not quit_event.is_set():
             try:
                 msg = self.msgqueue.get(block=True, timeout=1)
+                self.state=State.RUNNING
             except queue.Empty:
                 continue
             self.txt_to_audio(msg)
@@ -59,7 +70,7 @@ class EdgeTTS(BaseTTS):
         stream = self.__create_bytes_stream(self.input_stream)
         streamlen = stream.shape[0]
         idx=0
-        while streamlen >= self.chunk:
+        while streamlen >= self.chunk and self.state==State.RUNNING:
             self.parent.put_audio_frame(stream[idx:idx+self.chunk])
             streamlen -= self.chunk
             idx += self.chunk
@@ -92,7 +103,7 @@ class EdgeTTS(BaseTTS):
         async for chunk in communicate.stream():
             if first:
                 first = False
-            if chunk["type"] == "audio":
+            if chunk["type"] == "audio" and self.state==State.RUNNING:
                 #self.push_audio(chunk["data"])
                 self.input_stream.write(chunk["data"])
                 #file.write(chunk["data"])
@@ -147,7 +158,7 @@ class VoitsTTS(BaseTTS):
                 end = time.perf_counter()
                 print(f"gpt_sovits Time to first chunk: {end-start}s")
                 first = False
-            if chunk:
+            if chunk and self.state==State.RUNNING:
                 yield chunk
 
         print("gpt_sovits response.elapsed:", res.elapsed)
