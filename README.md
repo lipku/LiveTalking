@@ -180,9 +180,9 @@ python simple_musetalk.py --avatar_id 4  --file D:\\ok\\test.mp4
 ### 3.10 模型用wav2lip
 暂不支持rtmp推送
 - 下载模型  
-下载wav2lip运行需要的模型，网盘地址 https://drive.uc.cn/s/551be97d7cfa4
+下载wav2lip运行需要的模型，链接: https://pan.baidu.com/s/1yOsQ06-RIDTJd3HFCw4wtA  密码: ltua
 将s3fd.pth拷到本项目wav2lip/face_detection/detection/sfd/s3fd.pth, 将wav2lip.pth拷到本项目的models下  
-数字人模型文件 wav2lip_avatar1.tar.gz，网盘地址 https://drive.uc.cn/s/5bd0cde0b0774, 解压后将整个文件夹拷到本项目的data/avatars下
+数字人模型文件 wav2lip_avatar1.tar.gz, 解压后将整个文件夹拷到本项目的data/avatars下
 - 运行  
 python app.py --transport webrtc --model wav2lip --avatar_id wav2lip_avatar1  
 用浏览器打开http://serverip:8010/webrtcapi.html  
