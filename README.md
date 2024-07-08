@@ -170,6 +170,11 @@ cd MuseTalk
 修改configs/inference/realtime.yaml，将preparation改为True
 python -m scripts.realtime_inference --inference_config configs/inference/realtime.yaml
 运行后将results/avatars下文件拷到本项目的data/avatars下
+方法二
+执行
+cd musetalk 
+python simple_musetalk.py --avatar_id 4  --file D:\\ok\\test.mp4
+支持视频和图片生成 会自动生成到data的avatars目录下
 ```
 
 ### 3.10 模型用wav2lip
