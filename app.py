@@ -399,12 +399,14 @@ if __name__ == '__main__':
         if opt.transport=='rtcpush':
             loop.run_until_complete(run(opt.push_url))
         loop.run_forever()    
-    Thread(target=run_server, args=(web.AppRunner(appasync),)).start()
+    #Thread(target=run_server, args=(web.AppRunner(appasync),)).start()
+    run_server(web.AppRunner(appasync))
 
-    print('start websocket server')
     #app.on_shutdown.append(on_shutdown)
     #app.router.add_post("/offer", offer)
-    server = pywsgi.WSGIServer(('0.0.0.0', 8000), app, handler_class=WebSocketHandler)
-    server.serve_forever()
+
+    # print('start websocket server')
+    # server = pywsgi.WSGIServer(('0.0.0.0', 8000), app, handler_class=WebSocketHandler)
+    # server.serve_forever()
     
     
