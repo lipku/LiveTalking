@@ -30,6 +30,7 @@
 </div>
 <button id="start" onclick="start()">Start</button>
 <button id="stop" style="display: none" onclick="stop()">Stop</button>
+<input type="hidden" id="sessionid" value="1234">
 <form class="form-inline" id="echo-form">
     <div class="form-group">
       <p>input text</p>
@@ -75,11 +76,13 @@
       e.preventDefault();
       var message = $('#message').val();
       console.log('Sending: ' + message);
+      console.log('sessionid: ',document.getElementById('sessionid').value);
       fetch('/human', {
             body: JSON.stringify({
                 text: message,
                 type: 'echo',
                 interrupt: true,
+                sessionid:parseInt(document.getElementById('sessionid').value),
             }),
             headers: {
                 'Content-Type': 'application/json'

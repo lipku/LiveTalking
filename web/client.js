@@ -35,6 +35,7 @@ function negotiate() {
     }).then((response) => {
         return response.json();
     }).then((answer) => {
+        document.getElementById('sessionid').value = answer.sessionid
         return pc.setRemoteDescription(answer);
     }).catch((e) => {
         alert(e);
