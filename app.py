@@ -316,9 +316,9 @@ if __name__ == '__main__':
     parser.add_argument('--bbox_shift', type=int, default=5)
     parser.add_argument('--batch_size', type=int, default=16)
 
-    parser.add_argument('--customvideo', action='store_true', help="custom video")
-    parser.add_argument('--customvideo_img', type=str, default='data/customvideo/img')
-    parser.add_argument('--customvideo_imgnum', type=int, default=1)
+    # parser.add_argument('--customvideo', action='store_true', help="custom video")
+    # parser.add_argument('--customvideo_img', type=str, default='data/customvideo/img')
+    # parser.add_argument('--customvideo_imgnum', type=int, default=1)
 
     parser.add_argument('--customvideo_config', type=str, default='')
 

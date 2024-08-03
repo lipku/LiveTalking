@@ -15,6 +15,8 @@ from threading import Thread, Event
 from io import BytesIO
 import soundfile as sf
 
+from ttsreal import EdgeTTS,VoitsTTS,XTTS
+
 from tqdm import tqdm
 def read_imgs(img_list):
     frames = []
@@ -29,6 +31,13 @@ class BaseReal:
         self.opt = opt
         self.sample_rate = 16000
         self.chunk = self.sample_rate // opt.fps # 320 samples per chunk (20ms * 16000 / 1000)
+
+        if opt.tts == "edgetts":
+            self.tts = EdgeTTS(opt,self)
+        elif opt.tts == "gpt-sovits":
+            self.tts = VoitsTTS(opt,self)
+        elif opt.tts == "xtts":
+            self.tts = XTTS(opt,self)
 
         self.curr_state=0
         self.custom_img_cycle = {}
@@ -48,7 +57,14 @@ class BaseReal:
             self.custom_audio_index[item['audiotype']] = 0
             self.custom_index[item['audiotype']] = 0
             self.custom_opt[item['audiotype']] = item
-    
+
+    def init_customindex(self):
+        self.curr_state=0
+        for key in self.custom_audio_index:
+            self.custom_audio_index[key]=0
+        for key in self.custom_index:
+            self.custom_index[key]=0
+
     def mirror_index(self,size, index):
         #size = len(self.coord_list_cycle)
         turn = index // size
@@ -62,11 +78,12 @@ class BaseReal:
         idx = self.custom_audio_index[audiotype]
         stream = self.custom_audio_cycle[audiotype][idx:idx+self.chunk]
         self.custom_audio_index[audiotype] += self.chunk
-        if self.custom_audio_index[audiotype]>=stream.shape[0]:
+        if self.custom_audio_index[audiotype]>=self.custom_audio_cycle[audiotype].shape[0]:
             self.curr_state = 1  #当前视频不循环播放，切换到静音状态
         return stream
     
     def set_curr_state(self,audiotype, reinit):
+        print('set_curr_state:',audiotype)
         self.curr_state = audiotype
         if reinit:
             self.custom_audio_index[audiotype] = 0

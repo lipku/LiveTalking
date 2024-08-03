@@ -166,12 +166,6 @@ class LipReal(BaseReal):
 
         self.asr = LipASR(opt,self)
         self.asr.warm_up()
-        if opt.tts == "edgetts":
-            self.tts = EdgeTTS(opt,self)
-        elif opt.tts == "gpt-sovits":
-            self.tts = VoitsTTS(opt,self)
-        elif opt.tts == "xtts":
-            self.tts = XTTS(opt,self)
         #self.__warm_up()
         
         self.render_event = mp.Event()
@@ -257,6 +251,7 @@ class LipReal(BaseReal):
         #     self.asr.warm_up()
 
         self.tts.render(quit_event)
+        self.init_customindex()
         process_thread = Thread(target=self.process_frames, args=(quit_event,loop,audio_track,video_track))
         process_thread.start()
 

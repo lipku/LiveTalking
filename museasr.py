@@ -8,8 +8,8 @@ from baseasr import BaseASR
 from musetalk.whisper.audio2feature import Audio2Feature
 
 class MuseASR(BaseASR):
-    def __init__(self, opt, audio_processor:Audio2Feature):
-        super().__init__(opt)
+    def __init__(self, opt, parent,audio_processor:Audio2Feature):
+        super().__init__(opt,parent)
         self.audio_processor = audio_processor
 
     def run_step(self):

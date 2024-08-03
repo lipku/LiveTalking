@@ -12,9 +12,9 @@ from threading import Thread, Event
 
 from baseasr import BaseASR
 
-class ASR(BaseASR):
-    def __init__(self, opt):
-        super().__init__(opt)
+class NerfASR(BaseASR):
+    def __init__(self, opt, parent):
+        super().__init__(opt,parent)
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         if 'esperanto' in self.opt.asr_model:
@@ -66,8 +66,12 @@ class ASR(BaseASR):
             type = 0
             #print(f'[INFO] get frame {frame.shape}')
         except queue.Empty:
-            frame = np.zeros(self.chunk, dtype=np.float32)
-            type = 1
+            if self.parent and self.parent.curr_state>1: #播放自定义音频
+                frame = self.parent.get_audio_stream(self.parent.curr_state)
+                type = self.parent.curr_state
+            else:
+                frame = np.zeros(self.chunk, dtype=np.float32)
+                type = 1
 
         return frame,type
 

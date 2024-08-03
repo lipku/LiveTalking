@@ -27,6 +27,7 @@ from ttsreal import EdgeTTS,VoitsTTS,XTTS
 from museasr import MuseASR
 import asyncio
 from av import AudioFrame, VideoFrame
+from basereal import BaseReal
 
 from tqdm import tqdm
 def read_imgs(img_list):
@@ -125,9 +126,10 @@ def inference(render_event,batch_size,latents_out_path,audio_feat_queue,audio_ou
     print('musereal inference processor stop')
 
 @torch.no_grad()
-class MuseReal:
+class MuseReal(BaseReal):
     def __init__(self, opt):
-        self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.
+        super().__init__(opt)
+        #self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.
         self.W = opt.W
         self.H = opt.H
 
@@ -156,14 +158,8 @@ class MuseReal:
         self.__loadmodels()
         self.__loadavatar()
 
-        self.asr = MuseASR(opt,self.audio_processor)
+        self.asr = MuseASR(opt,self,self.audio_processor)
         self.asr.warm_up()
-        if opt.tts == "edgetts":
-            self.tts = EdgeTTS(opt,self)
-        elif opt.tts == "gpt-sovits":
-            self.tts = VoitsTTS(opt,self)
-        elif opt.tts == "xtts":
-            self.tts = XTTS(opt,self)
         #self.__warm_up()
         
         self.render_event = mp.Event()
@@ -246,8 +242,16 @@ class MuseReal:
                 res_frame,idx,audio_frames = self.res_frame_queue.get(block=True, timeout=1)
             except queue.Empty:
                 continue
-            if audio_frames[0][1]==1 and audio_frames[1][1]==1: #全为静音数据，只需要取fullimg
-                combine_frame = self.frame_list_cycle[idx]
+            if audio_frames[0][1]!=0 and audio_frames[1][1]!=0: #全为静音数据，只需要取fullimg
+                audiotype = audio_frames[0][1]
+                if self.custom_index.get(audiotype) is not None: #有自定义视频
+                    mirindex = self.mirror_index(len(self.custom_img_cycle[audiotype]),self.custom_index[audiotype])
+                    combine_frame = self.custom_img_cycle[audiotype][mirindex]
+                    self.custom_index[audiotype] += 1
+                    # if not self.custom_opt[audiotype].loop and self.custom_index[audiotype]>=len(self.custom_img_cycle[audiotype]):
+                    #     self.curr_state = 1  #当前视频不循环播放，切换到静音状态
+                else:
+                    combine_frame = self.frame_list_cycle[idx]
             else:
                 bbox = self.coord_list_cycle[idx]
                 ori_frame = copy.deepcopy(self.frame_list_cycle[idx])
@@ -283,6 +287,7 @@ class MuseReal:
         #     self.asr.warm_up()
 
         self.tts.render(quit_event)
+        self.init_customindex()
         process_thread = Thread(target=self.process_frames, args=(quit_event,loop,audio_track,video_track))
         process_thread.start()
 
