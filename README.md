@@ -67,7 +67,7 @@ python app.py --model ernerf
 ```
 支持如下参数配置
 ##### 3.1.1.1 音频特征用hubert
-默认用的wav2lip，如果训练模型时用的hubert提取音频特征，用如下命令启动数字人
+默认用的wav2vec，如果训练模型时用的hubert提取音频特征，用如下命令启动数字人
 ```
 python app.py --asr_model facebook/hubert-large-ls960-ft 
 ```
@@ -211,8 +211,8 @@ ffmpeg -i xxx.mp4 -s 576x768 -vf fps=25 -qmin 1 -q:v 1 -start_number 0 data/cust
 ffmpeg -i xxx.mp4 -vn -acodec pcm_s16le -ac 1 -ar 16000 data/customvideo/audio.wav
 ```
 其中-s与输出视频大小一致
-- 2，编辑data/custom_config.json
-指定imgpath和audiopath。
+- 2，编辑data/custom_config.json  
+指定imgpath和audiopath。  
 设置audiotype，说明：0表示推理视频，不用设置；1表示静音视频，如果不设置默认用推理视频代替; 2以上自定义配置
 - 3，运行
 ```
@@ -228,6 +228,9 @@ python app.py --transport webrtc --customvideo_config data/custom_config.json
 用浏览器打开http://serverip:8010/rtcpushchat.html
 
 
+### 3.6 更多功能集成
+- 语音输入、知识库问答 [Fay](https://github.com/xszyou/Fay)
+- 虚拟主播，字幕抓取 [Luna](https://github.com/Ikaros-521/AI-Vtuber)
   
 ## 4. Docker Run  
 不需要前面的安装，直接运行。
@@ -263,13 +266,14 @@ https://www.codewithgpu.com/i/lipku/metahuman-stream/base
 （2）wav2vec延时0.4s，需要缓存18帧音频做计算 
 （3）srs转发延时，设置srs服务器减少缓冲延时。具体配置可看 https://ossrs.net/lts/zh-cn/docs/v5/doc/low-latency
 
+
 ## 7. TODO
 - [x] 添加chatgpt实现数字人对话
 - [x] 声音克隆
 - [x] 数字人静音时用一段视频代替
 - [x] MuseTalk
 - [x] Wav2Lip
-- [ ] SyncTalk
+- [ ] TalkingGaussian
 
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目。   
 知识星球: https://t.zsxq.com/7NMyO 沉淀高质量常见问题、最佳实践经验、问题解答  
