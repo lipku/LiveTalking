@@ -46,6 +46,8 @@
     <audio id="audio" autoplay="true"></audio>
     <video id="video" style="width:600px;" autoplay="true" playsinline="true"></video>
 </div>
+<button id="custom" onclick="custom()">切换视频</button>
+<input type="text" id="audiotype" value="0">
 
 <script src="client.js"></script>
 <script type="text/javascript" src="http://cdn.sockjs.org/sockjs-0.3.4.js"></script>
@@ -92,6 +94,20 @@
       //ws.send(message);
       $('#message').val('');
 	  });
+
+    function custom() {
+      fetch('/set_audiotype', {
+            body: JSON.stringify({
+                audiotype: parseInt(document.getElementById('audiotype').value),
+                reinit: false,
+                sessionid:parseInt(document.getElementById('sessionid').value),
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'POST'
+      });
+    }
 	});
 </script>
 </html>

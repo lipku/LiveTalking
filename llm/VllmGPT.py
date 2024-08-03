@@ -15,7 +15,7 @@ class VllmGPT:
         self.__URL = "http://{}:{}/v1/completions".format(self.host, self.port)
         self.__URL2 = "http://{}:{}/v1/chat/completions".format(self.host, self.port)
 
-    def question(self,cont):
+    def chat(self,cont):
         chat_list = []
         # contentdb = content_db.new_instance()
         # list = contentdb.get_list('all','desc',11)
@@ -77,5 +77,5 @@ class VllmGPT:
     
 if __name__ == "__main__":
     vllm = VllmGPT('192.168.1.3','8101')
-    req = vllm.question("你叫什么名字啊今年多大了")
+    req = vllm.chat("你叫什么名字啊今年多大了")
     print(req)

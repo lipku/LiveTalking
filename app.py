@@ -140,8 +140,21 @@ async def human(request):
     if params['type']=='echo':
         nerfreals[sessionid].put_msg_txt(params['text'])
     elif params['type']=='chat':
-        res=await asyncio.get_event_loop().run_in_executor(None, llm_response(params['text']))                          
+        res=await asyncio.get_event_loop().run_in_executor(None, llm_response(params['text']))                         
         nerfreals[sessionid].put_msg_txt(res)
+
+    return web.Response(
+        content_type="application/json",
+        text=json.dumps(
+            {"code": 0, "data":"ok"}
+        ),
+    )
+
+async def set_audiotype(request):
+    params = await request.json()
+
+    sessionid = params.get('sessionid',0)    
+    nerfreals[sessionid].set_curr_state(params['audiotype'],params['reinit'])
 
     return web.Response(
         content_type="application/json",
@@ -307,6 +320,8 @@ if __name__ == '__main__':
     parser.add_argument('--customvideo_img', type=str, default='data/customvideo/img')
     parser.add_argument('--customvideo_imgnum', type=int, default=1)
 
+    parser.add_argument('--customvideo_config', type=str, default='')
+
     parser.add_argument('--tts', type=str, default='edgetts') #xtts gpt-sovits
     parser.add_argument('--REF_FILE', type=str, default=None)
     parser.add_argument('--REF_TEXT', type=str, default=None)
@@ -325,6 +340,10 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     #app.config.from_object(opt)
     #print(app.config)
+    opt.customopt = []
+    if opt.customvideo_config!='':
+        with open(opt.customvideo_config,'r') as file:
+            opt.customopt = json.load(file)
 
     if opt.model == 'ernerf':
         from ernerf.nerf_triplane.provider import NeRFDataset_Test
@@ -402,6 +421,7 @@ if __name__ == '__main__':
     appasync.on_shutdown.append(on_shutdown)
     appasync.router.add_post("/offer", offer)
     appasync.router.add_post("/human", human)
+    appasync.router.add_post("/set_audiotype", set_audiotype)
     appasync.router.add_static('/',path='web')
 
     # Configure default CORS settings.
