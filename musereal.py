@@ -46,7 +46,7 @@ def __mirror_index(size, index):
         return res
     else:
         return size - res - 1 
-
+@torch.no_grad()
 def inference(render_event,batch_size,latents_out_path,audio_feat_queue,audio_out_queue,res_frame_queue,
               ): #vae, unet, pe,timesteps
     
