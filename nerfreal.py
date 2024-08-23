@@ -8,6 +8,7 @@ import os
 import time
 import torch.nn.functional as F
 import cv2
+import glob
 
 from nerfasr import NerfASR
 from ttsreal import EdgeTTS,VoitsTTS,XTTS
@@ -15,6 +16,15 @@ from ttsreal import EdgeTTS,VoitsTTS,XTTS
 import asyncio
 from av import AudioFrame, VideoFrame
 from basereal import BaseReal
+
+from tqdm import tqdm
+def read_imgs(img_list):
+    frames = []
+    print('reading images...')
+    for img_path in tqdm(img_list):
+        frame = cv2.imread(img_path)
+        frames.append(frame)
+    return frames
 
 class NeRFReal(BaseReal):
     def __init__(self, opt, trainer, data_loader, debug=True):
@@ -44,6 +54,12 @@ class NeRFReal(BaseReal):
 
         # playing seq from dataloader, or pause.
         self.loader = iter(data_loader)
+        frame_total_num = data_loader._data.end_index
+        if opt.fullbody:
+            input_img_list = glob.glob(os.path.join(self.opt.fullbody_img, '*.[jpJP][pnPN]*[gG]'))
+            input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+            #print('input_img_list:',input_img_list)
+            self.fullbody_list_cycle = read_imgs(input_img_list[:frame_total_num])
 
         #self.render_buffer = np.zeros((self.W, self.H, 3), dtype=np.float32)
         #self.need_update = True # camera moved, should reset accumulation
@@ -207,7 +223,8 @@ class NeRFReal(BaseReal):
                     asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
             else: #fullbody human
                 #print("frame index:",data['index'])
-                image_fullbody = cv2.imread(os.path.join(self.opt.fullbody_img, str(data['index'][0])+'.jpg'))
+                #image_fullbody = cv2.imread(os.path.join(self.opt.fullbody_img, str(data['index'][0])+'.jpg'))
+                image_fullbody = self.fullbody_list_cycle[data['index'][0]]
                 image_fullbody = cv2.cvtColor(image_fullbody, cv2.COLOR_BGR2RGB)
                 start_x = self.opt.fullbody_offset_x  # 合并后小图片的起始x坐标
                 start_y = self.opt.fullbody_offset_y  # 合并后小图片的起始y坐标

@@ -410,7 +410,6 @@ if __name__ == '__main__':
     for _ in range(opt.max_session):
         statreals.append(0)
 
-    #txt_to_audio('我是中国人,我来自北京')
     if opt.transport=='rtmp':
         thread_quit = Event()
         rendthrd = Thread(target=nerfreals[0].render,args=(thread_quit,))
@@ -436,6 +435,12 @@ if __name__ == '__main__':
     for route in list(appasync.router.routes()):
         cors.add(route)
 
+    pagename='webrtcapi.html'
+    if opt.transport=='rtmp':
+        pagename='echoapi.html'
+    elif opt.transport=='rtcpush':
+        pagename='rtcpushapi.html'
+    print('start http server; http://<serverip>:'+str(opt.listenport)+'/'+pagename)
     def run_server(runner):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)

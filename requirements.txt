@@ -23,7 +23,7 @@ soundfile
 einops
 configargparse
 
-lpips
+lpips==0.1.3
 imageio-ffmpeg
 
 transformers

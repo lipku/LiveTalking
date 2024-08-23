@@ -302,9 +302,9 @@ def create_musetalk_human(file, avatar_id):
         latents = get_latents_for_unet(resized_crop_frame)
         input_latent_list.append(latents)
 
-    frame_list_cycle = frame_list + frame_list[::-1]
-    coord_list_cycle = coord_list + coord_list[::-1]
-    input_latent_list_cycle = input_latent_list + input_latent_list[::-1]
+    frame_list_cycle = frame_list #+ frame_list[::-1]
+    coord_list_cycle = coord_list #+ coord_list[::-1]
+    input_latent_list_cycle = input_latent_list #+ input_latent_list[::-1]
     mask_coords_list_cycle = []
     mask_list_cycle = []
     for i, frame in enumerate(tqdm(frame_list_cycle)):
