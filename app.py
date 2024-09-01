@@ -163,6 +163,22 @@ async def set_audiotype(request):
         ),
     )
 
+async def record(request):
+    params = await request.json()
+
+    sessionid = params.get('sessionid',0)
+    if params['type']=='start_record':
+        # nerfreals[sessionid].put_msg_txt(params['text'])
+        nerfreals[sessionid].start_recording()
+    elif params['type']=='end_record':
+        nerfreals[sessionid].stop_recording()
+    return web.Response(
+        content_type="application/json",
+        text=json.dumps(
+            {"code": 0, "data":"ok"}
+        ),
+    )
+
 async def on_shutdown(app):
     # close peer connections
     coros = [pc.close() for pc in pcs]
@@ -421,6 +437,7 @@ if __name__ == '__main__':
     appasync.router.add_post("/offer", offer)
     appasync.router.add_post("/human", human)
     appasync.router.add_post("/set_audiotype", set_audiotype)
+    appasync.router.add_post("/record", record)
     appasync.router.add_static('/',path='web')
 
     # Configure default CORS settings.

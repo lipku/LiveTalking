@@ -26,6 +26,8 @@ from av import AudioFrame, VideoFrame
 from wav2lip.models import Wav2Lip
 from basereal import BaseReal
 
+#from imgcache import ImgCache
+
 from tqdm import tqdm
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -188,6 +190,7 @@ class LipReal(BaseReal):
         input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
         input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
         self.frame_list_cycle = read_imgs(input_img_list)
+        #self.imagecache = ImgCache(len(self.coord_list_cycle),self.full_imgs_path,1000)
         
     
     def put_msg_txt(self,msg):
@@ -218,9 +221,11 @@ class LipReal(BaseReal):
                     #     self.curr_state = 1  #当前视频不循环播放，切换到静音状态
                 else:
                     combine_frame = self.frame_list_cycle[idx]
+                    #combine_frame = self.imagecache.get_img(idx)
             else:
                 bbox = self.coord_list_cycle[idx]
                 combine_frame = copy.deepcopy(self.frame_list_cycle[idx])
+                #combine_frame = copy.deepcopy(self.imagecache.get_img(idx))
                 y1, y2, x1, x2 = bbox
                 try:
                     res_frame = cv2.resize(res_frame.astype(np.uint8),(x2-x1,y2-y1))
@@ -233,7 +238,9 @@ class LipReal(BaseReal):
 
             image = combine_frame #(outputs['image'] * 255).astype(np.uint8)
             new_frame = VideoFrame.from_ndarray(image, format="bgr24")
-            asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop) 
+            asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
+            if self.recording:
+                self.recordq_video.put(new_frame) 
 
             for audio_frame in audio_frames:
                 frame,type = audio_frame
@@ -244,6 +251,8 @@ class LipReal(BaseReal):
                 # if audio_track._queue.qsize()>10:
                 #     time.sleep(0.1)
                 asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop)
+                if self.recording:
+                    self.recordq_audio.put(new_frame) 
         print('musereal process_frames thread stop') 
             
     def render(self,quit_event,loop=None,audio_track=None,video_track=None):

@@ -15,6 +15,9 @@ from threading import Thread, Event
 from io import BytesIO
 import soundfile as sf
 
+import av
+from fractions import Fraction
+
 from ttsreal import EdgeTTS,VoitsTTS,XTTS
 
 from tqdm import tqdm
@@ -38,6 +41,10 @@ class BaseReal:
             self.tts = VoitsTTS(opt,self)
         elif opt.tts == "xtts":
             self.tts = XTTS(opt,self)
+        
+        self.recording = False
+        self.recordq_video = Queue()
+        self.recordq_audio = Queue()
 
         self.curr_state=0
         self.custom_img_cycle = {}
@@ -64,6 +71,60 @@ class BaseReal:
             self.custom_audio_index[key]=0
         for key in self.custom_index:
             self.custom_index[key]=0
+
+    def start_recording(self):
+        """开始录制视频"""
+        if self.recording:
+            return
+        self.recording = True
+        self.recordq_video.queue.clear()
+        self.recordq_audio.queue.clear()
+        self.container = av.open("data/record_lasted.mp4", mode="w")
+    
+        process_thread = Thread(target=self.record_frame, args=())
+        process_thread.start()
+    
+    def record_frame(self): 
+        videostream = self.container.add_stream("libx264", rate=25)
+        videostream.codec_context.time_base = Fraction(1, 25)
+        audiostream = self.container.add_stream("aac")
+        audiostream.codec_context.time_base = Fraction(1, 16000)
+        init = True
+        framenum = 0       
+        while self.recording:
+            try:
+                videoframe = self.recordq_video.get(block=True, timeout=1)
+                videoframe.pts = framenum #int(round(framenum*0.04 / videostream.codec_context.time_base))
+                videoframe.dts = videoframe.pts
+                if init:
+                    videostream.width = videoframe.width
+                    videostream.height = videoframe.height
+                    init = False
+                for packet in videostream.encode(videoframe):
+                    self.container.mux(packet)
+                for k in range(2):
+                    audioframe = self.recordq_audio.get(block=True, timeout=1)
+                    audioframe.pts = int(round((framenum*2+k)*0.02 / audiostream.codec_context.time_base))
+                    audioframe.dts = audioframe.pts
+                    for packet in audiostream.encode(audioframe):
+                        self.container.mux(packet)
+                framenum += 1
+            except queue.Empty:
+                print('record queue empty,')
+                continue
+            except Exception as e:
+                print(e)
+                #break
+        self.container.close()
+        self.recordq_video.queue.clear()
+        self.recordq_audio.queue.clear()
+        print('record thread stop')
+		
+    def stop_recording(self):
+        """停止录制视频"""
+        if not self.recording:
+            return
+        self.recording = False        
 
     def mirror_index(self,size, index):
         #size = len(self.coord_list_cycle)
