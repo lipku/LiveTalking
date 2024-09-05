@@ -58,6 +58,61 @@ class BaseTTS:
     
 
 ###########################################################################################
+class CosyVoiceTTS(BaseTTS):
+    def __init__(self, opt, parent):
+        super().__init__(opt, parent)
+        from cosyvoice.cosyvoice import CosyVoice
+        from cosyvoice.file_utils import load_wav
+        import os
+        os.environ["PYTHONPATH"] = "third_party/Matcha-TTS"
+        self.cosyvoice = CosyVoice('pretrained_models/CosyVoice-300M')
+        # zero_shot usage, <|zh|><|en|><|jp|><|yue|><|ko|> for Chinese/English/Japanese/Cantonese/Korean
+        self.prompt_speech_16k = load_wav('aud_short.wav', 16000)
+
+    def txt_to_audio(self,msg):
+        text = msg
+        t = time.time()
+        asyncio.new_event_loop().run_until_complete(self.__main(text))
+        print(f'-------edge tts time:{time.time()-t:.4f}s')
+
+        self.input_stream.seek(0)
+        stream = self.__create_bytes_stream(self.input_stream)
+        streamlen = stream.shape[0]
+        idx=0
+        while streamlen >= self.chunk and self.state==State.RUNNING:
+            self.parent.put_audio_frame(stream[idx:idx+self.chunk])
+            streamlen -= self.chunk
+            idx += self.chunk
+        #if streamlen>0:  #skip last frame(not 20ms)
+        #    self.queue.put(stream[idx:])
+        self.input_stream.seek(0)
+        self.input_stream.truncate() 
+
+    def __create_bytes_stream(self,byte_stream):
+        #byte_stream=BytesIO(buffer)
+        stream, sample_rate = sf.read(byte_stream) # [T*sample_rate,] float64
+        print(f'[INFO]tts audio stream {sample_rate}: {stream.shape}')
+        stream = stream.astype(np.float32)
+
+        if stream.ndim > 1:
+            print(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
+            stream = stream[:, 0]
+    
+        if sample_rate != self.sample_rate and stream.shape[0]>0:
+            print(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
+            stream = resampy.resample(x=stream, sr_orig=sample_rate, sr_new=self.sample_rate)
+
+        return stream
+    
+    async def __main(self, text: str):
+        import torchaudio
+        output = self.cosyvoice.inference_zero_shot(
+            text , '对错综复杂的国际形势艰巨反', self.prompt_speech_16k)
+        torchaudio.save(self.input_stream, output['tts_speech'], 22050, format="wav")
+        #self.input_stream.write(output['tts_speech'])
+
+
+###########################################################################################
 class EdgeTTS(BaseTTS):
     def txt_to_audio(self,msg):
         voicename = "zh-CN-YunxiaNeural"
