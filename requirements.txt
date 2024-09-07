@@ -1,3 +1,5 @@
+torch==1.12.1 
+torchvision==0.13.1 
 torch-ema
 ninja
 trimesh
@@ -40,3 +42,16 @@ diffusers
 accelerate
 
 librosa
+
+hyperpyyaml
+modelscope
+onnxruntime
+whisper
+torchaudio==0.12.1
+conformer
+pytorch_lightning==2.1
+lightning==2.0.0
+pyarrow
+pyaudio
+openai-whisper==20231117
+WeTextProcessing
