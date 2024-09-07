@@ -65,7 +65,10 @@ class EdgeTTS(BaseTTS):
         t = time.time()
         asyncio.new_event_loop().run_until_complete(self.__main(voicename,text))
         print(f'-------edge tts time:{time.time()-t:.4f}s')
-
+        if self.input_stream.getbuffer().nbytes<=0: #edgetts err
+            print('edgetts err!!!!!')
+            return
+        
         self.input_stream.seek(0)
         stream = self.__create_bytes_stream(self.input_stream)
         streamlen = stream.shape[0]

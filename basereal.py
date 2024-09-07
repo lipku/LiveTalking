@@ -72,14 +72,14 @@ class BaseReal:
         for key in self.custom_index:
             self.custom_index[key]=0
 
-    def start_recording(self):
+    def start_recording(self,path):
         """开始录制视频"""
         if self.recording:
             return
         self.recording = True
         self.recordq_video.queue.clear()
         self.recordq_audio.queue.clear()
-        self.container = av.open("data/record_lasted.mp4", mode="w")
+        self.container = av.open(path, mode="w")
     
         process_thread = Thread(target=self.record_frame, args=())
         process_thread.start()
@@ -115,6 +115,10 @@ class BaseReal:
             except Exception as e:
                 print(e)
                 #break
+        for packet in videostream.encode(None):
+            self.container.mux(packet)
+        for packet in audiostream.encode(None):
+            self.container.mux(packet)
         self.container.close()
         self.recordq_video.queue.clear()
         self.recordq_audio.queue.clear()

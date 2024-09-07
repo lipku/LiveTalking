@@ -169,7 +169,7 @@ async def record(request):
     sessionid = params.get('sessionid',0)
     if params['type']=='start_record':
         # nerfreals[sessionid].put_msg_txt(params['text'])
-        nerfreals[sessionid].start_recording()
+        nerfreals[sessionid].start_recording("data/record_lasted.mp4")
     elif params['type']=='end_record':
         nerfreals[sessionid].stop_recording()
     return web.Response(
