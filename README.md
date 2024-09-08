@@ -22,7 +22,7 @@ conda create -n nerfstream python=3.10
 conda activate nerfstream
 conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
 pip install -r requirements.txt
-#如果只用musetalk或者wav2lip模型，不需要安装下面的库
+#如果不训练ernerf模型，不需要安装下面的库
 pip install "git+https://github.com/facebookresearch/pytorch3d.git"
 pip install tensorflow-gpu==2.8.0
 pip install --upgrade "protobuf<=3.20.1"
@@ -70,22 +70,11 @@ docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/c
 提供如下镜像
 - autodl镜像: <https://www.codewithgpu.com/i/lipku/metahuman-stream/base>   
 [autodl教程](autodl/README.md)
-- 好易智算镜像(不需要单独部srs服务器)，<https://bbs.haoee.com/postDetail/657>  
-在后台运行如下命令
-```
-nginx
-cd ~/srs/trunk
-./objs/srs -c conf/rtc.tcp.udp.conf
-cd ~/metahuman-stream
-python app.py 
-```
-浏览器打开http:<haoee公网访问地址>/rtcpushapi.html，如http://www.haoee.com:25232/rtcpushapi.html
 
 
 ## 5. 性能分析
 1. 帧率  
-在Tesla T4显卡上测试整体fps为18左右，如果去掉音视频编码推流，帧率在20左右。用4090显卡可以达到40多帧/秒。  
-优化：新开一个线程运行音视频编码推流  
+在Tesla T4显卡上测试整体fps为18左右，如果去掉音视频编码推流，帧率在20左右。用4090显卡可以达到40多帧/秒。    
 2. 延时  
 整体延时3s左右  
 （1）tts延时1.7s左右，目前用的edgetts，需要将每句话转完后一次性输入，可以优化tts改成流式输入  

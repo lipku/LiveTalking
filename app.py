@@ -17,6 +17,7 @@ from aiohttp import web
 import aiohttp
 import aiohttp_cors
 from aiortc import RTCPeerConnection, RTCSessionDescription
+from aiortc.rtcrtpsender import RTCRtpSender
 from webrtc import HumanPlayer
 
 import argparse
@@ -115,6 +116,12 @@ async def offer(request):
     player = HumanPlayer(nerfreals[sessionid])
     audio_sender = pc.addTrack(player.audio)
     video_sender = pc.addTrack(player.video)
+    capabilities = RTCRtpSender.getCapabilities("video")
+    preferences = list(filter(lambda x: x.name == "H264", capabilities.codecs))
+    preferences += list(filter(lambda x: x.name == "VP8", capabilities.codecs))
+    preferences += list(filter(lambda x: x.name == "rtx", capabilities.codecs))
+    transceiver = pc.getTransceivers()[1]
+    transceiver.setCodecPreferences(preferences)
 
     await pc.setRemoteDescription(offer)
 
@@ -338,7 +345,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--customvideo_config', type=str, default='')
 
-    parser.add_argument('--tts', type=str, default='edgetts') #xtts gpt-sovits
+    parser.add_argument('--tts', type=str, default='edgetts') #xtts gpt-sovits cosyvoice
     parser.add_argument('--REF_FILE', type=str, default=None)
     parser.add_argument('--REF_TEXT', type=str, default=None)
     parser.add_argument('--TTS_SERVER', type=str, default='http://127.0.0.1:9880') # http://localhost:9000
