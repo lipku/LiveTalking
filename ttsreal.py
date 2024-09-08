@@ -156,7 +156,7 @@ class VoitsTTS(BaseTTS):
             return
             
         first = True
-        for chunk in res.iter_content(chunk_size=32000): # 1280 32K*20ms*2
+        for chunk in res.iter_content(chunk_size=16000): # 1280 32K*20ms*2
             if first:
                 end = time.perf_counter()
                 print(f"gpt_sovits Time to first chunk: {end-start}s")
@@ -171,6 +171,60 @@ class VoitsTTS(BaseTTS):
             if chunk is not None and len(chunk)>0:          
                 stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
                 stream = resampy.resample(x=stream, sr_orig=32000, sr_new=self.sample_rate)
+                #byte_stream=BytesIO(buffer)
+                #stream = self.__create_bytes_stream(byte_stream)
+                streamlen = stream.shape[0]
+                idx=0
+                while streamlen >= self.chunk:
+                    self.parent.put_audio_frame(stream[idx:idx+self.chunk])
+                    streamlen -= self.chunk
+                    idx += self.chunk 
+
+###########################################################################################
+class CosyVoiceTTS(BaseTTS):
+    def txt_to_audio(self,msg): 
+        self.stream_tts(
+            self.cosy_voice(
+                msg,
+                self.opt.REF_FILE,  
+                self.opt.REF_TEXT,
+                "zh", #en args.language,
+                self.opt.TTS_SERVER, #"http://127.0.0.1:5000", #args.server_url,
+            )
+        )
+
+    def cosy_voice(self, text, reffile, reftext,language, server_url) -> Iterator[bytes]:
+        start = time.perf_counter()
+        payload = {
+            'tts_text': text,
+            'prompt_text': reftext
+        }
+        files = [('prompt_wav', ('prompt_wav', open(reffile, 'rb'), 'application/octet-stream'))]
+        res = requests.request("GET", f"{server_url}/inference_zero_shot", data=payload, files=files, stream=True)
+        
+        end = time.perf_counter()
+        print(f"cosy_voice Time to make POST: {end-start}s")
+
+        if res.status_code != 200:
+            print("Error:", res.text)
+            return
+            
+        first = True
+        for chunk in res.iter_content(chunk_size=16000): # 1280 32K*20ms*2
+            if first:
+                end = time.perf_counter()
+                print(f"cosy_voice Time to first chunk: {end-start}s")
+                first = False
+            if chunk and self.state==State.RUNNING:
+                yield chunk
+
+        print("cosy_voice response.elapsed:", res.elapsed)
+
+    def stream_tts(self,audio_stream):
+        for chunk in audio_stream:
+            if chunk is not None and len(chunk)>0:          
+                stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
+                stream = resampy.resample(x=stream, sr_orig=22050, sr_new=self.sample_rate)
                 #byte_stream=BytesIO(buffer)
                 #stream = self.__create_bytes_stream(byte_stream)
                 streamlen = stream.shape[0]

@@ -18,7 +18,7 @@ import soundfile as sf
 import av
 from fractions import Fraction
 
-from ttsreal import EdgeTTS,VoitsTTS,XTTS
+from ttsreal import EdgeTTS,VoitsTTS,XTTS,CosyVoiceTTS
 
 from tqdm import tqdm
 def read_imgs(img_list):
@@ -41,6 +41,8 @@ class BaseReal:
             self.tts = VoitsTTS(opt,self)
         elif opt.tts == "xtts":
             self.tts = XTTS(opt,self)
+        elif opt.tts == "cosyvoice":
+            self.tts = CosyVoiceTTS(opt,self)
         
         self.recording = False
         self.recordq_video = Queue()
