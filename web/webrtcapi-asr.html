@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebRTC webcam</title>
+    <style>
+    button {
+        padding: 8px 16px;
+    }
+
+    video {
+        width: 100%;
+    }
+
+    .option {
+        margin-bottom: 8px;
+    }
+
+    #media {
+        max-width: 1280px;
+    }
+    </style>
+</head>
+<body>
+
+<div class="option">
+    <input id="use-stun" type="checkbox"/>
+    <label for="use-stun">Use STUN server</label>
+</div>
+<button id="start" onclick="start()">Start</button>
+<button id="stop" style="display: none" onclick="stop()">Stop</button>
+<button class="btn btn-primary" id="btn_start_record">Start Recording</button>
+<button class="btn btn-primary" id="btn_stop_record" disabled>Stop Recording</button>
+<!-- <button class="btn btn-primary" id="btn_download">Download Video</button> -->
+<input type="hidden" id="sessionid" value="0">
+<form class="form-inline" id="echo-form">
+    <div class="form-group">
+      <p>input text</p>
+
+      <textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message">test</textarea>
+    </div>
+    <button type="submit" class="btn btn-default">Send</button>
+  </form>
+
+<div id="media">
+    <h2>Media</h2>
+
+    <audio id="audio" autoplay="true"></audio>
+    <video id="video" style="width:600px;" autoplay="true" playsinline="true"></video>
+</div>
+
+<iframe src="asr/index.html" width="600" height="500"></iframe>
+
+<script src="client.js"></script>
+<script type="text/javascript" src="http://cdn.sockjs.org/sockjs-0.3.4.js"></script>
+<script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-2.1.1.min.js"></script>
+</body>
+<script type="text/javascript" charset="utf-8">
+
+	$(document).ready(function() {
+	  // var host = window.location.hostname
+	  // var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	  // //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
+	  // ws.onopen = function() {
+		// console.log('Connected');
+	  // };
+	  // ws.onmessage = function(e) {
+		// console.log('Received: ' + e.data);
+		// data = e
+		// var vid = JSON.parse(data.data); 
+		// console.log(typeof(vid),vid)
+		// //document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
+		
+	  // };
+	  // ws.onclose = function(e) {
+		// console.log('Closed');
+	  // };
+
+	  $('#echo-form').on('submit', function(e) {
+      e.preventDefault();
+      var message = $('#message').val();
+      console.log('Sending: ' + message);
+      console.log('sessionid: ',document.getElementById('sessionid').value);
+      fetch('/human', {
+            body: JSON.stringify({
+                text: message,
+                type: 'echo',
+                interrupt: true,
+                sessionid:parseInt(document.getElementById('sessionid').value),
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'POST'
+      });
+      //ws.send(message);
+      $('#message').val('');
+	  });
+
+    $('#btn_start_record').click(function() {
+        // 开始录制
+        console.log('Starting recording...');
+        fetch('/record', {
+            body: JSON.stringify({
+                    type: 'start_record',
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            method: 'POST'
+        }).then(function(response) {
+            if (response.ok) {
+                console.log('Recording started.');
+                $('#btn_start_record').prop('disabled', true);
+                $('#btn_stop_record').prop('disabled', false);
+                // $('#btn_download').prop('disabled', true);
+            } else {
+                console.error('Failed to start recording.');
+            }
+        }).catch(function(error) {
+            console.error('Error:', error);
+        });
+    });
+
+    $('#btn_stop_record').click(function() {
+        // 结束录制
+        console.log('Stopping recording...');
+        fetch('/record', {
+            body: JSON.stringify({
+                    type: 'end_record',
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            method: 'POST'
+        }).then(function(response) {
+            if (response.ok) {
+                console.log('Recording stopped.');
+                $('#btn_start_record').prop('disabled', false);
+                $('#btn_stop_record').prop('disabled', true);
+                // $('#btn_download').prop('disabled', false);
+            } else {
+                console.error('Failed to stop recording.');
+            }
+        }).catch(function(error) {
+            console.error('Error:', error);
+        });
+    });
+
+    // $('#btn_download').click(function() {
+    //     // 下载视频文件
+    //     console.log('Downloading video...');
+    //     fetch('/record_lasted.mp4', {
+    //         method: 'GET'
+    //     }).then(function(response) {
+    //         if (response.ok) {
+    //             return response.blob();
+    //         } else {
+    //             throw new Error('Failed to download the video.');
+    //         }
+    //     }).then(function(blob) {
+    //         // 创建一个 Blob 对象
+    //         const url = window.URL.createObjectURL(blob);
+    //         // 创建一个隐藏的可下载链接
+    //         const a = document.createElement('a');
+    //         a.style.display = 'none';
+    //         a.href = url;
+    //         a.download = 'record_lasted.mp4';
+    //         document.body.appendChild(a);
+    //         // 触发下载
+    //         a.click();
+    //         // 清理
+    //         window.URL.revokeObjectURL(url);
+    //         document.body.removeChild(a);
+    //         console.log('Video downloaded successfully.');
+    //     }).catch(function(error) {
+    //         console.error('Error:', error);
+    //     });
+    // });
+
+	});
+
+  
+</script>
+</html>

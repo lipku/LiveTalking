@@ -186,6 +186,18 @@ async def record(request):
         ),
     )
 
+async def is_speaking(request):
+    params = await request.json()
+
+    sessionid = params.get('sessionid',0)
+    return web.Response(
+        content_type="application/json",
+        text=json.dumps(
+            {"code": 0, "data": nerfreals[sessionid].is_speaking()}
+        ),
+    )
+
+
 async def on_shutdown(app):
     # close peer connections
     coros = [pc.close() for pc in pcs]
@@ -445,6 +457,7 @@ if __name__ == '__main__':
     appasync.router.add_post("/human", human)
     appasync.router.add_post("/set_audiotype", set_audiotype)
     appasync.router.add_post("/record", record)
+    appasync.router.add_post("/is_speaking", is_speaking)
     appasync.router.add_static('/',path='web')
 
     # Configure default CORS settings.

@@ -126,17 +126,7 @@ class NeRFReal(BaseReal):
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.opt.asr:
-            self.asr.stop()
-
-    def put_msg_txt(self,msg):
-        self.tts.put_msg_txt(msg)
-
-    def put_audio_frame(self,audio_chunk): #16khz 20ms pcm
-        self.asr.put_audio_frame(audio_chunk)
-
-    def pause_talk(self):
-        self.tts.pause_talk()
-        self.asr.pause_talk()   
+            self.asr.stop()  
     
 
     # def mirror_index(self, index):
@@ -200,6 +190,11 @@ class NeRFReal(BaseReal):
         #         #     time.sleep(0.1)
         #         asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop)  
         #t = time.time()
+        if audiotype1!=0 and audiotype2!=0: #全为静音数据
+            self.speaking = False
+        else:
+            self.speaking = True
+            
         if audiotype1!=0 and audiotype2!=0 and self.custom_index.get(audiotype1) is not None: #不为推理视频并且有自定义视频
             mirindex = self.mirror_index(len(self.custom_img_cycle[audiotype1]),self.custom_index[audiotype1])
             #imgindex  = self.mirror_index(self.customimg_index)

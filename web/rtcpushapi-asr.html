@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebRTC webcam</title>
+    <style>
+    button {
+        padding: 8px 16px;
+    }
+
+    video {
+        width: 100%;
+    }
+
+    .option {
+        margin-bottom: 8px;
+    }
+
+    #media {
+        max-width: 1280px;
+    }
+    </style>
+</head>
+<body>
+
+<div class="option">
+    <input id="use-stun" type="checkbox"/>
+    <label for="use-stun">Use STUN server</label>
+</div>
+<button class="btn btn-primary" id="btn_play">Start</button>
+<form class="form-inline" id="echo-form">
+    <div class="form-group">
+      <p>input text</p>
+
+      <textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message">test</textarea>
+    </div>
+    <button type="submit" class="btn btn-default">Send</button>
+  </form>
+
+<div id="media">
+    <h2>Media</h2>
+
+    <video id="rtc_media_player" style="width:600px;" controls autoplay></video>
+</div>
+<iframe src="asr/index.html" width="600" height="500"></iframe>
+
+<script src="srs.sdk.js"></script>
+<script type="text/javascript" src="http://cdn.sockjs.org/sockjs-0.3.4.js"></script>
+<script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-2.1.1.min.js"></script>
+</body>
+<script type="text/javascript" charset="utf-8">
+
+	$(document).ready(function() {
+	  // var host = window.location.hostname
+	  // var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	  // //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
+	  // ws.onopen = function() {
+		// console.log('Connected');
+	  // };
+	  // ws.onmessage = function(e) {
+		// console.log('Received: ' + e.data);
+		// data = e
+		// var vid = JSON.parse(data.data); 
+		// console.log(typeof(vid),vid)
+		// //document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
+		
+	  // };
+	  // ws.onclose = function(e) {
+		// console.log('Closed');
+	  // };
+
+	  $('#echo-form').on('submit', function(e) {
+      e.preventDefault();
+      var message = $('#message').val();
+      console.log('Sending: ' + message);
+      fetch('/human', {
+            body: JSON.stringify({
+                text: message,
+                type: 'echo',
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'POST'
+      });
+      //ws.send(message);
+      $('#message').val('');
+	  });
+	});
+
+  $(function(){
+    var sdk = null; // Global handler to do cleanup when republishing.
+    var startPlay = function() {
+        $('#rtc_media_player').show();
+
+        // Close PC when user replay.
+        if (sdk) {
+            sdk.close();
+        }
+        sdk = new SrsRtcWhipWhepAsync();
+
+        // User should set the stream when publish is done, @see https://webrtc.org/getting-started/media-devices
+        // However SRS SDK provides a consist API like https://webrtc.org/getting-started/remote-streams
+        $('#rtc_media_player').prop('srcObject', sdk.stream);
+        // Optional callback, SDK will add track to stream.
+        // sdk.ontrack = function (event) { console.log('Got track', event); sdk.stream.addTrack(event.track); };
+
+        var host = window.location.hostname
+        // For example: webrtc://r.ossrs.net/live/livestream
+        var url = "http://"+host+":1985/rtc/v1/whep/?app=live&stream=livestream"
+        sdk.play(url).then(function(session){
+            //$('#sessionid').html(session.sessionid);
+            //$('#simulator-drop').attr('href', session.simulator + '?drop=1&username=' + session.sessionid);
+        }).catch(function (reason) {
+            sdk.close();
+            $('#rtc_media_player').hide();
+            console.error(reason);
+        });
+    };
+
+    $('#rtc_media_player').hide();
+    // var query = parse_query_string();
+    // srs_init_whep("#txt_url", query);
+
+    $("#btn_play").click(startPlay);
+    // Never play util windows loaded @see https://github.com/ossrs/srs/issues/2732
+    // if (query.autostart === 'true') {
+    //     $('#rtc_media_player').prop('muted', true);
+    //     console.warn('For autostart, we should mute it, see https://www.jianshu.com/p/c3c6944eed5a ' +
+    //         'or https://developers.google.com/web/updates/2017/09/autoplay-policy-changes#audiovideo_elements');
+    //     window.addEventListener("load", function(){ startPlay(); });
+    // }
+});
+</script>
+</html>

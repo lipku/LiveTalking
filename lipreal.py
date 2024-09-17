@@ -191,17 +191,6 @@ class LipReal(BaseReal):
         input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
         self.frame_list_cycle = read_imgs(input_img_list)
         #self.imagecache = ImgCache(len(self.coord_list_cycle),self.full_imgs_path,1000)
-        
-    
-    def put_msg_txt(self,msg):
-        self.tts.put_msg_txt(msg)
-    
-    def put_audio_frame(self,audio_chunk): #16khz 20ms pcm
-        self.asr.put_audio_frame(audio_chunk)
-
-    def pause_talk(self):
-        self.tts.pause_talk()
-        self.asr.pause_talk()
       
 
     def process_frames(self,quit_event,loop=None,audio_track=None,video_track=None):
@@ -212,6 +201,7 @@ class LipReal(BaseReal):
             except queue.Empty:
                 continue
             if audio_frames[0][1]!=0 and audio_frames[1][1]!=0: #全为静音数据，只需要取fullimg
+                self.speaking = False
                 audiotype = audio_frames[0][1]
                 if self.custom_index.get(audiotype) is not None: #有自定义视频
                     mirindex = self.mirror_index(len(self.custom_img_cycle[audiotype]),self.custom_index[audiotype])
@@ -223,6 +213,7 @@ class LipReal(BaseReal):
                     combine_frame = self.frame_list_cycle[idx]
                     #combine_frame = self.imagecache.get_img(idx)
             else:
+                self.speaking = True
                 bbox = self.coord_list_cycle[idx]
                 combine_frame = copy.deepcopy(self.frame_list_cycle[idx])
                 #combine_frame = copy.deepcopy(self.imagecache.get_img(idx))

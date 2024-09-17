@@ -48,6 +48,9 @@ class BaseASR:
 
         return frame,type 
 
+    def is_audio_frame_empty(self)->bool:
+        return self.queue.empty()
+
     def get_audio_out(self):  #get origin audio pcm to nerf
         return self.output_queue.get()
     

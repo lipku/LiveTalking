@@ -51,12 +51,12 @@ var file_data_array;  // array to save file data
 var totalsend=0;
 
 
-var now_ipaddress=window.location.href;
-now_ipaddress=now_ipaddress.replace("https://","wss://");
-now_ipaddress=now_ipaddress.replace("static/index.html","");
-var localport=window.location.port;
-now_ipaddress=now_ipaddress.replace(localport,"10095");
-document.getElementById('wssip').value=now_ipaddress;
+// var now_ipaddress=window.location.href;
+// now_ipaddress=now_ipaddress.replace("https://","wss://");
+// now_ipaddress=now_ipaddress.replace("static/index.html","");
+// var localport=window.location.port;
+// now_ipaddress=now_ipaddress.replace(localport,"10095");
+// document.getElementById('wssip').value=now_ipaddress;
 addresschange();
 function addresschange()
 {   
@@ -343,6 +343,43 @@ function handleWithTimestamp(tmptext,tmptime)
 	
 
 }
+
+const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+async function is_speaking() {
+	const response = await fetch('/is_speaking', {
+		body: JSON.stringify({
+			sessionid: 0,
+		}),
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		method: 'POST'
+	  });
+	const data = await response.json();
+	console.log('is_speaking res:',data)
+	return data.data
+}
+
+async function waitSpeakingEnd() {
+	rec.stop() //关闭录音
+	for(let i=0;i<10;i++) {  //等待数字人开始讲话，最长等待10s
+		bspeak = await is_speaking()
+		if(bspeak) {
+			break
+		}
+		await sleep(1000)
+	}
+
+	while(true) {  //等待数字人讲话结束
+		bspeak = await is_speaking()
+		if(!bspeak) {
+			break
+		}
+		await sleep(1000)
+	}
+	await sleep(2000)
+	rec.start() 
+}
 // 语音识别结果; 对jsonMsg数据解析,将识别结果附加到编辑框中
 function getJsonMessage( jsonMsg ) {
 	//console.log(jsonMsg);
@@ -353,9 +390,20 @@ function getJsonMessage( jsonMsg ) {
 	var timestamp=JSON.parse(jsonMsg.data)['timestamp'];
 	if(asrmodel=="2pass-offline" || asrmodel=="offline")
 	{
-		
-		offline_text=offline_text+handleWithTimestamp(rectxt,timestamp); //rectxt; //.replace(/ +/g,"");
+		offline_text=offline_text+rectxt.replace(/ +/g,"")+'\n'; //handleWithTimestamp(rectxt,timestamp); //rectxt; //.replace(/ +/g,"");
 		rec_text=offline_text;
+		fetch('/human', {
+            body: JSON.stringify({
+                text: rectxt.replace(/ +/g,""),
+                type: 'echo',
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'POST'
+      	});
+
+		waitSpeakingEnd();
 	}
 	else
 	{

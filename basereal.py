@@ -44,6 +44,8 @@ class BaseReal:
         elif opt.tts == "cosyvoice":
             self.tts = CosyVoiceTTS(opt,self)
         
+        self.speaking = False
+
         self.recording = False
         self.recordq_video = Queue()
         self.recordq_audio = Queue()
@@ -55,6 +57,19 @@ class BaseReal:
         self.custom_index = {}
         self.custom_opt = {}
         self.__loadcustom()
+
+    def put_msg_txt(self,msg):
+        self.tts.put_msg_txt(msg)
+    
+    def put_audio_frame(self,audio_chunk): #16khz 20ms pcm
+        self.asr.put_audio_frame(audio_chunk)
+
+    def pause_talk(self):
+        self.tts.pause_talk()
+        self.asr.pause_talk()
+
+    def is_speaking(self)->bool:
+        return self.speaking
     
     def __loadcustom(self):
         for item in self.opt.customopt:
