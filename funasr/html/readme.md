@@ -1,1 +1,0 @@
-在浏览器中打开 samples/html/static/index.html，输入ASR服务器地址，支持麦克风输入，也支持文件输入
