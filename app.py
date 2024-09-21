@@ -157,6 +157,29 @@ async def human(request):
         ),
     )
 
+async def humanaudio(request):
+    try:
+        form= await request.post()
+        sessionid = int(form.get('sessionid',0))
+        fileobj = form["file"]
+        filename=fileobj.filename
+        filebytes=fileobj.file.read()
+        nerfreals[sessionid].put_audio_file(filebytes)
+
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": 0, "msg":"ok"}
+            ),
+        )
+    except Exception as e:
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "msg":"err","data": ""+e.args[0]+""}
+            ),
+        )
+
 async def set_audiotype(request):
     params = await request.json()
 
@@ -455,6 +478,7 @@ if __name__ == '__main__':
     appasync.on_shutdown.append(on_shutdown)
     appasync.router.add_post("/offer", offer)
     appasync.router.add_post("/human", human)
+    appasync.router.add_post("/humanaudio", humanaudio)
     appasync.router.add_post("/set_audiotype", set_audiotype)
     appasync.router.add_post("/record", record)
     appasync.router.add_post("/is_speaking", is_speaking)
