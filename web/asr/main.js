@@ -395,7 +395,7 @@ function getJsonMessage( jsonMsg ) {
 		fetch('/human', {
             body: JSON.stringify({
                 text: rectxt.replace(/ +/g,""),
-                type: 'echo',
+                type: 'chat',
             }),
             headers: {
                 'Content-Type': 'application/json'
