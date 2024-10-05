@@ -40,3 +40,4 @@ diffusers
 accelerate
 
 librosa
+openai

@@ -24,6 +24,7 @@ import argparse
 
 import shutil
 import asyncio
+import string
 
 
 app = Flask(__name__)
@@ -52,14 +53,58 @@ def echo_socket(ws):
                 nerfreal.put_msg_txt(message)
 
 
-def llm_response(message):
-    from llm.LLM import LLM
-    # llm = LLM().init_model('Gemini', model_path= 'gemini-pro',api_key='Your API Key', proxy_url=None)
-    # llm = LLM().init_model('ChatGPT', model_path= 'gpt-3.5-turbo',api_key='Your API Key')
-    llm = LLM().init_model('VllmGPT', model_path= 'THUDM/chatglm3-6b')
-    response = llm.chat(message)
-    print(response)
-    return response
+# def llm_response(message):
+#     from llm.LLM import LLM
+#     # llm = LLM().init_model('Gemini', model_path= 'gemini-pro',api_key='Your API Key', proxy_url=None)
+#     # llm = LLM().init_model('ChatGPT', model_path= 'gpt-3.5-turbo',api_key='Your API Key')
+#     llm = LLM().init_model('VllmGPT', model_path= 'THUDM/chatglm3-6b')
+#     response = llm.chat(message)
+#     print(response)
+#     return response
+
+def llm_response(message,nerfreal):
+    start = time.perf_counter()
+    from openai import OpenAI
+    client = OpenAI(
+        # 如果您没有配置环境变量，请在此处用您的API Key进行替换
+        api_key=os.getenv("DASHSCOPE_API_KEY"),
+        # 填写DashScope SDK的base_url
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    )
+    end = time.perf_counter()
+    print(f"llm Time init: {end-start}s")
+    completion = client.chat.completions.create(
+        model="qwen-plus",
+        messages=[{'role': 'system', 'content': 'You are a helpful assistant.'},
+                  {'role': 'user', 'content': message}],
+        stream=True,
+        # 通过以下设置，在流式输出的最后一行展示token使用信息
+        stream_options={"include_usage": True}
+    )
+    result=""
+    first = True
+    for chunk in completion:
+        if len(chunk.choices)>0:
+            #print(chunk.choices[0].delta.content)
+            if first:
+                end = time.perf_counter()
+                print(f"llm Time to first chunk: {end-start}s")
+                first = False
+            msg = chunk.choices[0].delta.content
+            lastpos=0
+            #msglist = re.split('[,.!;:，。！?]',msg)
+            for i, char in enumerate(msg):
+                if char in ",.!;:，。！？：；" :
+                    result = result+msg[lastpos:i+1]
+                    lastpos = i+1
+                    if len(result)>10:
+                        print(result)
+                        nerfreal.put_msg_txt(result)
+                        result=""
+            result = result+msg[lastpos:]
+    end = time.perf_counter()
+    print(f"llm Time to last chunk: {end-start}s")
+    nerfreal.put_msg_txt(result)            
 
 @sockets.route('/humanchat')
 def chat_socket(ws):
@@ -147,8 +192,8 @@ async def human(request):
     if params['type']=='echo':
         nerfreals[sessionid].put_msg_txt(params['text'])
     elif params['type']=='chat':
-        res=await asyncio.get_event_loop().run_in_executor(None, llm_response(params['text']))                         
-        nerfreals[sessionid].put_msg_txt(res)
+        res=await asyncio.get_event_loop().run_in_executor(None, llm_response, params['text'],nerfreals[sessionid])                         
+        #nerfreals[sessionid].put_msg_txt(res)
 
     return web.Response(
         content_type="application/json",
