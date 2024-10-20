@@ -244,7 +244,7 @@ async def record(request):
     sessionid = params.get('sessionid',0)
     if params['type']=='start_record':
         # nerfreals[sessionid].put_msg_txt(params['text'])
-        nerfreals[sessionid].start_recording("data/record_lasted.mp4")
+        nerfreals[sessionid].start_recording()
     elif params['type']=='end_record':
         nerfreals[sessionid].stop_recording()
     return web.Response(
@@ -494,19 +494,22 @@ if __name__ == '__main__':
         model.eye_areas = test_loader._data.eye_area
 
         # we still need test_loader to provide audio features for testing.
-        for _ in range(opt.max_session):
+        for k in range(opt.max_session):
+            opt.sessionid=k
             nerfreal = NeRFReal(opt, trainer, test_loader)
             nerfreals.append(nerfreal)
     elif opt.model == 'musetalk':
         from musereal import MuseReal
         print(opt)
-        for _ in range(opt.max_session):
+        for k in range(opt.max_session):
+            opt.sessionid=k
             nerfreal = MuseReal(opt)
             nerfreals.append(nerfreal)
     elif opt.model == 'wav2lip':
         from lipreal import LipReal
         print(opt)
-        for _ in range(opt.max_session):
+        for k in range(opt.max_session):
+            opt.sessionid=k
             nerfreal = LipReal(opt)
             nerfreals.append(nerfreal)
     

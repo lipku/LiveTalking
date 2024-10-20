@@ -2,6 +2,7 @@ import math
 import torch
 import numpy as np
 
+import subprocess
 import os
 import time
 import cv2
@@ -48,8 +49,9 @@ class BaseReal:
         self.speaking = False
 
         self.recording = False
-        self.recordq_video = Queue()
-        self.recordq_audio = Queue()
+        self._record_video_pipe = None
+        self._record_audio_pipe = None
+        self.width = self.height = 0
 
         self.curr_state=0
         self.custom_img_cycle = {}
@@ -116,63 +118,108 @@ class BaseReal:
         for key in self.custom_index:
             self.custom_index[key]=0
 
-    def start_recording(self,path):
+    def start_recording(self):
         """开始录制视频"""
         if self.recording:
             return
+
+        command = ['ffmpeg',
+                    '-y', '-an',
+                    '-f', 'rawvideo',
+                    '-vcodec','rawvideo',
+                    '-pix_fmt', 'bgr24', #像素格式
+                    '-s', "{}x{}".format(self.width, self.height),
+                    '-r', str(25),
+                    '-i', '-',
+                    '-pix_fmt', 'yuv420p', 
+                    '-vcodec', "h264",
+                    #'-f' , 'flv',                  
+                    f'temp{self.opt.sessionid}.mp4']
+        self._record_video_pipe = subprocess.Popen(command, shell=False, stdin=subprocess.PIPE)
+
+        acommand = ['ffmpeg',
+                    '-y', '-vn',
+                    '-f', 's16le',
+                    #'-acodec','pcm_s16le',
+                    '-ac', '1',
+                    '-ar', '16000',
+                    '-i', '-',
+                    '-acodec', 'aac',
+                    #'-f' , 'wav',                  
+                    f'temp{self.opt.sessionid}.aac']
+        self._record_audio_pipe = subprocess.Popen(acommand, shell=False, stdin=subprocess.PIPE)
+
         self.recording = True
-        self.recordq_video.queue.clear()
-        self.recordq_audio.queue.clear()
-        self.container = av.open(path, mode="w")
+        # self.recordq_video.queue.clear()
+        # self.recordq_audio.queue.clear()
+        # self.container = av.open(path, mode="w")
     
-        process_thread = Thread(target=self.record_frame, args=())
-        process_thread.start()
+        # process_thread = Thread(target=self.record_frame, args=())
+        # process_thread.start()
     
-    def record_frame(self): 
-        videostream = self.container.add_stream("libx264", rate=25)
-        videostream.codec_context.time_base = Fraction(1, 25)
-        audiostream = self.container.add_stream("aac")
-        audiostream.codec_context.time_base = Fraction(1, 16000)
-        init = True
-        framenum = 0       
-        while self.recording:
-            try:
-                videoframe = self.recordq_video.get(block=True, timeout=1)
-                videoframe.pts = framenum #int(round(framenum*0.04 / videostream.codec_context.time_base))
-                videoframe.dts = videoframe.pts
-                if init:
-                    videostream.width = videoframe.width
-                    videostream.height = videoframe.height
-                    init = False
-                for packet in videostream.encode(videoframe):
-                    self.container.mux(packet)
-                for k in range(2):
-                    audioframe = self.recordq_audio.get(block=True, timeout=1)
-                    audioframe.pts = int(round((framenum*2+k)*0.02 / audiostream.codec_context.time_base))
-                    audioframe.dts = audioframe.pts
-                    for packet in audiostream.encode(audioframe):
-                        self.container.mux(packet)
-                framenum += 1
-            except queue.Empty:
-                print('record queue empty,')
-                continue
-            except Exception as e:
-                print(e)
-                #break
-        for packet in videostream.encode(None):
-            self.container.mux(packet)
-        for packet in audiostream.encode(None):
-            self.container.mux(packet)
-        self.container.close()
-        self.recordq_video.queue.clear()
-        self.recordq_audio.queue.clear()
-        print('record thread stop')
+    def record_video_data(self,image):
+        if self.width == 0:
+            print("image.shape:",image.shape)
+            self.height,self.width,_ = image.shape
+        if self.recording:
+            self._record_video_pipe.stdin.write(image.tostring())
+
+    def record_audio_data(self,frame):
+        if self.recording:
+            self._record_audio_pipe.stdin.write(frame.tostring())
+    
+    # def record_frame(self): 
+    #     videostream = self.container.add_stream("libx264", rate=25)
+    #     videostream.codec_context.time_base = Fraction(1, 25)
+    #     audiostream = self.container.add_stream("aac")
+    #     audiostream.codec_context.time_base = Fraction(1, 16000)
+    #     init = True
+    #     framenum = 0       
+    #     while self.recording:
+    #         try:
+    #             videoframe = self.recordq_video.get(block=True, timeout=1)
+    #             videoframe.pts = framenum #int(round(framenum*0.04 / videostream.codec_context.time_base))
+    #             videoframe.dts = videoframe.pts
+    #             if init:
+    #                 videostream.width = videoframe.width
+    #                 videostream.height = videoframe.height
+    #                 init = False
+    #             for packet in videostream.encode(videoframe):
+    #                 self.container.mux(packet)
+    #             for k in range(2):
+    #                 audioframe = self.recordq_audio.get(block=True, timeout=1)
+    #                 audioframe.pts = int(round((framenum*2+k)*0.02 / audiostream.codec_context.time_base))
+    #                 audioframe.dts = audioframe.pts
+    #                 for packet in audiostream.encode(audioframe):
+    #                     self.container.mux(packet)
+    #             framenum += 1
+    #         except queue.Empty:
+    #             print('record queue empty,')
+    #             continue
+    #         except Exception as e:
+    #             print(e)
+    #             #break
+    #     for packet in videostream.encode(None):
+    #         self.container.mux(packet)
+    #     for packet in audiostream.encode(None):
+    #         self.container.mux(packet)
+    #     self.container.close()
+    #     self.recordq_video.queue.clear()
+    #     self.recordq_audio.queue.clear()
+    #     print('record thread stop')
 		
     def stop_recording(self):
         """停止录制视频"""
         if not self.recording:
             return
-        self.recording = False        
+        self.recording = False 
+        self._record_video_pipe.stdin.close()  #wait() 
+        self._record_video_pipe.wait()
+        self._record_audio_pipe.stdin.close()
+        self._record_audio_pipe.wait()
+        cmd_combine_audio = f"ffmpeg -y -i temp{self.opt.sessionid}.aac -i temp{self.opt.sessionid}.mp4 -c:v copy -c:a copy data/record.mp4"
+        os.system(cmd_combine_audio) 
+        #os.remove(output_path)
 
     def mirror_index(self,size, index):
         #size = len(self.coord_list_cycle)
