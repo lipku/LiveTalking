@@ -29,7 +29,7 @@ pip install "git+https://github.com/facebookresearch/pytorch3d.git"
 pip install tensorflow-gpu==2.8.0
 pip install --upgrade "protobuf<=3.20.1"
 ```
-如果用pytorch2.1，torchvision用0.16（可以去torchvision官网根据pytorch版本找匹配的）,cudatoolkit可以不用装  
+如果用pytorch2.1，torchvision用0.16（可以去[torchvision官网](https://github.com/pytorch/vision)根据pytorch版本找匹配的）,cudatoolkit可以不用装  
 安装常见问题[FAQ](/assets/faq.md)  
 linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/674972886
 
