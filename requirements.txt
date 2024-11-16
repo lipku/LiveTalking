@@ -27,7 +27,7 @@ lpips==0.1.3
 imageio-ffmpeg
 
 transformers
-edge_tts==6.1.13
+edge_tts
 flask
 flask_sockets
 opencv-python-headless
