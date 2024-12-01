@@ -29,16 +29,16 @@ pip install "git+https://github.com/facebookresearch/pytorch3d.git"
 pip install tensorflow-gpu==2.8.0
 pip install --upgrade "protobuf<=3.20.1"
 ```
-如果用pytorch2.1，torchvision用0.16（可以去[torchvision官网](https://github.com/pytorch/vision)根据pytorch版本找匹配的）,cudatoolkit可以不用装  
-安装常见问题[FAQ](/assets/faq.md)  
+如果cuda为其他版本，上<https://pytorch.org/get-started/previous-versions/>安装相应版本的pytorch  
+安装常见问题[FAQ](https://livetalking-doc.readthedocs.io/en/latest/faq.html)  
 linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/674972886
 
 
 ## 2. Quick Start
 默认采用ernerf模型，webrtc推流到srs  
 ### 2.1 运行srs
-```
-export CANDIDATE='<服务器外网ip>'
+```bash
+export CANDIDATE='<服务器外网ip>'  #如果srs与livetalking在同一层级内网，不需要执行这步
 docker run --rm --env CANDIDATE=$CANDIDATE \
   -p 1935:1935 -p 8080:8080 -p 1985:1985 -p 8000:8000/udp \
   registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5 \
@@ -70,10 +70,10 @@ docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/c
 代码在/root/metahuman-stream，先git pull拉一下最新代码，然后执行命令同第2、3步 
 
 提供如下镜像
-- ucloud镜像: <https://www.compshare.cn/images-detail?ImageID=compshareImage-14pa8x8ucwr9&ImageType=Community&ytag=cs_lipku_image>  
-推荐用该镜像，可以开放任意端口，不需要单独运行srs服务.
 - autodl镜像: <https://www.codewithgpu.com/i/lipku/metahuman-stream/base>   
 [autodl教程](autodl/README.md)
+- ucloud镜像: <https://www.compshare.cn/images-detail?ImageID=compshareImage-14pa8x8ucwr9&ImageType=Community&ytag=cs_lipku_image>  
+可以开放任意端口，不需要单独运行srs服务.
 
 
 ## 5. 性能分析
