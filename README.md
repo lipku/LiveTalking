@@ -38,7 +38,7 @@ linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/6749
 默认采用ernerf模型，webrtc推流到srs  
 ### 2.1 运行srs
 ```bash
-export CANDIDATE='<服务器外网ip>'  #如果srs与livetalking在同一层级内网，不需要执行这步
+export CANDIDATE='<服务器外网ip>'  #如果srs与浏览器访问在同一层级内网，不需要执行这步
 docker run --rm --env CANDIDATE=$CANDIDATE \
   -p 1935:1935 -p 8080:8080 -p 1985:1985 -p 8000:8000/udp \
   registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5 \
