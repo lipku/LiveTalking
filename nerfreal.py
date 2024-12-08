@@ -1,9 +1,25 @@
+###############################################################################
+#  Copyright (C) 2024 LiveTalking@lipku https://github.com/lipku/LiveTalking
+#  email: lipku@foxmail.com
+# 
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#  
+#       http://www.apache.org/licenses/LICENSE-2.0
+# 
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+###############################################################################
+
 import math
 import torch
 import numpy as np
 
 #from .utils import *
-import subprocess
 import os
 import time
 import torch.nn.functional as F
@@ -11,7 +27,6 @@ import cv2
 import glob
 
 from nerfasr import NerfASR
-from ttsreal import EdgeTTS,VoitsTTS,XTTS
 
 import asyncio
 from av import AudioFrame, VideoFrame
@@ -29,7 +44,7 @@ def read_imgs(img_list):
     return frames
 
 class NeRFReal(BaseReal):
-    def __init__(self, opt, trainer, data_loader, debug=True):
+    def __init__(self, opt, trainer, data_loader, audio_processor,audio_model, debug=True):
         super().__init__(opt)
         #self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.
         self.W = opt.W
@@ -79,7 +94,7 @@ class NeRFReal(BaseReal):
         #self.customimg_index = 0
 
         # build asr
-        self.asr = NerfASR(opt,self)
+        self.asr = NerfASR(opt,self,audio_processor,audio_model)
         self.asr.warm_up()
         
         '''

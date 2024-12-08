@@ -30,6 +30,7 @@ def video2imgs(vid_path, save_path, ext='.png', cut_frame=10000000):
             break
         ret, frame = cap.read()
         if ret:
+            cv2.putText(frame, "LiveTalking", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128,128,128), 1)
             cv2.imwrite(f"{save_path}/{count:08d}.png", frame)
             count += 1
         else:

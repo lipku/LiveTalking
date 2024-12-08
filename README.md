@@ -5,6 +5,9 @@ Real time interactive streaming digital human， realize audio video synchronous
 
 ## 为避免与3d数字人混淆，原项目metahuman-stream改名为livetalking，原有链接地址继续可用
 
+## News
+- 2024.12.8 完善多并发，显存不随并发数增加
+
 ## Features
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip
 2. 支持声音克隆
@@ -12,6 +15,7 @@ Real time interactive streaming digital human， realize audio video synchronous
 4. 支持全身视频拼接
 5. 支持rtmp和webrtc
 6. 支持视频编排：不说话时播放自定义视频
+7. 支持多并发
 
 ## 1. Installation
 

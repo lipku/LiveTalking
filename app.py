@@ -1,3 +1,20 @@
+###############################################################################
+#  Copyright (C) 2024 LiveTalking@lipku https://github.com/lipku/LiveTalking
+#  email: lipku@foxmail.com
+# 
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#  
+#       http://www.apache.org/licenses/LICENSE-2.0
+# 
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+###############################################################################
+
 # server.py
 from flask import Flask, render_template,send_from_directory,request, jsonify
 from flask_sockets import Sockets
@@ -11,7 +28,8 @@ import os
 import re
 import numpy as np
 from threading import Thread,Event
-import multiprocessing
+#import multiprocessing
+import torch.multiprocessing as mp
 
 from aiohttp import web
 import aiohttp
@@ -24,7 +42,7 @@ import argparse
 
 import shutil
 import asyncio
-import string
+import torch
 
 
 app = Flask(__name__)
@@ -302,7 +320,7 @@ async def run(push_url):
 # os.environ['MKL_SERVICE_FORCE_INTEL'] = '1'
 # os.environ['MULTIPROCESSING_METHOD'] = 'forkserver'                                                    
 if __name__ == '__main__':
-    multiprocessing.set_start_method('spawn')
+    mp.set_start_method('spawn')
     parser = argparse.ArgumentParser()
     parser.add_argument('--pose', type=str, default="data/data_kf.json", help="transforms.json, pose source")
     parser.add_argument('--au', type=str, default="data/au.csv", help="eye blink area")
@@ -452,6 +470,7 @@ if __name__ == '__main__':
         from ernerf.nerf_triplane.provider import NeRFDataset_Test
         from ernerf.nerf_triplane.utils import *
         from ernerf.nerf_triplane.network import NeRFNetwork
+        from transformers import AutoModelForCTC, AutoProcessor, Wav2Vec2Processor, HubertModel
         from nerfreal import NeRFReal
         # assert test mode
         opt.test = True
@@ -493,24 +512,42 @@ if __name__ == '__main__':
         model.aud_features = test_loader._data.auds
         model.eye_areas = test_loader._data.eye_area
 
+        print(f'[INFO] loading ASR model {opt.asr_model}...')
+        if 'hubert' in opt.asr_model:
+            audio_processor = Wav2Vec2Processor.from_pretrained(opt.asr_model)
+            audio_model = HubertModel.from_pretrained(opt.asr_model).to(device) 
+        else:   
+            audio_processor = AutoProcessor.from_pretrained(opt.asr_model)
+            audio_model = AutoModelForCTC.from_pretrained(opt.asr_model).to(device)
+
         # we still need test_loader to provide audio features for testing.
         for k in range(opt.max_session):
             opt.sessionid=k
-            nerfreal = NeRFReal(opt, trainer, test_loader)
+            nerfreal = NeRFReal(opt, trainer, test_loader,audio_processor,audio_model)
             nerfreals.append(nerfreal)
     elif opt.model == 'musetalk':
         from musereal import MuseReal
+        from musetalk.utils.utils import load_all_model
         print(opt)
+        audio_processor,vae, unet, pe = load_all_model()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        timesteps = torch.tensor([0], device=device)
+        pe = pe.half()
+        vae.vae = vae.vae.half()
+        #vae.vae.share_memory()
+        unet.model = unet.model.half()
+        #unet.model.share_memory()
         for k in range(opt.max_session):
             opt.sessionid=k
-            nerfreal = MuseReal(opt)
+            nerfreal = MuseReal(opt,audio_processor,vae, unet, pe,timesteps)
             nerfreals.append(nerfreal)
     elif opt.model == 'wav2lip':
-        from lipreal import LipReal
+        from lipreal import LipReal,load_model
         print(opt)
+        model = load_model("./models/wav2lip.pth")
         for k in range(opt.max_session):
             opt.sessionid=k
-            nerfreal = LipReal(opt)
+            nerfreal = LipReal(opt,model)
             nerfreals.append(nerfreal)
     
     for _ in range(opt.max_session):
