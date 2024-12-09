@@ -550,7 +550,7 @@ class LMDMeter:
             lms_pred = lms_pred[48:68]
             lms_truth = lms_truth[48:68]
 
-        # avarage
+        # average
         lms_pred = lms_pred - lms_pred.mean(0)
         lms_truth = lms_truth - lms_truth.mean(0)
         
