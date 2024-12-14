@@ -109,9 +109,9 @@ class BaseReal:
 
         return stream
 
-    def pause_talk(self):
-        self.tts.pause_talk()
-        self.asr.pause_talk()
+    def flush_talk(self):
+        self.tts.flush_talk()
+        self.asr.flush_talk()
 
     def is_speaking(self)->bool:
         return self.speaking

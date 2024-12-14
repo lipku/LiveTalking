@@ -44,7 +44,7 @@ class BaseASR:
 
         #self.warm_up()
 
-    def pause_talk(self):
+    def flush_talk(self):
         self.queue.queue.clear()
 
     def put_audio_frame(self,audio_chunk): #16khz 20ms pcm

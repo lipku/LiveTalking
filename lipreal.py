@@ -67,6 +67,24 @@ def load_model(path):
 	model = model.to(device)
 	return model.eval()
 
+def load_avatar(avatar_id):
+    avatar_path = f"./data/avatars/{avatar_id}"
+    full_imgs_path = f"{avatar_path}/full_imgs" 
+    face_imgs_path = f"{avatar_path}/face_imgs" 
+    coords_path = f"{avatar_path}/coords.pkl"
+    
+    with open(coords_path, 'rb') as f:
+        coord_list_cycle = pickle.load(f)
+    input_img_list = glob.glob(os.path.join(full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
+    input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    frame_list_cycle = read_imgs(input_img_list)
+    #self.imagecache = ImgCache(len(self.coord_list_cycle),self.full_imgs_path,1000)
+    input_face_list = glob.glob(os.path.join(face_imgs_path, '*.[jpJP][pnPN]*[gG]'))
+    input_face_list = sorted(input_face_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    face_list_cycle = read_imgs(input_face_list)
+
+    return frame_list_cycle,face_list_cycle,coord_list_cycle
+
 def read_imgs(img_list):
     frames = []
     print('reading images...')
@@ -156,45 +174,31 @@ def inference(quit_event,batch_size,face_list_cycle,audio_feat_queue,audio_out_q
 
 class LipReal(BaseReal):
     @torch.no_grad()
-    def __init__(self, opt, model):
+    def __init__(self, opt, model, avatar):
         super().__init__(opt)
         #self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.
         self.W = opt.W
         self.H = opt.H
 
         self.fps = opt.fps # 20 ms per frame
-
-        #### musetalk
-        self.avatar_id = opt.avatar_id
-        self.avatar_path = f"./data/avatars/{self.avatar_id}"
-        self.full_imgs_path = f"{self.avatar_path}/full_imgs" 
-        self.face_imgs_path = f"{self.avatar_path}/face_imgs" 
-        self.coords_path = f"{self.avatar_path}/coords.pkl"
+        
         self.batch_size = opt.batch_size
         self.idx = 0
         self.res_frame_queue = Queue(self.batch_size*2)  #mp.Queue
-        #self.__loadmodels()
-        self.__loadavatar()
+        #self.__loadavatar()
+        self.model = model
+        self.frame_list_cycle,self.face_list_cycle,self.coord_list_cycle = avatar
 
         self.asr = LipASR(opt,self)
         self.asr.warm_up()
         #self.__warm_up()
         
-        self.model = model
         self.render_event = mp.Event()
+    
+    def __del__(self):
+        print(f'lipreal({self.sessionid}) delete')
 
-    def __loadavatar(self):
-        with open(self.coords_path, 'rb') as f:
-            self.coord_list_cycle = pickle.load(f)
-        input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
-        input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-        self.frame_list_cycle = read_imgs(input_img_list)
-        #self.imagecache = ImgCache(len(self.coord_list_cycle),self.full_imgs_path,1000)
-        input_face_list = glob.glob(os.path.join(self.face_imgs_path, '*.[jpJP][pnPN]*[gG]'))
-        input_face_list = sorted(input_face_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-        self.face_list_cycle = read_imgs(input_face_list)
-      
-
+   
     def process_frames(self,quit_event,loop=None,audio_track=None,video_track=None):
         
         while not quit_event.is_set():

@@ -46,6 +46,49 @@ from av import AudioFrame, VideoFrame
 from basereal import BaseReal
 
 from tqdm import tqdm
+
+def load_model():
+    # load model weights
+    audio_processor,vae, unet, pe = load_all_model()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    timesteps = torch.tensor([0], device=device)
+    pe = pe.half()
+    vae.vae = vae.vae.half()
+    #vae.vae.share_memory()
+    unet.model = unet.model.half()
+    #unet.model.share_memory()
+    return vae, unet, pe, timesteps, audio_processor
+
+def load_avatar(avatar_id):
+    #self.video_path = '' #video_path
+    #self.bbox_shift = opt.bbox_shift
+    avatar_path = f"./data/avatars/{avatar_id}"
+    full_imgs_path = f"{avatar_path}/full_imgs" 
+    coords_path = f"{avatar_path}/coords.pkl"
+    latents_out_path= f"{avatar_path}/latents.pt"
+    video_out_path = f"{avatar_path}/vid_output/"
+    mask_out_path =f"{avatar_path}/mask"
+    mask_coords_path =f"{avatar_path}/mask_coords.pkl"
+    avatar_info_path = f"{avatar_path}/avator_info.json"
+    # self.avatar_info = {
+    #     "avatar_id":self.avatar_id,
+    #     "video_path":self.video_path,
+    #     "bbox_shift":self.bbox_shift   
+    # }
+
+    input_latent_list_cycle = torch.load(latents_out_path,weights_only=True)
+    with open(coords_path, 'rb') as f:
+        coord_list_cycle = pickle.load(f)
+    input_img_list = glob.glob(os.path.join(full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
+    input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    frame_list_cycle = read_imgs(input_img_list)
+    with open(mask_coords_path, 'rb') as f:
+        mask_coords_list_cycle = pickle.load(f)
+    input_mask_list = glob.glob(os.path.join(mask_out_path, '*.[jpJP][pnPN]*[gG]'))
+    input_mask_list = sorted(input_mask_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    mask_list_cycle = read_imgs(input_mask_list)
+    return frame_list_cycle,mask_list_cycle,coord_list_cycle,mask_coords_list_cycle,input_latent_list_cycle
+
 def read_imgs(img_list):
     frames = []
     print('reading images...')
@@ -145,7 +188,7 @@ def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,a
 
 class MuseReal(BaseReal):
     @torch.no_grad()
-    def __init__(self, opt, audio_processor:Audio2Feature,vae, unet, pe,timesteps):
+    def __init__(self, opt, model, avatar):
         super().__init__(opt)
         #self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.
         self.W = opt.W
@@ -153,63 +196,22 @@ class MuseReal(BaseReal):
 
         self.fps = opt.fps # 20 ms per frame
 
-        #### musetalk
-        self.avatar_id = opt.avatar_id
-        self.video_path = '' #video_path
-        self.bbox_shift = opt.bbox_shift
-        self.avatar_path = f"./data/avatars/{self.avatar_id}"
-        self.full_imgs_path = f"{self.avatar_path}/full_imgs" 
-        self.coords_path = f"{self.avatar_path}/coords.pkl"
-        self.latents_out_path= f"{self.avatar_path}/latents.pt"
-        self.video_out_path = f"{self.avatar_path}/vid_output/"
-        self.mask_out_path =f"{self.avatar_path}/mask"
-        self.mask_coords_path =f"{self.avatar_path}/mask_coords.pkl"
-        self.avatar_info_path = f"{self.avatar_path}/avator_info.json"
-        self.avatar_info = {
-            "avatar_id":self.avatar_id,
-            "video_path":self.video_path,
-            "bbox_shift":self.bbox_shift   
-        }
         self.batch_size = opt.batch_size
         self.idx = 0
         self.res_frame_queue = mp.Queue(self.batch_size*2)
-        #self.__loadmodels()
-        self.audio_processor= audio_processor
-        self.__loadavatar()
+
+        self.vae, self.unet, self.pe, self.timesteps, self.audio_processor = model
+        self.frame_list_cycle,self.mask_list_cycle,self.coord_list_cycle,self.mask_coords_list_cycle, self.input_latent_list_cycle = avatar
+        #self.__loadavatar()
 
         self.asr = MuseASR(opt,self,self.audio_processor)
         self.asr.warm_up()
         #self.__warm_up()
         
         self.render_event = mp.Event()
-        self.vae = vae
-        self.unet = unet
-        self.pe = pe 
-        self.timesteps = timesteps
-        
 
-    # def __loadmodels(self):
-    #     # load model weights
-    #     self.audio_processor= load_audio_model()
-        # self.audio_processor, self.vae, self.unet, self.pe = load_all_model()
-        # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # self.timesteps = torch.tensor([0], device=device)
-        # self.pe = self.pe.half()
-        # self.vae.vae = self.vae.vae.half()
-        # self.unet.model = self.unet.model.half()
-
-    def __loadavatar(self):
-        self.input_latent_list_cycle = torch.load(self.latents_out_path,weights_only=True)
-        with open(self.coords_path, 'rb') as f:
-            self.coord_list_cycle = pickle.load(f)
-        input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
-        input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-        self.frame_list_cycle = read_imgs(input_img_list)
-        with open(self.mask_coords_path, 'rb') as f:
-            self.mask_coords_list_cycle = pickle.load(f)
-        input_mask_list = glob.glob(os.path.join(self.mask_out_path, '*.[jpJP][pnPN]*[gG]'))
-        input_mask_list = sorted(input_mask_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-        self.mask_list_cycle = read_imgs(input_mask_list)
+    def __del__(self):
+        print(f'musereal({self.sessionid}) delete')
     
 
     def __mirror_index(self, index):

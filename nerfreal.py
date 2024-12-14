@@ -33,6 +33,10 @@ from av import AudioFrame, VideoFrame
 from basereal import BaseReal
 
 #from imgcache import ImgCache
+from ernerf.nerf_triplane.provider import NeRFDataset_Test
+from ernerf.nerf_triplane.utils import *
+from ernerf.nerf_triplane.network import NeRFNetwork
+from transformers import AutoModelForCTC, AutoProcessor, Wav2Vec2Processor, HubertModel
 
 from tqdm import tqdm
 def read_imgs(img_list):
@@ -43,15 +47,76 @@ def read_imgs(img_list):
         frames.append(frame)
     return frames
 
+def load_model(opt):
+    # assert test mode
+    opt.test = True
+    opt.test_train = False
+    #opt.train_camera =True
+    # explicit smoothing
+    opt.smooth_path = True
+    opt.smooth_lips = True
+
+    assert opt.pose != '', 'Must provide a pose source'
+
+    # if opt.O:
+    opt.fp16 = True
+    opt.cuda_ray = True
+    opt.exp_eye = True
+    opt.smooth_eye = True
+
+    if opt.torso_imgs=='': #no img,use model output
+        opt.torso = True
+
+    # assert opt.cuda_ray, "Only support CUDA ray mode."
+    opt.asr = True
+
+    if opt.patch_size > 1:
+        # assert opt.patch_size > 16, "patch_size should > 16 to run LPIPS loss."
+        assert opt.num_rays % (opt.patch_size ** 2) == 0, "patch_size ** 2 should be dividable by num_rays."
+    seed_everything(opt.seed)
+    print(opt)
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = NeRFNetwork(opt)
+
+    criterion = torch.nn.MSELoss(reduction='none')
+    metrics = [] # use no metric in GUI for faster initialization...
+    print(model)
+    trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, criterion=criterion, fp16=opt.fp16, metrics=metrics, use_checkpoint=opt.ckpt)
+
+    test_loader = NeRFDataset_Test(opt, device=device).dataloader()
+    model.aud_features = test_loader._data.auds
+    model.eye_areas = test_loader._data.eye_area
+
+    print(f'[INFO] loading ASR model {opt.asr_model}...')
+    if 'hubert' in opt.asr_model:
+        audio_processor = Wav2Vec2Processor.from_pretrained(opt.asr_model)
+        audio_model = HubertModel.from_pretrained(opt.asr_model).to(device) 
+    else:   
+        audio_processor = AutoProcessor.from_pretrained(opt.asr_model)
+        audio_model = AutoModelForCTC.from_pretrained(opt.asr_model).to(device)
+    return trainer,test_loader,audio_processor,audio_model
+
+def load_avatar(opt):
+    fullbody_list_cycle = None
+    if opt.fullbody:
+        input_img_list = glob.glob(os.path.join(self.opt.fullbody_img, '*.[jpJP][pnPN]*[gG]'))
+        input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+        #print('input_img_list:',input_img_list)
+        fullbody_list_cycle = read_imgs(input_img_list) #[:frame_total_num]
+        #self.imagecache = ImgCache(frame_total_num,self.opt.fullbody_img,1000)
+    return fullbody_list_cycle
+
 class NeRFReal(BaseReal):
-    def __init__(self, opt, trainer, data_loader, audio_processor,audio_model, debug=True):
+    def __init__(self, opt, model,avatar, debug=True):
         super().__init__(opt)
         #self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.
         self.W = opt.W
         self.H = opt.H
 
-        self.trainer = trainer
-        self.data_loader = data_loader
+        #self.trainer = trainer
+        #self.data_loader = data_loader
+        self.trainer, self.data_loader, audio_processor,audio_model = model
 
         # use dataloader's bg
         #bg_img = data_loader._data.bg_img #.view(1, -1, 3)
@@ -70,14 +135,10 @@ class NeRFReal(BaseReal):
         #self.eye_area = None if not self.opt.exp_eye else data_loader._data.eye_area.mean().item()
 
         # playing seq from dataloader, or pause.
-        self.loader = iter(data_loader)
-        frame_total_num = data_loader._data.end_index
-        if opt.fullbody:
-            input_img_list = glob.glob(os.path.join(self.opt.fullbody_img, '*.[jpJP][pnPN]*[gG]'))
-            input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-            #print('input_img_list:',input_img_list)
-            self.fullbody_list_cycle = read_imgs(input_img_list[:frame_total_num])
-            #self.imagecache = ImgCache(frame_total_num,self.opt.fullbody_img,1000)
+        self.loader = iter(self.data_loader)
+        frame_total_num = self.data_loader._data.end_index
+        self.fullbody_list_cycle = avatar
+        
 
         #self.render_buffer = np.zeros((self.W, self.H, 3), dtype=np.float32)
         #self.need_update = True # camera moved, should reset accumulation
@@ -134,7 +195,9 @@ class NeRFReal(BaseReal):
         self.fifo_audio = open(audio_path, 'wb')
         #self.test_step()
         '''
-        
+
+    def __del__(self):
+        print(f'nerfreal({self.sessionid}) delete')    
 
     def __enter__(self):
         return self

@@ -49,7 +49,7 @@ class BaseTTS:
         self.msgqueue = Queue()
         self.state = State.RUNNING
 
-    def pause_talk(self):
+    def flush_talk(self):
         self.msgqueue.queue.clear()
         self.state = State.PAUSE
 
