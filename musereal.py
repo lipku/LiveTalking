@@ -76,7 +76,7 @@ def load_avatar(avatar_id):
     #     "bbox_shift":self.bbox_shift   
     # }
 
-    input_latent_list_cycle = torch.load(latents_out_path,weights_only=True)
+    input_latent_list_cycle = torch.load(latents_out_path)  #,weights_only=True
     with open(coords_path, 'rb') as f:
         coord_list_cycle = pickle.load(f)
     input_img_list = glob.glob(os.path.join(full_imgs_path, '*.[jpJP][pnPN]*[gG]'))

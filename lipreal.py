@@ -48,7 +48,7 @@ print('Using {} for inference.'.format(device))
 
 def _load(checkpoint_path):
 	if device == 'cuda':
-		checkpoint = torch.load(checkpoint_path,weights_only=True)
+		checkpoint = torch.load(checkpoint_path) #,weights_only=True
 	else:
 		checkpoint = torch.load(checkpoint_path,
 								map_location=lambda storage, loc: storage)
