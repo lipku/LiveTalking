@@ -100,7 +100,7 @@ def load_model(opt):
 def load_avatar(opt):
     fullbody_list_cycle = None
     if opt.fullbody:
-        input_img_list = glob.glob(os.path.join(self.opt.fullbody_img, '*.[jpJP][pnPN]*[gG]'))
+        input_img_list = glob.glob(os.path.join(opt.fullbody_img, '*.[jpJP][pnPN]*[gG]'))
         input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
         #print('input_img_list:',input_img_list)
         fullbody_list_cycle = read_imgs(input_img_list) #[:frame_total_num]
