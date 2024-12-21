@@ -461,19 +461,21 @@ if __name__ == '__main__':
         #     nerfreal = NeRFReal(opt, trainer, test_loader,audio_processor,audio_model)
         #     nerfreals.append(nerfreal)
     elif opt.model == 'musetalk':
-        from musereal import MuseReal,load_model,load_avatar
+        from musereal import MuseReal,load_model,load_avatar,warm_up
         print(opt)
         model = load_model()
-        avatar = load_avatar(opt.avatar_id)       
+        avatar = load_avatar(opt.avatar_id) 
+        warm_up(opt.batch_size,model)      
         # for k in range(opt.max_session):
         #     opt.sessionid=k
         #     nerfreal = MuseReal(opt,audio_processor,vae, unet, pe,timesteps)
         #     nerfreals.append(nerfreal)
     elif opt.model == 'wav2lip':
-        from lipreal import LipReal,load_model,load_avatar
+        from lipreal import LipReal,load_model,load_avatar,warm_up
         print(opt)
         model = load_model("./models/wav2lip.pth")
         avatar = load_avatar(opt.avatar_id)
+        warm_up(opt.batch_size,model,96)
         # for k in range(opt.max_session):
         #     opt.sessionid=k
         #     nerfreal = LipReal(opt,model)

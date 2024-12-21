@@ -85,6 +85,14 @@ def load_avatar(avatar_id):
 
     return frame_list_cycle,face_list_cycle,coord_list_cycle
 
+@torch.no_grad()
+def warm_up(batch_size,model,modelres):
+    # 预热函数
+    print('warmup model...')
+    img_batch = torch.ones(batch_size, 6, modelres, modelres).to(device)
+    mel_batch = torch.ones(batch_size, 1, 80, 16).to(device)
+    model(mel_batch, img_batch)
+
 def read_imgs(img_list):
     frames = []
     print('reading images...')
@@ -191,7 +199,6 @@ class LipReal(BaseReal):
 
         self.asr = LipASR(opt,self)
         self.asr.warm_up()
-        #self.__warm_up()
         
         self.render_event = mp.Event()
     
