@@ -7,6 +7,7 @@ Real time interactive streaming digital human， realize audio video synchronous
 
 ## News
 - 2024.12.8 完善多并发，显存不随并发数增加
+- 2024.12.21 添加wav2lip、musetalk模型预热，解决第一次推理卡顿问题
 
 ## Features
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip
@@ -96,7 +97,6 @@ docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/c
 - [x] 数字人静音时用一段视频代替
 - [x] MuseTalk
 - [x] Wav2Lip
-- [ ] TalkingGaussian
 
 ---
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.
