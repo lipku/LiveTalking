@@ -127,6 +127,9 @@ def build_nerfreal(sessionid):
     elif opt.model == 'ernerf':
         from nerfreal import NeRFReal
         nerfreal = NeRFReal(opt,model,avatar)
+    elif opt.model == 'ultralight':
+        from lightreal import LightReal
+        nerfreal = LightReal(opt,model,avatar)
     return nerfreal
 
 #@app.route('/offer', methods=['POST'])
@@ -480,6 +483,12 @@ if __name__ == '__main__':
         #     opt.sessionid=k
         #     nerfreal = LipReal(opt,model)
         #     nerfreals.append(nerfreal)
+    elif opt.model == 'ultralight':
+        from lightreal import LightReal,load_model,load_avatar,warm_up
+        print(opt)
+        model = load_model(opt)
+        avatar = load_avatar(opt.avatar_id)
+        warm_up(opt.batch_size,model,160)
 
     if opt.transport=='rtmp':
         thread_quit = Event()
