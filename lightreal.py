@@ -1,0 +1,350 @@
+###############################################################################
+#  Copyright (C) 2024 LiveTalking@lipku https://github.com/lipku/LiveTalking
+#  email: lipku@foxmail.com
+# 
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#  
+#       http://www.apache.org/licenses/LICENSE-2.0
+# 
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+###############################################################################
+
+import math
+import torch
+import numpy as np
+
+#from .utils import *
+import os
+import time
+import cv2
+import glob
+import pickle
+import copy
+
+import queue
+from queue import Queue
+from threading import Thread, Event
+import torch.multiprocessing as mp
+
+
+from lightasr import LightASR
+import asyncio
+from av import AudioFrame, VideoFrame
+from basereal import BaseReal
+
+#from imgcache import ImgCache
+
+from tqdm import tqdm
+
+#new
+import os
+import cv2
+import torch
+import numpy as np
+import torch.nn as nn
+from torch import optim
+from tqdm import tqdm
+from transformers import Wav2Vec2Processor, HubertModel
+from torch.utils.data import DataLoader
+from ultralight.unet import Model
+from ultralight.audio2feature import Audio2Feature
+
+
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print('Using {} for inference.'.format(device))
+
+
+
+def load_model(opt):
+    audio_processor = Audio2Feature()
+    model = Model(6, 'hubert').to(device)  # 假设Model是你自定义的类
+    model.load_state_dict(torch.load('./models/ultralight.pth'))
+    model.eval()
+
+    return model,audio_processor
+
+def load_avatar(avatar_id):
+    avatar_path = f"./data/avatars/{avatar_id}"
+    full_imgs_path = f"{avatar_path}/full_body_img" 
+    land_marks_path = f"{avatar_path}/landmarks" 
+    
+    input_img_list = glob.glob(os.path.join(full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
+    input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    frame_list_cycle = read_imgs(input_img_list)
+    #self.imagecache = ImgCache(len(self.coord_list_cycle),self.full_imgs_path,1000)
+    land_marks_list = glob.glob(os.path.join(land_marks_path, '*.lms'))
+    land_marks_list = sorted(land_marks_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    lms_list_cycle = read_lms(land_marks_list)
+    lms_list_cycle = np.array(lms_list_cycle, dtype=np.int32)
+    return frame_list_cycle,lms_list_cycle
+
+
+@torch.no_grad()
+def warm_up(batch_size,model,modelres):
+    # ?~D?~C??~G??~U?
+    print('warmup model...')
+    model1, audio_processor = model
+    img_batch = torch.ones(batch_size, 6, modelres, modelres).to(device)
+    mel_batch = torch.ones(batch_size, 32, 32, 32).to(device)
+    model1(img_batch, mel_batch)
+
+def read_imgs(img_list):
+    frames = []
+    print('reading images...')
+    for img_path in tqdm(img_list):
+        frame = cv2.imread(img_path)
+        frames.append(frame)
+    return frames
+
+def get_audio_features(features, index):
+    left = index - 8
+    right = index + 8
+    pad_left = 0
+    pad_right = 0
+    if left < 0:
+        pad_left = -left
+        left = 0
+    if right > features.shape[0]:
+        pad_right = right - features.shape[0]
+        right = features.shape[0]
+    auds = torch.from_numpy(features[left:right])
+    if pad_left > 0:
+        auds = torch.cat([torch.zeros_like(auds[:pad_left]), auds], dim=0)
+    if pad_right > 0:
+        auds = torch.cat([auds, torch.zeros_like(auds[:pad_right])], dim=0) # [8, 16]
+    return auds
+
+
+def read_lms(lms_list):
+    land_marks = []
+    print('reading lms...')
+    for lms_path in tqdm(lms_list):
+        file_landmarks = []  # Store landmarks for this file
+        with open(lms_path, "r") as f:
+            lines = f.read().splitlines()
+            for line in lines:
+                arr = list(filter(None, line.split(" ")))
+                if arr:
+                    arr = np.array(arr, dtype=np.float32)
+                    file_landmarks.append(arr)
+        land_marks.append(file_landmarks)  # Add the file's landmarks to the overall list
+    return land_marks
+
+def __mirror_index(size, index):
+    #size = len(self.coord_list_cycle)
+    turn = index // size
+    res = index % size
+    if turn % 2 == 0:
+        return res
+    else:
+        return size - res - 1 
+
+
+def inference(quit_event, batch_size, frame_list_cycle, lms_list_cycle, audio_feat_queue, audio_out_queue, res_frame_queue, model):
+    length = len(lms_list_cycle)
+    index = 0
+    count = 0
+    counttime = 0
+    print('start inference')
+
+    while not quit_event.is_set():
+        starttime=time.perf_counter()
+        try:
+            mel_batch = audio_feat_queue.get(block=True, timeout=1)
+        except queue.Empty:
+            continue
+        is_all_silence=True
+        audio_frames = []
+        for _ in range(batch_size*2):
+            frame,type_ = audio_out_queue.get()
+            audio_frames.append((frame,type_))
+            if type_==0:
+                is_all_silence=False
+        if is_all_silence:
+            for i in range(batch_size):
+                res_frame_queue.put((None,__mirror_index(length,index),audio_frames[i*2:i*2+2]))
+                index = index + 1
+        else:
+            t = time.perf_counter()
+            img_batch = []
+
+            for i in range(batch_size):
+                idx = __mirror_index(length, index + i)
+                face = frame_list_cycle[idx]
+                lms = lms_list_cycle[idx]
+                xmin, ymin = lms[1][0], lms[52][1]
+                xmax = lms[31][0]
+                width = xmax - xmin
+                ymax = ymin + width
+                crop_img = face[ymin:ymax, xmin:xmax]
+#                h, w = crop_img.shape[:2]
+                crop_img = cv2.resize(crop_img, (168, 168), cv2.INTER_AREA)
+                crop_img_ori = crop_img.copy()
+                img_real_ex = crop_img[4:164, 4:164].copy()
+                img_real_ex_ori = img_real_ex.copy()
+                img_masked = cv2.rectangle(img_real_ex_ori,(5,5,150,145),(0,0,0),-1)
+    
+                img_masked = img_masked.transpose(2,0,1).astype(np.float32)
+                img_real_ex = img_real_ex.transpose(2,0,1).astype(np.float32)
+    
+                img_real_ex_T = torch.from_numpy(img_real_ex / 255.0)
+                img_masked_T = torch.from_numpy(img_masked / 255.0)
+                img_concat_T = torch.cat([img_real_ex_T, img_masked_T], axis=0)[None]
+                img_batch.append(img_concat_T)
+
+            reshaped_mel_batch = [arr.reshape(32, 32, 32) for arr in mel_batch]
+            mel_batch = torch.stack([torch.from_numpy(arr) for arr in reshaped_mel_batch])
+            img_batch = torch.stack(img_batch).squeeze(1)
+
+
+            with torch.no_grad():
+                pred = model(img_batch.cuda(),mel_batch.cuda())
+            pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.
+
+            counttime += (time.perf_counter() - t)
+            count += batch_size
+            if count >= 100:
+                print(f"------actual avg infer fps:{count / counttime:.4f}")
+                count = 0
+                counttime = 0
+            for i,res_frame in enumerate(pred):
+                #self.__pushmedia(res_frame,loop,audio_track,video_track)
+                res_frame_queue.put((res_frame,__mirror_index(length,index),audio_frames[i*2:i*2+2]))
+                index = index + 1
+
+#            for i, pred_frame in enumerate(pred):
+#                pred_frame_uint8 = np.array(pred_frame, dtype=np.uint8)
+#                res_frame_queue.put((pred_frame_uint8, __mirror_index(length, index), audio_frames[i * 2:i * 2 + 2]))
+#                index = (index + 1) % length
+
+        #print('total batch time:', time.perf_counter() - starttime)
+
+    print('lightreal inference processor stop')
+
+
+class LightReal(BaseReal):
+    @torch.no_grad()
+    def __init__(self, opt, model, avatar):
+        super().__init__(opt)
+        #self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.
+        self.W = opt.W
+        self.H = opt.H
+
+        self.fps = opt.fps # 20 ms per frame
+        
+        self.batch_size = opt.batch_size
+        self.idx = 0
+        self.res_frame_queue = Queue(self.batch_size*2)  #mp.Queue
+        #self.__loadavatar()
+        self.model,audio_processor = model
+        self.frame_list_cycle,self.lms_list_cycle = avatar
+
+        self.asr = LightASR(opt,self,audio_processor)
+        self.asr.warm_up()
+        #self.__warm_up()
+        
+        self.render_event = mp.Event()
+    
+    def __del__(self):
+        print(f'lightreal({self.sessionid}) delete')
+
+   
+    def process_frames(self,quit_event,loop=None,audio_track=None,video_track=None):
+        
+        while not quit_event.is_set():
+            try:
+                res_frame,idx,audio_frames = self.res_frame_queue.get(block=True, timeout=1)
+            except queue.Empty:
+                continue
+            if audio_frames[0][1]!=0 and audio_frames[1][1]!=0: #全为静音数据，只需要取fullimg
+                self.speaking = False
+                audiotype = audio_frames[0][1]
+                if self.custom_index.get(audiotype) is not None: #有自定义视频
+                    mirindex = self.mirror_index(len(self.custom_img_cycle[audiotype]),self.custom_index[audiotype])
+                    combine_frame = self.custom_img_cycle[audiotype][mirindex]
+                    self.custom_index[audiotype] += 1
+                    # if not self.custom_opt[audiotype].loop and self.custom_index[audiotype]>=len(self.custom_img_cycle[audiotype]):
+                    #     self.curr_state = 1  #当前视频不循环播放，切换到静音状态
+                else:
+                    combine_frame = self.frame_list_cycle[idx]
+                    #combine_frame = self.imagecache.get_img(idx)
+            else:
+                self.speaking = True
+                lms = self.lms_list_cycle[idx]
+                combine_frame = copy.deepcopy(self.frame_list_cycle[idx])
+                xmin = lms[1][0]
+                ymin = lms[52][1]
+
+                xmax = lms[31][0]
+                width = xmax - xmin
+                ymax = ymin + width
+                crop_img = combine_frame[ymin:ymax, xmin:xmax]
+                h, w = crop_img.shape[:2]
+                crop_img_ori = cv2.resize(crop_img, (168, 168), cv2.INTER_AREA).copy()
+                #combine_frame = copy.deepcopy(self.imagecache.get_img(idx))
+                res_frame = np.array(res_frame, dtype=np.uint8)
+                crop_img_ori[4:164, 4:164] = res_frame
+                crop_img_ori = cv2.resize(crop_img_ori, (w, h))
+                combine_frame[ymin:ymax, xmin:xmax] = crop_img_ori
+                #print('blending time:',time.perf_counter()-t)
+
+            new_frame = VideoFrame.from_ndarray(combine_frame, format="bgr24")
+            asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
+            self.record_video_data(combine_frame)
+
+            for audio_frame in audio_frames:
+                frame,type_ = audio_frame
+                frame = (frame * 32767).astype(np.int16)
+                new_frame = AudioFrame(format='s16', layout='mono', samples=frame.shape[0])
+                new_frame.planes[0].update(frame.tobytes())
+                new_frame.sample_rate=16000
+                # if audio_track._queue.qsize()>10:
+                #     time.sleep(0.1)
+                asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop)
+                self.record_audio_data(frame)
+        print('lightreal process_frames thread stop') 
+            
+    def render(self,quit_event,loop=None,audio_track=None,video_track=None):
+        #if self.opt.asr:
+        #     self.asr.warm_up()
+
+        self.tts.render(quit_event)
+        self.init_customindex()
+        process_thread = Thread(target=self.process_frames, args=(quit_event,loop,audio_track,video_track))
+        process_thread.start()
+        Thread(target=inference, args=(quit_event,self.batch_size,self.frame_list_cycle,self.lms_list_cycle,self.asr.feat_queue,self.asr.output_queue,self.res_frame_queue,
+                                           self.model,)).start()  #mp.Process
+        
+
+        #self.render_event.set() #start infer process render
+        count=0
+        totaltime=0
+        _starttime=time.perf_counter()
+        #_totalframe=0
+        while not quit_event.is_set(): 
+            # update texture every frame
+            # audio stream thread...
+            t = time.perf_counter()
+            self.asr.run_step()
+
+            # if video_track._queue.qsize()>=2*self.opt.batch_size:
+            #     print('sleep qsize=',video_track._queue.qsize())
+            #     time.sleep(0.04*video_track._queue.qsize()*0.8)
+            if video_track._queue.qsize()>=5:
+                print('sleep qsize=',video_track._queue.qsize())
+                time.sleep(0.04*video_track._queue.qsize()*0.8)
+                
+            # delay = _starttime+_totalframe*0.04-time.perf_counter() #40ms
+            # if delay > 0:
+            #     time.sleep(delay)
+        #self.render_event.clear() #end infer process render
+        print('lightreal thread stop')
+            
+
