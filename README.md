@@ -97,6 +97,7 @@ docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/c
 - [x] 数字人静音时用一段视频代替
 - [x] MuseTalk
 - [x] Wav2Lip
+- [x] Ultralight-Digital-Human
 
 ---
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.
