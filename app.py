@@ -488,7 +488,7 @@ if __name__ == '__main__':
         print(opt)
         model = load_model(opt)
         avatar = load_avatar(opt.avatar_id)
-        warm_up(opt.batch_size,model,160)
+        warm_up(opt.batch_size,avatar,160)
 
     if opt.transport=='rtmp':
         thread_quit = Event()

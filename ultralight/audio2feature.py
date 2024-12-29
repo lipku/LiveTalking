@@ -6,8 +6,8 @@ import numpy as np
 class Audio2Feature():
     def __init__(self):
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.processor = Wav2Vec2Processor.from_pretrained('./models/hubert-large-ls960-ft')
-        self.model = HubertModel.from_pretrained('./models/hubert-large-ls960-ft').to(self.device)
+        self.processor = Wav2Vec2Processor.from_pretrained("facebook/hubert-large-ls960-ft")
+        self.model = HubertModel.from_pretrained("facebook/hubert-large-ls960-ft").to(self.device)
 
 
     @torch.no_grad()

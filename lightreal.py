@@ -61,39 +61,39 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('Using {} for inference.'.format(device))
 
 
-
 def load_model(opt):
     audio_processor = Audio2Feature()
-    model = Model(6, 'hubert').to(device)  # 假设Model是你自定义的类
-    model.load_state_dict(torch.load('./models/ultralight.pth'))
-    model.eval()
-
-    return model,audio_processor
+    return audio_processor
 
 def load_avatar(avatar_id):
     avatar_path = f"./data/avatars/{avatar_id}"
-    full_imgs_path = f"{avatar_path}/full_body_img" 
-    land_marks_path = f"{avatar_path}/landmarks" 
+    full_imgs_path = f"{avatar_path}/full_imgs" 
+    face_imgs_path = f"{avatar_path}/face_imgs" 
+    coords_path = f"{avatar_path}/coords.pkl" 
     
+    model = Model(6, 'hubert').to(device)  # 假设Model是你自定义的类
+    model.load_state_dict(torch.load(f"{avatar_path}/ultralight.pth"))
+    
+    with open(coords_path, 'rb') as f:
+        coord_list_cycle = pickle.load(f)
     input_img_list = glob.glob(os.path.join(full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
     input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
     frame_list_cycle = read_imgs(input_img_list)
     #self.imagecache = ImgCache(len(self.coord_list_cycle),self.full_imgs_path,1000)
-    land_marks_list = glob.glob(os.path.join(land_marks_path, '*.lms'))
-    land_marks_list = sorted(land_marks_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-    lms_list_cycle = read_lms(land_marks_list)
-    lms_list_cycle = np.array(lms_list_cycle, dtype=np.int32)
-    return frame_list_cycle,lms_list_cycle
+    input_face_list = glob.glob(os.path.join(face_imgs_path, '*.[jpJP][pnPN]*[gG]'))
+    input_face_list = sorted(input_face_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    face_list_cycle = read_imgs(input_face_list)
+
+    return model.eval(),frame_list_cycle,face_list_cycle,coord_list_cycle
 
 
 @torch.no_grad()
-def warm_up(batch_size,model,modelres):
-    # ?~D?~C??~G??~U?
+def warm_up(batch_size,avatar,modelres):
     print('warmup model...')
-    model1, audio_processor = model
+    model,_,_,_ = avatar
     img_batch = torch.ones(batch_size, 6, modelres, modelres).to(device)
     mel_batch = torch.ones(batch_size, 32, 32, 32).to(device)
-    model1(img_batch, mel_batch)
+    model(img_batch, mel_batch)
 
 def read_imgs(img_list):
     frames = []
@@ -147,8 +147,8 @@ def __mirror_index(size, index):
         return size - res - 1 
 
 
-def inference(quit_event, batch_size, frame_list_cycle, lms_list_cycle, audio_feat_queue, audio_out_queue, res_frame_queue, model):
-    length = len(lms_list_cycle)
+def inference(quit_event, batch_size, face_list_cycle, audio_feat_queue, audio_out_queue, res_frame_queue, model):
+    length = len(face_list_cycle)
     index = 0
     count = 0
     counttime = 0
@@ -177,16 +177,11 @@ def inference(quit_event, batch_size, frame_list_cycle, lms_list_cycle, audio_fe
 
             for i in range(batch_size):
                 idx = __mirror_index(length, index + i)
-                face = frame_list_cycle[idx]
-                lms = lms_list_cycle[idx]
-                xmin, ymin = lms[1][0], lms[52][1]
-                xmax = lms[31][0]
-                width = xmax - xmin
-                ymax = ymin + width
-                crop_img = face[ymin:ymax, xmin:xmax]
+                #face = face_list_cycle[idx]
+                crop_img = face_list_cycle[idx] #face[ymin:ymax, xmin:xmax]
 #                h, w = crop_img.shape[:2]
-                crop_img = cv2.resize(crop_img, (168, 168), cv2.INTER_AREA)
-                crop_img_ori = crop_img.copy()
+                #crop_img = cv2.resize(crop_img, (168, 168), cv2.INTER_AREA)
+                #crop_img_ori = crop_img.copy()
                 img_real_ex = crop_img[4:164, 4:164].copy()
                 img_real_ex_ori = img_real_ex.copy()
                 img_masked = cv2.rectangle(img_real_ex_ori,(5,5,150,145),(0,0,0),-1)
@@ -243,8 +238,8 @@ class LightReal(BaseReal):
         self.idx = 0
         self.res_frame_queue = Queue(self.batch_size*2)  #mp.Queue
         #self.__loadavatar()
-        self.model,audio_processor = model
-        self.frame_list_cycle,self.lms_list_cycle = avatar
+        audio_processor = model
+        self.model,self.frame_list_cycle,self.face_list_cycle,self.coord_list_cycle = avatar
 
         self.asr = LightASR(opt,self,audio_processor)
         self.asr.warm_up()
@@ -277,22 +272,19 @@ class LightReal(BaseReal):
                     #combine_frame = self.imagecache.get_img(idx)
             else:
                 self.speaking = True
-                lms = self.lms_list_cycle[idx]
+                bbox = self.coord_list_cycle[idx]
                 combine_frame = copy.deepcopy(self.frame_list_cycle[idx])
-                xmin = lms[1][0]
-                ymin = lms[52][1]
+                x1, y1, x2, y2 = bbox
 
-                xmax = lms[31][0]
-                width = xmax - xmin
-                ymax = ymin + width
-                crop_img = combine_frame[ymin:ymax, xmin:xmax]
-                h, w = crop_img.shape[:2]
-                crop_img_ori = cv2.resize(crop_img, (168, 168), cv2.INTER_AREA).copy()
-                #combine_frame = copy.deepcopy(self.imagecache.get_img(idx))
-                res_frame = np.array(res_frame, dtype=np.uint8)
-                crop_img_ori[4:164, 4:164] = res_frame
-                crop_img_ori = cv2.resize(crop_img_ori, (w, h))
-                combine_frame[ymin:ymax, xmin:xmax] = crop_img_ori
+                crop_img = self.face_list_cycle[idx]
+                crop_img_ori = crop_img.copy()
+                #res_frame = np.array(res_frame, dtype=np.uint8)
+                try:
+                    crop_img_ori[4:164, 4:164] = res_frame.astype(np.uint8)
+                    crop_img_ori = cv2.resize(crop_img_ori, (x2-x1,y2-y1))
+                except:
+                    continue
+                combine_frame[y1:y2, x1:x2] = crop_img_ori
                 #print('blending time:',time.perf_counter()-t)
 
             new_frame = VideoFrame.from_ndarray(combine_frame, format="bgr24")
@@ -319,7 +311,7 @@ class LightReal(BaseReal):
         self.init_customindex()
         process_thread = Thread(target=self.process_frames, args=(quit_event,loop,audio_track,video_track))
         process_thread.start()
-        Thread(target=inference, args=(quit_event,self.batch_size,self.frame_list_cycle,self.lms_list_cycle,self.asr.feat_queue,self.asr.output_queue,self.res_frame_queue,
+        Thread(target=inference, args=(quit_event,self.batch_size,self.face_list_cycle,self.asr.feat_queue,self.asr.output_queue,self.res_frame_queue,
                                            self.model,)).start()  #mp.Process
         
 

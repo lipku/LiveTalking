@@ -30,5 +30,5 @@ class LightASR(BaseASR):
 
         self.feat_queue.put(mel_chunks)
         self.frames = self.frames[-(self.stride_left_size + self.stride_right_size):]
-        print(f"Processing audio costs {(time.time() - start_time) * 1000}ms")
+        #print(f"Processing audio costs {(time.time() - start_time) * 1000}ms")
 
