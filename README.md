@@ -9,6 +9,7 @@ Real time interactive streaming digital human， realize audio video synchronous
 - 2024.12.8 完善多并发，显存不随并发数增加
 - 2024.12.21 添加wav2lip、musetalk模型预热，解决第一次推理卡顿问题。感谢@heimaojinzhangyz
 - 2024.12.28 添加数字人模型Ultralight-Digital-Human。 感谢@lijihua2017
+- 2025.1.26 添加wav2lip384模型 感谢@不蠢不蠢
 
 ## Features
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
@@ -41,29 +42,20 @@ linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/6749
 
 
 ## 2. Quick Start
-默认采用ernerf模型，webrtc推流到srs  
-### 2.1 运行srs
-```bash
-export CANDIDATE='<服务器外网ip>'  #如果srs与浏览器访问在同一层级内网，不需要执行这步
-docker run --rm --env CANDIDATE=$CANDIDATE \
-  -p 1935:1935 -p 8080:8080 -p 1985:1985 -p 8000:8000/udp \
-  registry.cn-hangzhou.aliyuncs.com/ossrs/srs:5 \
-  objs/srs -c conf/rtc.conf
-```
-备注：<font color=red>服务端需要开放端口 tcp:8000,8010,1985; udp:8000</font>
+- 下载模型  
+下载wav2lip运行需要的模型，链接:<https://pan.baidu.com/s/1yOsQ06-RIDTJd3HFCw4wtA> 密码: ltua  
+将wav2lip384.pth拷到本项目的models下, 重命名为wav2lip.pth;  
+将wav2lip384_avatar1.tar.gz解压后整个文件夹拷到本项目的data/avatars下
+- 运行  
+python app.py --transport webrtc --model wav2lip --avatar_id wav2lip384_avatar1  
+用浏览器打开http://serverip:8010/webrtcapi.html , 在文本框输入任意文字，提交。数字人播报该段文字
 
-### 2.2 启动数字人：
-
-```python
-python app.py
-```
+<font color=red>服务端需要开放端口 tcp:8010; udp:1-65536 </font>
 
 如果访问不了huggingface，在运行前
 ```
 export HF_ENDPOINT=https://hf-mirror.com
-```
-
-用浏览器打开http://serverip:8010/rtcpushapi.html, 在文本框输入任意文字，提交。数字人播报该段文字  
+``` 
 
 
 ## 3. More Usage

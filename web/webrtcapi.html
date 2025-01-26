@@ -102,6 +102,7 @@
         fetch('/record', {
             body: JSON.stringify({
                     type: 'start_record',
+                    sessionid:parseInt(document.getElementById('sessionid').value),
                 }),
                 headers: {
                     'Content-Type': 'application/json'
@@ -127,6 +128,7 @@
         fetch('/record', {
             body: JSON.stringify({
                     type: 'end_record',
+                    sessionid:parseInt(document.getElementById('sessionid').value),
                 }),
                 headers: {
                     'Content-Type': 'application/json'

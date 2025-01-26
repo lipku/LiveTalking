@@ -33,7 +33,7 @@ from threading import Thread, Event
 import torch.multiprocessing as mp
 
 
-from lightasr import LightASR
+from hubertasr import HubertASR
 import asyncio
 from av import AudioFrame, VideoFrame
 from basereal import BaseReal
@@ -241,7 +241,7 @@ class LightReal(BaseReal):
         audio_processor = model
         self.model,self.frame_list_cycle,self.face_list_cycle,self.coord_list_cycle = avatar
 
-        self.asr = LightASR(opt,self,audio_processor)
+        self.asr = HubertASR(opt,self,audio_processor)
         self.asr.warm_up()
         #self.__warm_up()
         
