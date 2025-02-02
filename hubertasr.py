@@ -18,9 +18,9 @@ class HubertASR(BaseASR):
         start_time = time.time()
         
         for _ in range(self.batch_size * 2):
-            audio_frame, type_ = self.get_audio_frame()
+            audio_frame, type,eventpoint = self.get_audio_frame()
             self.frames.append(audio_frame)
-            self.output_queue.put((audio_frame, type_))
+            self.output_queue.put((audio_frame, type,eventpoint))
         
         if len(self.frames) <= self.stride_left_size + self.stride_right_size:
             return

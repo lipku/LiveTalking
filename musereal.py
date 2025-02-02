@@ -150,8 +150,8 @@ def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,a
         is_all_silence=True
         audio_frames = []
         for _ in range(batch_size*2):
-            frame,type = audio_out_queue.get()
-            audio_frames.append((frame,type))
+            frame,type,eventpoint = audio_out_queue.get()
+            audio_frames.append((frame,type,eventpoint))
             if type==0:
                 is_all_silence=False
         if is_all_silence:
@@ -301,20 +301,21 @@ class MuseReal(BaseReal):
 
             image = combine_frame #(outputs['image'] * 255).astype(np.uint8)
             new_frame = VideoFrame.from_ndarray(image, format="bgr24")
-            asyncio.run_coroutine_threadsafe(video_track._queue.put(new_frame), loop)
+            asyncio.run_coroutine_threadsafe(video_track._queue.put((new_frame,None)), loop)
             self.record_video_data(image)
             #self.recordq_video.put(new_frame)  
 
             for audio_frame in audio_frames:
-                frame,type = audio_frame
+                frame,type,eventpoint = audio_frame
                 frame = (frame * 32767).astype(np.int16)
                 new_frame = AudioFrame(format='s16', layout='mono', samples=frame.shape[0])
                 new_frame.planes[0].update(frame.tobytes())
                 new_frame.sample_rate=16000
                 # if audio_track._queue.qsize()>10:
                 #     time.sleep(0.1)
-                asyncio.run_coroutine_threadsafe(audio_track._queue.put(new_frame), loop)
+                asyncio.run_coroutine_threadsafe(audio_track._queue.put((new_frame,eventpoint)), loop)
                 self.record_audio_data(frame)
+                #self.notify(eventpoint)
                 #self.recordq_audio.put(new_frame)
         print('musereal process_frames thread stop') 
             

@@ -77,11 +77,11 @@ class BaseReal:
         self.custom_opt = {}
         self.__loadcustom()
 
-    def put_msg_txt(self,msg):
-        self.tts.put_msg_txt(msg)
+    def put_msg_txt(self,msg,eventpoint=None):
+        self.tts.put_msg_txt(msg,eventpoint)
     
-    def put_audio_frame(self,audio_chunk): #16khz 20ms pcm
-        self.asr.put_audio_frame(audio_chunk)
+    def put_audio_frame(self,audio_chunk,eventpoint=None): #16khz 20ms pcm
+        self.asr.put_audio_frame(audio_chunk,eventpoint)
 
     def put_audio_file(self,filebyte): 
         input_stream = BytesIO(filebyte)
@@ -133,6 +133,9 @@ class BaseReal:
             self.custom_audio_index[key]=0
         for key in self.custom_index:
             self.custom_index[key]=0
+
+    def notify(self,eventpoint):
+        print("notify:",eventpoint)
 
     def start_recording(self):
         """开始录制视频"""

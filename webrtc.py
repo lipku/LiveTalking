@@ -122,10 +122,12 @@ class PlayerStreamTrack(MediaStreamTrack):
         #             frame = await self._queue.get()
         #     else:
         #         frame = await self._queue.get()
-        frame = await self._queue.get()
+        frame,eventpoint = await self._queue.get()
         pts, time_base = await self.next_timestamp()
         frame.pts = pts
         frame.time_base = time_base
+        if eventpoint:
+            self._player.notify(eventpoint)
         if frame is None:
             self.stop()
             raise Exception
@@ -172,6 +174,8 @@ class HumanPlayer:
 
         self.__container = nerfreal
 
+    def notify(self,eventpoint):
+        self.__container.notify(eventpoint)
 
     @property
     def audio(self) -> MediaStreamTrack:
