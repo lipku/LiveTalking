@@ -35,7 +35,7 @@ import soundfile as sf
 import av
 from fractions import Fraction
 
-from ttsreal import EdgeTTS,VoitsTTS,XTTS,CosyVoiceTTS
+from ttsreal import EdgeTTS,VoitsTTS,XTTS,CosyVoiceTTS,FishTTS
 
 from tqdm import tqdm
 def read_imgs(img_list):
@@ -61,6 +61,8 @@ class BaseReal:
             self.tts = XTTS(opt,self)
         elif opt.tts == "cosyvoice":
             self.tts = CosyVoiceTTS(opt,self)
+        elif opt.tts == "fishtts":
+            self.tts = FishTTS(opt,self)
         
         self.speaking = False
 
