@@ -179,8 +179,11 @@ print(f'[INFO] fitting light...')
 
 batch_size = 32
 
-device_default = torch.device("cuda:0")
-device_render = torch.device("cuda:0")
+device_default = torch.device("cuda:0" if torch.cuda.is_available() else (
+    "mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu"))
+device_render = torch.device("cuda:0" if torch.cuda.is_available() else (
+    "mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu"))
+
 renderer = Render_3DMM(arg_focal, h, w, batch_size, device_render)
 
 sel_ids = np.arange(0, num_frames, int(num_frames / batch_size))[:batch_size]

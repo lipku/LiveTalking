@@ -83,7 +83,7 @@ class Render_3DMM(nn.Module):
         img_h=500,
         img_w=500,
         batch_size=1,
-        device=torch.device("cuda:0"),
+        device=torch.device("cuda:0" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu")),
     ):
         super(Render_3DMM, self).__init__()
 

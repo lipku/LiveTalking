@@ -57,7 +57,7 @@ from ultralight.audio2feature import Audio2Feature
 
 
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = "cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu")
 print('Using {} for inference.'.format(device))
 
 

@@ -43,7 +43,7 @@ from basereal import BaseReal
 
 from tqdm import tqdm
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = "cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu")
 print('Using {} for inference.'.format(device))
 
 def _load(checkpoint_path):

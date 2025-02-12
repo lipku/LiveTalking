@@ -76,7 +76,7 @@ def load_model(opt):
     seed_everything(opt.seed)
     print(opt)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else ('mps' if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else 'cpu'))
     model = NeRFNetwork(opt)
 
     criterion = torch.nn.MSELoss(reduction='none')
