@@ -478,7 +478,7 @@ if __name__ == '__main__':
         print(opt)
         model = load_model("./models/wav2lip.pth")
         avatar = load_avatar(opt.avatar_id)
-        warm_up(opt.batch_size,model,384)
+        warm_up(opt.batch_size,model,256)
         # for k in range(opt.max_session):
         #     opt.sessionid=k
         #     nerfreal = LipReal(opt,model)
