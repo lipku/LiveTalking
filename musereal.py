@@ -46,6 +46,7 @@ from av import AudioFrame, VideoFrame
 from basereal import BaseReal
 
 from tqdm import tqdm
+from logger import logger
 
 def load_model():
     # load model weights
@@ -92,7 +93,7 @@ def load_avatar(avatar_id):
 @torch.no_grad()
 def warm_up(batch_size,model):
     # 预热函数
-    print('warmup model...')
+    logger.info('warmup model...')
     vae, unet, pe, timesteps, audio_processor = model
     #batch_size = 16
     #timesteps = torch.tensor([0], device=unet.device)
@@ -110,7 +111,7 @@ def warm_up(batch_size,model):
 
 def read_imgs(img_list):
     frames = []
-    print('reading images...')
+    logger.info('reading images...')
     for img_path in tqdm(img_list):
         frame = cv2.imread(img_path)
         frames.append(frame)
@@ -140,7 +141,7 @@ def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,a
     index = 0
     count=0
     counttime=0
-    print('start inference')
+    logger.info('start inference')
     while render_event.is_set():
         starttime=time.perf_counter()
         try:
@@ -195,7 +196,7 @@ def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,a
             count += batch_size
             #_totalframe += 1
             if count>=100:
-                print(f"------actual avg infer fps:{count/counttime:.4f}")
+                logger.info(f"------actual avg infer fps:{count/counttime:.4f}")
                 count=0
                 counttime=0
             for i,res_frame in enumerate(recon):
@@ -203,7 +204,7 @@ def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,a
                 res_frame_queue.put((res_frame,__mirror_index(length,index),audio_frames[i*2:i*2+2]))
                 index = index + 1
             #print('total batch time:',time.perf_counter()-starttime)            
-    print('musereal inference processor stop')
+    logger.info('musereal inference processor stop')
 
 class MuseReal(BaseReal):
     @torch.no_grad()
@@ -229,7 +230,7 @@ class MuseReal(BaseReal):
         self.render_event = mp.Event()
 
     def __del__(self):
-        print(f'musereal({self.sessionid}) delete')
+        logger.info(f'musereal({self.sessionid}) delete')
     
 
     def __mirror_index(self, index):
@@ -251,7 +252,7 @@ class MuseReal(BaseReal):
             latent = self.input_latent_list_cycle[idx]
             latent_batch.append(latent)
         latent_batch = torch.cat(latent_batch, dim=0)
-        print('infer=======')
+        logger.info('infer=======')
         # for i, (whisper_batch,latent_batch) in enumerate(gen):
         audio_feature_batch = torch.from_numpy(whisper_batch)
         audio_feature_batch = audio_feature_batch.to(device=self.unet.device,
@@ -317,7 +318,7 @@ class MuseReal(BaseReal):
                 self.record_audio_data(frame)
                 #self.notify(eventpoint)
                 #self.recordq_audio.put(new_frame)
-        print('musereal process_frames thread stop') 
+        logger.info('musereal process_frames thread stop') 
             
     def render(self,quit_event,loop=None,audio_track=None,video_track=None):
         #if self.opt.asr:
@@ -349,7 +350,7 @@ class MuseReal(BaseReal):
             #     count=0
             #     totaltime=0
             if video_track._queue.qsize()>=1.5*self.opt.batch_size:
-                print('sleep qsize=',video_track._queue.qsize())
+                logger.debug('sleep qsize=%d',video_track._queue.qsize())
                 time.sleep(0.04*video_track._queue.qsize()*0.8)
             # if video_track._queue.qsize()>=5:
             #     print('sleep qsize=',video_track._queue.qsize())
@@ -359,5 +360,5 @@ class MuseReal(BaseReal):
             # if delay > 0:
             #     time.sleep(delay)
         self.render_event.clear() #end infer process render
-        print('musereal thread stop')
+        logger.info('musereal thread stop')
             

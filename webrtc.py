@@ -40,8 +40,9 @@ from aiortc import (
     MediaStreamTrack,
 )
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
+#logging.basicConfig()
+#logger = logging.getLogger(__name__)
+from logger import logger
 
 
 class PlayerStreamTrack(MediaStreamTrack):
@@ -82,7 +83,7 @@ class PlayerStreamTrack(MediaStreamTrack):
                 self._start = time.time()
                 self._timestamp = 0
                 self.timelist.append(self._start)
-                print('video start:',self._start)
+                logger.info('video start:%f',self._start)
             return self._timestamp, VIDEO_TIME_BASE
         else: #audio
             if hasattr(self, "_timestamp"):
@@ -100,7 +101,7 @@ class PlayerStreamTrack(MediaStreamTrack):
                 self._start = time.time()
                 self._timestamp = 0
                 self.timelist.append(self._start)
-                print('audio start:',self._start)
+                logger.info('audio start:%f',self._start)
             return self._timestamp, AUDIO_TIME_BASE
 
     async def recv(self) -> Union[Frame, Packet]:
@@ -136,7 +137,7 @@ class PlayerStreamTrack(MediaStreamTrack):
             self.framecount += 1
             self.lasttime = time.perf_counter()
             if self.framecount==100:
-                print(f"------actual avg final fps:{self.framecount/self.totaltime:.4f}")
+                logger.info(f"------actual avg final fps:{self.framecount/self.totaltime:.4f}")
                 self.framecount = 0
                 self.totaltime=0
         return frame

@@ -36,11 +36,12 @@ import av
 from fractions import Fraction
 
 from ttsreal import EdgeTTS,VoitsTTS,XTTS,CosyVoiceTTS,FishTTS
+from logger import logger
 
 from tqdm import tqdm
 def read_imgs(img_list):
     frames = []
-    print('reading images...')
+    logger.info('reading images...')
     for img_path in tqdm(img_list):
         frame = cv2.imread(img_path)
         frames.append(frame)
@@ -98,15 +99,15 @@ class BaseReal:
     def __create_bytes_stream(self,byte_stream):
         #byte_stream=BytesIO(buffer)
         stream, sample_rate = sf.read(byte_stream) # [T*sample_rate,] float64
-        print(f'[INFO]put audio stream {sample_rate}: {stream.shape}')
+        logger.info(f'[INFO]put audio stream {sample_rate}: {stream.shape}')
         stream = stream.astype(np.float32)
 
         if stream.ndim > 1:
-            print(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
+            logger.info(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
             stream = stream[:, 0]
     
         if sample_rate != self.sample_rate and stream.shape[0]>0:
-            print(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
+            logger.info(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
             stream = resampy.resample(x=stream, sr_orig=sample_rate, sr_new=self.sample_rate)
 
         return stream
@@ -120,7 +121,7 @@ class BaseReal:
     
     def __loadcustom(self):
         for item in self.opt.customopt:
-            print(item)
+            logger.info(item)
             input_img_list = glob.glob(os.path.join(item['imgpath'], '*.[jpJP][pnPN]*[gG]'))
             input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
             self.custom_img_cycle[item['audiotype']] = read_imgs(input_img_list)
@@ -137,7 +138,7 @@ class BaseReal:
             self.custom_index[key]=0
 
     def notify(self,eventpoint):
-        print("notify:",eventpoint)
+        logger.info("notify:%s",eventpoint)
 
     def start_recording(self):
         """开始录制视频"""

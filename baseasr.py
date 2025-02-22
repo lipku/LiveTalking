@@ -22,9 +22,11 @@ import queue
 from queue import Queue
 import torch.multiprocessing as mp
 
+from basereal import BaseReal
+
 
 class BaseASR:
-    def __init__(self, opt, parent=None):
+    def __init__(self, opt, parent:BaseReal|None = None):
         self.opt = opt
         self.parent = parent
 

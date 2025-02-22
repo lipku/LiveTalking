@@ -19,12 +19,10 @@
 from flask import Flask, render_template,send_from_directory,request, jsonify
 from flask_sockets import Sockets
 import base64
-import time
 import json
 #import gevent
 #from gevent import pywsgi
 #from geventwebsocket.handler import WebSocketHandler
-import os
 import re
 import numpy as np
 from threading import Thread,Event
@@ -37,86 +35,36 @@ import aiohttp_cors
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from aiortc.rtcrtpsender import RTCRtpSender
 from webrtc import HumanPlayer
+from basereal import BaseReal
+from llm import llm_response
 
 import argparse
 import random
-
 import shutil
 import asyncio
 import torch
+from typing import Dict
+from logger import logger
 
 
 app = Flask(__name__)
 #sockets = Sockets(app)
-nerfreals = {}
+nerfreals:Dict[int, BaseReal] = {} #sessionid:BaseReal
 opt = None
 model = None
 avatar = None
-
-
-# def llm_response(message):
-#     from llm.LLM import LLM
-#     # llm = LLM().init_model('Gemini', model_path= 'gemini-pro',api_key='Your API Key', proxy_url=None)
-#     # llm = LLM().init_model('ChatGPT', model_path= 'gpt-3.5-turbo',api_key='Your API Key')
-#     llm = LLM().init_model('VllmGPT', model_path= 'THUDM/chatglm3-6b')
-#     response = llm.chat(message)
-#     print(response)
-#     return response
-
-def llm_response(message,nerfreal):
-    start = time.perf_counter()
-    from openai import OpenAI
-    client = OpenAI(
-        # 如果您没有配置环境变量，请在此处用您的API Key进行替换
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
-        # 填写DashScope SDK的base_url
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-    )
-    end = time.perf_counter()
-    print(f"llm Time init: {end-start}s")
-    completion = client.chat.completions.create(
-        model="qwen-plus",
-        messages=[{'role': 'system', 'content': 'You are a helpful assistant.'},
-                  {'role': 'user', 'content': message}],
-        stream=True,
-        # 通过以下设置，在流式输出的最后一行展示token使用信息
-        stream_options={"include_usage": True}
-    )
-    result=""
-    first = True
-    for chunk in completion:
-        if len(chunk.choices)>0:
-            #print(chunk.choices[0].delta.content)
-            if first:
-                end = time.perf_counter()
-                print(f"llm Time to first chunk: {end-start}s")
-                first = False
-            msg = chunk.choices[0].delta.content
-            lastpos=0
-            #msglist = re.split('[,.!;:，。！?]',msg)
-            for i, char in enumerate(msg):
-                if char in ",.!;:，。！？：；" :
-                    result = result+msg[lastpos:i+1]
-                    lastpos = i+1
-                    if len(result)>10:
-                        print(result)
-                        nerfreal.put_msg_txt(result)
-                        result=""
-            result = result+msg[lastpos:]
-    end = time.perf_counter()
-    print(f"llm Time to last chunk: {end-start}s")
-    nerfreal.put_msg_txt(result)            
+        
 
 #####webrtc###############################
 pcs = set()
 
-def randN(N):
+def randN(N)->int:
     '''生成长度为 N的随机数 '''
     min = pow(10, N - 1)
     max = pow(10, N)
     return random.randint(min, max - 1)
 
-def build_nerfreal(sessionid):
+def build_nerfreal(sessionid:int)->BaseReal:
     opt.sessionid=sessionid
     if opt.model == 'wav2lip':
         from lipreal import LipReal
@@ -138,10 +86,10 @@ async def offer(request):
     offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
 
     if len(nerfreals) >= opt.max_session:
-        print('reach max session')
+        logger.info('reach max session')
         return -1
     sessionid = randN(6) #len(nerfreals)
-    print('sessionid=',sessionid)
+    logger.info('sessionid=%d',sessionid)
     nerfreals[sessionid] = None
     nerfreal = await asyncio.get_event_loop().run_in_executor(None, build_nerfreal,sessionid)
     nerfreals[sessionid] = nerfreal
@@ -151,7 +99,7 @@ async def offer(request):
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
-        print("Connection state is %s" % pc.connectionState)
+        logger.info("Connection state is %s" % pc.connectionState)
         if pc.connectionState == "failed":
             await pc.close()
             pcs.discard(pc)
@@ -280,7 +228,7 @@ async def post(url,data):
             async with session.post(url,data=data) as response:
                 return await response.text()
     except aiohttp.ClientError as e:
-        print(f'Error: {e}')
+        logger.info(f'Error: {e}')
 
 async def run(push_url,sessionid):
     nerfreal = await asyncio.get_event_loop().run_in_executor(None, build_nerfreal,sessionid)
@@ -291,7 +239,7 @@ async def run(push_url,sessionid):
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
-        print("Connection state is %s" % pc.connectionState)
+        logger.info("Connection state is %s" % pc.connectionState)
         if pc.connectionState == "failed":
             await pc.close()
             pcs.discard(pc)
@@ -465,7 +413,7 @@ if __name__ == '__main__':
         #     nerfreals.append(nerfreal)
     elif opt.model == 'musetalk':
         from musereal import MuseReal,load_model,load_avatar,warm_up
-        print(opt)
+        logger.info(opt)
         model = load_model()
         avatar = load_avatar(opt.avatar_id) 
         warm_up(opt.batch_size,model)      
@@ -475,7 +423,7 @@ if __name__ == '__main__':
         #     nerfreals.append(nerfreal)
     elif opt.model == 'wav2lip':
         from lipreal import LipReal,load_model,load_avatar,warm_up
-        print(opt)
+        logger.info(opt)
         model = load_model("./models/wav2lip.pth")
         avatar = load_avatar(opt.avatar_id)
         warm_up(opt.batch_size,model,256)
@@ -485,7 +433,7 @@ if __name__ == '__main__':
         #     nerfreals.append(nerfreal)
     elif opt.model == 'ultralight':
         from lightreal import LightReal,load_model,load_avatar,warm_up
-        print(opt)
+        logger.info(opt)
         model = load_model(opt)
         avatar = load_avatar(opt.avatar_id)
         warm_up(opt.batch_size,avatar,160)
@@ -524,7 +472,7 @@ if __name__ == '__main__':
         pagename='echoapi.html'
     elif opt.transport=='rtcpush':
         pagename='rtcpushapi.html'
-    print('start http server; http://<serverip>:'+str(opt.listenport)+'/'+pagename)
+    logger.info('start http server; http://<serverip>:'+str(opt.listenport)+'/'+pagename)
     def run_server(runner):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
