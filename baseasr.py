@@ -26,7 +26,7 @@ from basereal import BaseReal
 
 
 class BaseASR:
-    def __init__(self, opt, parent:BaseReal|None = None):
+    def __init__(self, opt, parent:BaseReal = None):
         self.opt = opt
         self.parent = parent
 
