@@ -11,6 +11,7 @@ Real time interactive streaming digital human， realize audio video synchronous
 - 2024.12.28 添加数字人模型Ultralight-Digital-Human。 感谢@lijihua2017
 - 2025.2.7 添加fish-speech tts
 - 2025.2.21 添加wav2lip256开源模型 感谢@不蠢不蠢
+- 2025.3.2 添加腾讯语音合成服务
 
 ## Features
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
