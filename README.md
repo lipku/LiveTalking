@@ -52,9 +52,11 @@ GoogleDriver <https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P
 - 运行  
 python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1  
 用浏览器打开http://serverip:8010/webrtcapi.html , 先点‘start',播放数字人视频；然后在文本框输入任意文字，提交。数字人播报该段文字  
-
 <font color=red>服务端需要开放端口 tcp:8010; udp:1-65536 </font>  
-如果需要商用高清wav2lip模型，可以与我联系购买
+如果需要商用高清wav2lip模型，可以与我联系购买  
+
+- 快速体验  
+<https://www.compshare.cn/images-detail?ImageID=compshareImage-18tpjhhxoq3j&referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking1.3> 用该镜像创建实例即可运行成功
 
 如果访问不了huggingface，在运行前
 ```
