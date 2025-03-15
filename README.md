@@ -7,11 +7,12 @@ Real time interactive streaming digital human， realize audio video synchronous
 
 ## News
 - 2024.12.8 完善多并发，显存不随并发数增加
-- 2024.12.21 添加wav2lip、musetalk模型预热，解决第一次推理卡顿问题。感谢@heimaojinzhangyz
-- 2024.12.28 添加数字人模型Ultralight-Digital-Human。 感谢@lijihua2017
+- 2024.12.21 添加wav2lip、musetalk模型预热，解决第一次推理卡顿问题。感谢[@heimaojinzhangyz](https://github.com/heimaojinzhangyz)
+- 2024.12.28 添加数字人模型Ultralight-Digital-Human。 感谢[@lijihua2017](https://github.com/lijihua2017)
 - 2025.2.7 添加fish-speech tts
 - 2025.2.21 添加wav2lip256开源模型 感谢@不蠢不蠢
 - 2025.3.2 添加腾讯语音合成服务
+- 20253.16 支持mac gpu推理，感谢[@GcsSloop](https://github.com/GcsSloop) 
 
 ## Features
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
