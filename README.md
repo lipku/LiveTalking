@@ -9,8 +9,9 @@ Real time interactive streaming digital human， realize audio video synchronous
 - 2024.12.8 完善多并发，显存不随并发数增加
 - 2024.12.21 添加wav2lip、musetalk模型预热，解决第一次推理卡顿问题。感谢@heimaojinzhangyz
 - 2024.12.28 添加数字人模型Ultralight-Digital-Human。 感谢@lijihua2017
-- 2025.1.26 添加wav2lip384开源模型 感谢@不蠢不蠢
 - 2025.2.7 添加fish-speech tts
+- 2025.2.21 添加wav2lip256开源模型 感谢@不蠢不蠢
+- 2025.3.2 添加腾讯语音合成服务
 
 ## Features
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
@@ -33,10 +34,10 @@ conda activate nerfstream
 #如果cuda版本不为11.3(运行nvidia-smi确认版本)，根据<https://pytorch.org/get-started/previous-versions/>安装对应版本的pytorch 
 conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
 pip install -r requirements.txt
-#如果不训练ernerf模型，不需要安装下面的库
-pip install "git+https://github.com/facebookresearch/pytorch3d.git"
-pip install tensorflow-gpu==2.8.0
-pip install --upgrade "protobuf<=3.20.1"
+#如果需要训练ernerf模型，安装下面的库
+# pip install "git+https://github.com/facebookresearch/pytorch3d.git"
+# pip install tensorflow-gpu==2.8.0
+# pip install --upgrade "protobuf<=3.20.1"
 ``` 
 安装常见问题[FAQ](https://livetalking-doc.readthedocs.io/en/latest/faq.html)  
 linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/674972886
@@ -46,13 +47,16 @@ linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/6749
 - 下载模型  
 百度云盘<https://pan.baidu.com/s/1yOsQ06-RIDTJd3HFCw4wtA> 密码: ltua  
 GoogleDriver <https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P9NlSAJ?usp=sharing>  
-将wav2lip384.pth拷到本项目的models下, 重命名为wav2lip.pth;  
-将wav2lip384_avatar1.tar.gz解压后整个文件夹拷到本项目的data/avatars下
+将wav2lip256.pth拷到本项目的models下, 重命名为wav2lip.pth;  
+将wav2lip256_avatar1.tar.gz解压后整个文件夹拷到本项目的data/avatars下
 - 运行  
-python app.py --transport webrtc --model wav2lip --avatar_id wav2lip384_avatar1  
-用浏览器打开http://serverip:8010/webrtcapi.html , 在文本框输入任意文字，提交。数字人播报该段文字
+python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1  
+用浏览器打开http://serverip:8010/webrtcapi.html , 先点‘start',播放数字人视频；然后在文本框输入任意文字，提交。数字人播报该段文字  
+<font color=red>服务端需要开放端口 tcp:8010; udp:1-65536 </font>  
+如果需要商用高清wav2lip模型，可以与我联系购买  
 
-<font color=red>服务端需要开放端口 tcp:8010; udp:1-65536 </font>
+- 快速体验  
+<https://www.compshare.cn/images-detail?ImageID=compshareImage-18tpjhhxoq3j&referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking1.3> 用该镜像创建实例即可运行成功
 
 如果访问不了huggingface，在运行前
 ```
@@ -66,14 +70,14 @@ export HF_ENDPOINT=https://hf-mirror.com
 ## 4. Docker Run  
 不需要前面的安装，直接运行。
 ```
-docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/lipku-metahuman-stream:vjo1Y6NJ3N
+docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/lipku-metahuman-stream:2K9qaMBu8v
 ```
 代码在/root/metahuman-stream，先git pull拉一下最新代码，然后执行命令同第2、3步 
 
 提供如下镜像
 - autodl镜像: <https://www.codewithgpu.com/i/lipku/metahuman-stream/base>   
 [autodl教程](https://livetalking-doc.readthedocs.io/en/latest/autodl/README.html)
-- ucloud镜像: <https://www.compshare.cn/images-detail?ImageID=compshareImage-16ktl2kxwjef&ImageType=Community&referral_code=3XW3852OBmnD089hMMrtuU&ytag=lipku_github>  
+- ucloud镜像: <https://www.compshare.cn/images-detail?ImageID=compshareImage-18tpjhhxoq3j&referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_livetalking1.3>  
 可以开放任意端口，不需要另外部署srs服务.  
 [ucloud教程](https://livetalking-doc.readthedocs.io/en/latest/ucloud/ucloud.html) 
 

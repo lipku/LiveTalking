@@ -14,13 +14,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 ###############################################################################
-import os
+from __future__ import annotations
 import time
 import numpy as np
 import soundfile as sf
 import resampy
 import asyncio
 import edge_tts
+
+import os
+import hmac
+import hashlib
+import base64
+import json
+import uuid
 
 from typing import Iterator
 
@@ -32,12 +39,17 @@ from io import BytesIO
 from threading import Thread, Event
 from enum import Enum
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from basereal import BaseReal
+
+from logger import logger
 class State(Enum):
     RUNNING=0
     PAUSE=1
 
 class BaseTTS:
-    def __init__(self, opt, parent):
+    def __init__(self, opt, parent:BaseReal):
         self.opt=opt
         self.parent = parent
 
@@ -53,7 +65,7 @@ class BaseTTS:
         self.msgqueue.queue.clear()
         self.state = State.PAUSE
 
-    def put_msg_txt(self,msg,eventpoint=None): 
+    def put_msg_txt(self,msg:str,eventpoint=None): 
         if len(msg)>0:
             self.msgqueue.put((msg,eventpoint))
 
@@ -69,7 +81,7 @@ class BaseTTS:
             except queue.Empty:
                 continue
             self.txt_to_audio(msg)
-        print('ttsreal thread stop')
+        logger.info('ttsreal thread stop')
     
     def txt_to_audio(self,msg):
         pass
@@ -82,9 +94,9 @@ class EdgeTTS(BaseTTS):
         text,textevent = msg
         t = time.time()
         asyncio.new_event_loop().run_until_complete(self.__main(voicename,text))
-        print(f'-------edge tts time:{time.time()-t:.4f}s')
+        logger.info(f'-------edge tts time:{time.time()-t:.4f}s')
         if self.input_stream.getbuffer().nbytes<=0: #edgetts err
-            print('edgetts err!!!!!')
+            logger.error('edgetts err!!!!!')
             return
         
         self.input_stream.seek(0)
@@ -108,15 +120,15 @@ class EdgeTTS(BaseTTS):
     def __create_bytes_stream(self,byte_stream):
         #byte_stream=BytesIO(buffer)
         stream, sample_rate = sf.read(byte_stream) # [T*sample_rate,] float64
-        print(f'[INFO]tts audio stream {sample_rate}: {stream.shape}')
+        logger.info(f'[INFO]tts audio stream {sample_rate}: {stream.shape}')
         stream = stream.astype(np.float32)
 
         if stream.ndim > 1:
-            print(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
+            logger.info(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
             stream = stream[:, 0]
     
         if sample_rate != self.sample_rate and stream.shape[0]>0:
-            print(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
+            logger.info(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
             stream = resampy.resample(x=stream, sr_orig=sample_rate, sr_new=self.sample_rate)
 
         return stream
@@ -137,7 +149,7 @@ class EdgeTTS(BaseTTS):
                 elif chunk["type"] == "WordBoundary":
                     pass
         except Exception as e:
-            print(e)
+            logger.exception('edgetts')
 
 ###########################################################################################
 class FishTTS(BaseTTS):
@@ -173,10 +185,10 @@ class FishTTS(BaseTTS):
                 },
             )
             end = time.perf_counter()
-            print(f"fish_speech Time to make POST: {end-start}s")
+            logger.info(f"fish_speech Time to make POST: {end-start}s")
 
             if res.status_code != 200:
-                print("Error:", res.text)
+                logger.error("Error:%s", res.text)
                 return
                 
             first = True
@@ -185,13 +197,13 @@ class FishTTS(BaseTTS):
                 #print('chunk len:',len(chunk))
                 if first:
                     end = time.perf_counter()
-                    print(f"fish_speech Time to first chunk: {end-start}s")
+                    logger.info(f"fish_speech Time to first chunk: {end-start}s")
                     first = False
                 if chunk and self.state==State.RUNNING:
                     yield chunk
             #print("gpt_sovits response.elapsed:", res.elapsed)
         except Exception as e:
-            print(e)
+            logger.exception('fishtts')
 
     def stream_tts(self,audio_stream,msg):
         text,textevent = msg
@@ -254,38 +266,38 @@ class VoitsTTS(BaseTTS):
                 stream=True,
             )
             end = time.perf_counter()
-            print(f"gpt_sovits Time to make POST: {end-start}s")
+            logger.info(f"gpt_sovits Time to make POST: {end-start}s")
 
             if res.status_code != 200:
-                print("Error:", res.text)
+                logger.error("Error:%s", res.text)
                 return
                 
             first = True
         
             for chunk in res.iter_content(chunk_size=None): #12800 1280 32K*20ms*2
-                print('chunk len:',len(chunk))
+                logger.info('chunk len:%d',len(chunk))
                 if first:
                     end = time.perf_counter()
-                    print(f"gpt_sovits Time to first chunk: {end-start}s")
+                    logger.info(f"gpt_sovits Time to first chunk: {end-start}s")
                     first = False
                 if chunk and self.state==State.RUNNING:
                     yield chunk
             #print("gpt_sovits response.elapsed:", res.elapsed)
         except Exception as e:
-            print(e)
+            logger.exception('sovits')
 
     def __create_bytes_stream(self,byte_stream):
         #byte_stream=BytesIO(buffer)
         stream, sample_rate = sf.read(byte_stream) # [T*sample_rate,] float64
-        print(f'[INFO]tts audio stream {sample_rate}: {stream.shape}')
+        logger.info(f'[INFO]tts audio stream {sample_rate}: {stream.shape}')
         stream = stream.astype(np.float32)
 
         if stream.ndim > 1:
-            print(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
+            logger.info(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
             stream = stream[:, 0]
     
         if sample_rate != self.sample_rate and stream.shape[0]>0:
-            print(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
+            logger.info(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
             stream = resampy.resample(x=stream, sr_orig=sample_rate, sr_new=self.sample_rate)
 
         return stream
@@ -338,23 +350,23 @@ class CosyVoiceTTS(BaseTTS):
             res = requests.request("GET", f"{server_url}/inference_zero_shot", data=payload, files=files, stream=True)
             
             end = time.perf_counter()
-            print(f"cosy_voice Time to make POST: {end-start}s")
+            logger.info(f"cosy_voice Time to make POST: {end-start}s")
 
             if res.status_code != 200:
-                print("Error:", res.text)
+                logger.error("Error:%s", res.text)
                 return
                 
             first = True
         
-            for chunk in res.iter_content(chunk_size=8820): # 882 22.05K*20ms*2
+            for chunk in res.iter_content(chunk_size=9600): # 960 24K*20ms*2
                 if first:
                     end = time.perf_counter()
-                    print(f"cosy_voice Time to first chunk: {end-start}s")
+                    logger.info(f"cosy_voice Time to first chunk: {end-start}s")
                     first = False
                 if chunk and self.state==State.RUNNING:
                     yield chunk
         except Exception as e:
-            print(e)
+            logger.exception('cosyvoice')
 
     def stream_tts(self,audio_stream,msg):
         text,textevent = msg
@@ -362,7 +374,7 @@ class CosyVoiceTTS(BaseTTS):
         for chunk in audio_stream:
             if chunk is not None and len(chunk)>0:          
                 stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
-                stream = resampy.resample(x=stream, sr_orig=22050, sr_new=self.sample_rate)
+                stream = resampy.resample(x=stream, sr_orig=24000, sr_new=self.sample_rate)
                 #byte_stream=BytesIO(buffer)
                 #stream = self.__create_bytes_stream(byte_stream)
                 streamlen = stream.shape[0]
@@ -379,6 +391,131 @@ class CosyVoiceTTS(BaseTTS):
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint) 
 
 ###########################################################################################
+_PROTOCOL = "https://"
+_HOST = "tts.cloud.tencent.com"
+_PATH = "/stream"
+_ACTION = "TextToStreamAudio"
+
+class TencentTTS(BaseTTS):
+    def __init__(self, opt, parent):
+        super().__init__(opt,parent)
+        self.appid = os.getenv("TENCENT_APPID")
+        self.secret_key = os.getenv("TENCENT_SECRET_KEY")
+        self.secret_id = os.getenv("TENCENT_SECRET_ID")
+        self.voice_type = int(opt.REF_FILE)
+        self.codec = "pcm"
+        self.sample_rate = 16000
+        self.volume = 0
+        self.speed = 0
+    
+    def __gen_signature(self, params):
+        sort_dict = sorted(params.keys())
+        sign_str = "POST" + _HOST + _PATH + "?"
+        for key in sort_dict:
+            sign_str = sign_str + key + "=" + str(params[key]) + '&'
+        sign_str = sign_str[:-1]
+        hmacstr = hmac.new(self.secret_key.encode('utf-8'),
+                           sign_str.encode('utf-8'), hashlib.sha1).digest()
+        s = base64.b64encode(hmacstr)
+        s = s.decode('utf-8')
+        return s
+
+    def __gen_params(self, session_id, text):
+        params = dict()
+        params['Action'] = _ACTION
+        params['AppId'] = int(self.appid)
+        params['SecretId'] = self.secret_id
+        params['ModelType'] = 1
+        params['VoiceType'] = self.voice_type
+        params['Codec'] = self.codec
+        params['SampleRate'] = self.sample_rate
+        params['Speed'] = self.speed
+        params['Volume'] = self.volume
+        params['SessionId'] = session_id
+        params['Text'] = text
+
+        timestamp = int(time.time())
+        params['Timestamp'] = timestamp
+        params['Expired'] = timestamp + 24 * 60 * 60
+        return params
+
+    def txt_to_audio(self,msg):
+        text,textevent = msg 
+        self.stream_tts(
+            self.tencent_voice(
+                text,
+                self.opt.REF_FILE,  
+                self.opt.REF_TEXT,
+                "zh", #en args.language,
+                self.opt.TTS_SERVER, #"http://127.0.0.1:5000", #args.server_url,
+            ),
+            msg
+        )
+
+    def tencent_voice(self, text, reffile, reftext,language, server_url) -> Iterator[bytes]:
+        start = time.perf_counter()
+        session_id = str(uuid.uuid1())
+        params = self.__gen_params(session_id, text)
+        signature = self.__gen_signature(params)
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": str(signature)
+        }
+        url = _PROTOCOL + _HOST + _PATH
+        try:
+            res = requests.post(url, headers=headers,
+                          data=json.dumps(params), stream=True)
+            
+            end = time.perf_counter()
+            logger.info(f"tencent Time to make POST: {end-start}s")
+                
+            first = True
+        
+            for chunk in res.iter_content(chunk_size=6400): # 640 16K*20ms*2
+                #logger.info('chunk len:%d',len(chunk))
+                if first:
+                    try:
+                        rsp = json.loads(chunk)
+                        #response["Code"] = rsp["Response"]["Error"]["Code"]
+                        #response["Message"] = rsp["Response"]["Error"]["Message"]
+                        logger.error("tencent tts:%s",rsp["Response"]["Error"]["Message"])
+                        return
+                    except:
+                        end = time.perf_counter()
+                        logger.info(f"tencent Time to first chunk: {end-start}s")
+                        first = False                    
+                if chunk and self.state==State.RUNNING:
+                    yield chunk
+        except Exception as e:
+            logger.exception('tencent')
+
+    def stream_tts(self,audio_stream,msg):
+        text,textevent = msg
+        first = True
+        last_stream = np.array([],dtype=np.float32)
+        for chunk in audio_stream:
+            if chunk is not None and len(chunk)>0:          
+                stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
+                stream = np.concatenate((last_stream,stream))
+                #stream = resampy.resample(x=stream, sr_orig=24000, sr_new=self.sample_rate)
+                #byte_stream=BytesIO(buffer)
+                #stream = self.__create_bytes_stream(byte_stream)
+                streamlen = stream.shape[0]
+                idx=0
+                while streamlen >= self.chunk:
+                    eventpoint=None
+                    if first:
+                        eventpoint={'status':'start','text':text,'msgenvent':textevent}
+                        first = False
+                    self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
+                    streamlen -= self.chunk
+                    idx += self.chunk
+                last_stream = stream[idx:] #get the remain stream
+        eventpoint={'status':'end','text':text,'msgenvent':textevent}
+        self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint) 
+
+###########################################################################################
+
 class XTTS(BaseTTS):
     def __init__(self, opt, parent):
         super().__init__(opt,parent)
@@ -414,7 +551,7 @@ class XTTS(BaseTTS):
                 stream=True,
             )
             end = time.perf_counter()
-            print(f"xtts Time to make POST: {end-start}s")
+            logger.info(f"xtts Time to make POST: {end-start}s")
 
             if res.status_code != 200:
                 print("Error:", res.text)
@@ -425,7 +562,7 @@ class XTTS(BaseTTS):
             for chunk in res.iter_content(chunk_size=9600): #24K*20ms*2
                 if first:
                     end = time.perf_counter()
-                    print(f"xtts Time to first chunk: {end-start}s")
+                    logger.info(f"xtts Time to first chunk: {end-start}s")
                     first = False
                 if chunk:
                     yield chunk

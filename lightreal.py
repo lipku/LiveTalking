@@ -54,12 +54,10 @@ from transformers import Wav2Vec2Processor, HubertModel
 from torch.utils.data import DataLoader
 from ultralight.unet import Model
 from ultralight.audio2feature import Audio2Feature
-
-
+from logger import logger
 
 device = "cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu")
 print('Using {} for inference.'.format(device))
-
 
 def load_model(opt):
     audio_processor = Audio2Feature()
@@ -89,7 +87,7 @@ def load_avatar(avatar_id):
 
 @torch.no_grad()
 def warm_up(batch_size,avatar,modelres):
-    print('warmup model...')
+    logger.info('warmup model...')
     model,_,_,_ = avatar
     img_batch = torch.ones(batch_size, 6, modelres, modelres).to(device)
     mel_batch = torch.ones(batch_size, 32, 32, 32).to(device)
@@ -97,7 +95,7 @@ def warm_up(batch_size,avatar,modelres):
 
 def read_imgs(img_list):
     frames = []
-    print('reading images...')
+    logger.info('reading images...')
     for img_path in tqdm(img_list):
         frame = cv2.imread(img_path)
         frames.append(frame)
@@ -124,7 +122,7 @@ def get_audio_features(features, index):
 
 def read_lms(lms_list):
     land_marks = []
-    print('reading lms...')
+    logger.info('reading lms...')
     for lms_path in tqdm(lms_list):
         file_landmarks = []  # Store landmarks for this file
         with open(lms_path, "r") as f:
@@ -152,7 +150,7 @@ def inference(quit_event, batch_size, face_list_cycle, audio_feat_queue, audio_o
     index = 0
     count = 0
     counttime = 0
-    print('start inference')
+    logger.info('start inference')
 
     while not quit_event.is_set():
         starttime=time.perf_counter()
@@ -206,7 +204,7 @@ def inference(quit_event, batch_size, face_list_cycle, audio_feat_queue, audio_o
             counttime += (time.perf_counter() - t)
             count += batch_size
             if count >= 100:
-                print(f"------actual avg infer fps:{count / counttime:.4f}")
+                logger.info(f"------actual avg infer fps:{count / counttime:.4f}")
                 count = 0
                 counttime = 0
             for i,res_frame in enumerate(pred):
@@ -221,7 +219,7 @@ def inference(quit_event, batch_size, face_list_cycle, audio_feat_queue, audio_o
 
         #print('total batch time:', time.perf_counter() - starttime)
 
-    print('lightreal inference processor stop')
+    logger.info('lightreal inference processor stop')
 
 
 class LightReal(BaseReal):
@@ -248,7 +246,7 @@ class LightReal(BaseReal):
         self.render_event = mp.Event()
     
     def __del__(self):
-        print(f'lightreal({self.sessionid}) delete')
+        logger.info(f'lightreal({self.sessionid}) delete')
 
    
     def process_frames(self,quit_event,loop=None,audio_track=None,video_track=None):
@@ -302,7 +300,7 @@ class LightReal(BaseReal):
                 asyncio.run_coroutine_threadsafe(audio_track._queue.put((new_frame,eventpoint)), loop)
                 self.record_audio_data(frame)
                 #self.notify(eventpoint)
-        print('lightreal process_frames thread stop') 
+        logger.info('lightreal process_frames thread stop') 
             
     def render(self,quit_event,loop=None,audio_track=None,video_track=None):
         #if self.opt.asr:
@@ -331,13 +329,13 @@ class LightReal(BaseReal):
             #     print('sleep qsize=',video_track._queue.qsize())
             #     time.sleep(0.04*video_track._queue.qsize()*0.8)
             if video_track._queue.qsize()>=5:
-                print('sleep qsize=',video_track._queue.qsize())
+                logger.debug('sleep qsize=%d',video_track._queue.qsize())
                 time.sleep(0.04*video_track._queue.qsize()*0.8)
                 
             # delay = _starttime+_totalframe*0.04-time.perf_counter() #40ms
             # if delay > 0:
             #     time.sleep(delay)
         #self.render_event.clear() #end infer process render
-        print('lightreal thread stop')
+        logger.info('lightreal thread stop')
             
 

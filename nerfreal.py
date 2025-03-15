@@ -38,10 +38,11 @@ from ernerf.nerf_triplane.utils import *
 from ernerf.nerf_triplane.network import NeRFNetwork
 from transformers import AutoModelForCTC, AutoProcessor, Wav2Vec2Processor, HubertModel
 
+from logger import logger
 from tqdm import tqdm
 def read_imgs(img_list):
     frames = []
-    print('reading images...')
+    logger.info('reading images...')
     for img_path in tqdm(img_list):
         frame = cv2.imread(img_path)
         frames.append(frame)
@@ -74,21 +75,21 @@ def load_model(opt):
         # assert opt.patch_size > 16, "patch_size should > 16 to run LPIPS loss."
         assert opt.num_rays % (opt.patch_size ** 2) == 0, "patch_size ** 2 should be dividable by num_rays."
     seed_everything(opt.seed)
-    print(opt)
+    logger.info(opt)
 
     device = torch.device('cuda' if torch.cuda.is_available() else ('mps' if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else 'cpu'))
     model = NeRFNetwork(opt)
 
     criterion = torch.nn.MSELoss(reduction='none')
     metrics = [] # use no metric in GUI for faster initialization...
-    print(model)
+    logger.info(model)
     trainer = Trainer('ngp', opt, model, device=device, workspace=opt.workspace, criterion=criterion, fp16=opt.fp16, metrics=metrics, use_checkpoint=opt.ckpt)
 
     test_loader = NeRFDataset_Test(opt, device=device).dataloader()
     model.aud_features = test_loader._data.auds
     model.eye_areas = test_loader._data.eye_area
 
-    print(f'[INFO] loading ASR model {opt.asr_model}...')
+    logger.info(f'[INFO] loading ASR model {opt.asr_model}...')
     if 'hubert' in opt.asr_model:
         audio_processor = Wav2Vec2Processor.from_pretrained(opt.asr_model)
         audio_model = HubertModel.from_pretrained(opt.asr_model).to(device) 
@@ -197,7 +198,7 @@ class NeRFReal(BaseReal):
         '''
 
     def __del__(self):
-        print(f'nerfreal({self.sessionid}) delete')    
+        logger.info(f'nerfreal({self.sessionid}) delete')    
 
     def __enter__(self):
         return self
@@ -365,7 +366,7 @@ class NeRFReal(BaseReal):
             count += 1
             _totalframe += 1
             if count==100:
-                print(f"------actual avg infer fps:{count/totaltime:.4f}")
+                logger.info(f"------actual avg infer fps:{count/totaltime:.4f}")
                 count=0
                 totaltime=0
             if self.opt.transport=='rtmp':
@@ -376,6 +377,6 @@ class NeRFReal(BaseReal):
                 if video_track._queue.qsize()>=5:
                     #print('sleep qsize=',video_track._queue.qsize())
                     time.sleep(0.04*video_track._queue.qsize()*0.8)
-        print('nerfreal thread stop')
+        logger.info('nerfreal thread stop')
             
             
