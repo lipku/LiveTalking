@@ -56,10 +56,8 @@ from ultralight.unet import Model
 from ultralight.audio2feature import Audio2Feature
 from logger import logger
 
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-logger.info('Using {} for inference.'.format(device))
-
+device = "cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu")
+print('Using {} for inference.'.format(device))
 
 def load_model(opt):
     audio_processor = Audio2Feature()

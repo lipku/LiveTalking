@@ -91,7 +91,7 @@ def load_model(name: str, device: Optional[Union[str, torch.device]] = None, dow
     """
 
     if device is None:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = "cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu")
     if download_root is None:
         download_root = os.getenv(
             "XDG_CACHE_HOME", 

@@ -23,7 +23,7 @@ class VAE():
         self.model_path = model_path
         self.vae = AutoencoderKL.from_pretrained(self.model_path)
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu"))
         self.vae.to(self.device)
 
         if use_float16:

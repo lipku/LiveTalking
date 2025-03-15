@@ -51,7 +51,7 @@ from logger import logger
 def load_model():
     # load model weights
     audio_processor,vae, unet, pe = load_all_model()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu"))
     timesteps = torch.tensor([0], device=device)
     pe = pe.half()
     vae.vae = vae.vae.half()
@@ -77,7 +77,7 @@ def load_avatar(avatar_id):
     #     "bbox_shift":self.bbox_shift   
     # }
 
-    input_latent_list_cycle = torch.load(latents_out_path)  #,weights_only=True
+    input_latent_list_cycle = torch.load(latents_out_path, map_location=torch.device('mps'))  #,weights_only=True
     with open(coords_path, 'rb') as f:
         coord_list_cycle = pickle.load(f)
     input_img_list = glob.glob(os.path.join(full_imgs_path, '*.[jpJP][pnPN]*[gG]'))

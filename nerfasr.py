@@ -30,7 +30,7 @@ class NerfASR(BaseASR):
     def __init__(self, opt, parent, audio_processor,audio_model):
         super().__init__(opt,parent)
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device = "cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu")
         if 'esperanto' in self.opt.asr_model:
             self.audio_dim = 44
         elif 'deepspeech' in self.opt.asr_model:
