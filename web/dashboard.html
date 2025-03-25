@@ -298,6 +298,7 @@
                     <div class="card-body p-0">
                         <div class="video-container">
                             <video id="video" autoplay playsinline></video>
+                            <audio id="audio" autoplay playsinline style="display:none;"></audio>
                             <div class="recording-indicator" id="recording-indicator">
                                 <div class="blink"></div>
                                 <span>录制中</span>
@@ -438,6 +439,16 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
+
+            // 视频流检测定时器
+            setInterval(function() {
+                const videoElement = document.getElementById('video');
+                if (videoElement && videoElement.srcObject && videoElement.srcObject.active) {
+                    console.log('检测到视频流活跃，更新连接状态');
+                    updateConnectionStatus('connected');
+                }
+            }, 2000); 
+                    
             $('#video-size-slider').on('input', function() {
                 const value = $(this).val();
                 $('#video-size-value').text(value + '%');

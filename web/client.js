@@ -52,13 +52,27 @@ function start() {
     }
 
     pc = new RTCPeerConnection(config);
+    
+    pc.onconnectionstatechange = function() {
+        console.log('WebRTC连接状态:', pc.connectionState);
+    };
 
     // connect audio / video
     pc.addEventListener('track', (evt) => {
         if (evt.track.kind == 'video') {
-            document.getElementById('video').srcObject = evt.streams[0];
+            const videoElement = document.getElementById('video');
+            if (videoElement) {
+                videoElement.srcObject = evt.streams[0];
+            } else {
+                console.error('Video element not found');
+            }
         } else {
-            document.getElementById('audio').srcObject = evt.streams[0];
+            const audioElement = document.getElementById('audio');
+            if (audioElement) {
+                audioElement.srcObject = evt.streams[0];
+            } else {
+                console.error('Audio element not found');
+            }
         }
     });
 
@@ -84,14 +98,14 @@ window.onunload = function(event) {
 };
 
 window.onbeforeunload = function (e) {
-        setTimeout(() => {
-                pc.close();
-            }, 500);
-        e = e || window.event
-        // 兼容IE8和Firefox 4之前的版本
-        if (e) {
-          e.returnValue = '关闭提示'
-        }
-        // Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
-        return '关闭提示'
-      }
+    setTimeout(() => {
+        pc.close();
+    }, 500);
+    e = e || window.event
+    // 兼容IE8和Firefox 4之前的版本
+    if (e) {
+      e.returnValue = '关闭提示'
+    }
+    // Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
+    return '关闭提示'
+}

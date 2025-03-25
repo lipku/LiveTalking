@@ -100,6 +100,8 @@ async def offer(request):
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
         logger.info("Connection state is %s" % pc.connectionState)
+        if pc.connectionState == "connected":
+            logger.info("WebRTC connection established for session %d", sessionid)
         if pc.connectionState == "failed":
             await pc.close()
             pcs.discard(pc)
