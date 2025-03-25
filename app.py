@@ -230,6 +230,28 @@ async def post(url,data):
     except aiohttp.ClientError as e:
         logger.info(f'Error: {e}')
 
+async def update_voice(request):
+    params = await request.json()
+    
+    sessionid = params.get('sessionid', 0)
+    voice_type = params.get('voice_type')
+    
+    if sessionid in nerfreals and voice_type:
+        success = nerfreals[sessionid].update_tts_voice(voice_type)
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": 0 if success else -1, "message": "音色更新成功" if success else "音色更新失败"}
+            ),
+        )
+    else:
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "message": "会话ID不存在或未提供音色ID"}
+            ),
+        )
+
 async def run(push_url,sessionid):
     nerfreal = await asyncio.get_event_loop().run_in_executor(None, build_nerfreal,sessionid)
     nerfreals[sessionid] = nerfreal
@@ -453,6 +475,7 @@ if __name__ == '__main__':
     appasync.router.add_post("/set_audiotype", set_audiotype)
     appasync.router.add_post("/record", record)
     appasync.router.add_post("/is_speaking", is_speaking)
+    appasync.router.add_post("/update_voice", update_voice)
     appasync.router.add_static('/',path='web')
 
     # Configure default CORS settings.
@@ -473,7 +496,7 @@ if __name__ == '__main__':
     elif opt.transport=='rtcpush':
         pagename='rtcpushapi.html'
     logger.info('start http server; http://<serverip>:'+str(opt.listenport)+'/'+pagename)
-    logger.info('推荐访问webrtc集成前端: http://<serverip>:'+str(opt.listenport)+'/dashboard.html')
+    logger.info('如果使用webrtc，推荐访问webrtc集成前端: http://<serverip>:'+str(opt.listenport)+'/dashboard.html')
     def run_server(runner):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)

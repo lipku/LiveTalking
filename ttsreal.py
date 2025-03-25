@@ -408,6 +408,15 @@ class TencentTTS(BaseTTS):
         self.volume = 0
         self.speed = 0
     
+    def update_voice_type(self, voice_type):
+        try:
+            self.voice_type = int(voice_type)
+            logger.info(f"腾讯TTS音色ID已更新为: {self.voice_type}")
+            return True
+        except ValueError:
+            logger.error(f"无效的音色ID: {voice_type}")
+            return False
+    
     def __gen_signature(self, params):
         sort_dict = sorted(params.keys())
         sign_str = "POST" + _HOST + _PATH + "?"
@@ -589,4 +598,4 @@ class XTTS(BaseTTS):
                     streamlen -= self.chunk
                     idx += self.chunk
         eventpoint={'status':'end','text':text,'msgenvent':textevent}
-        self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint)  
+        self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint)

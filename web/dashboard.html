@@ -335,6 +335,22 @@
                                 </div>
                             </div>
                             
+
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="voice-type-control">
+                                        <label for="voice-type" class="form-label">腾讯TTS音色ID</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="voice-type" placeholder="输入音色ID，例如：101025">
+                                            <button class="btn btn-primary" id="update-voice-btn" type="button">
+                                                <i class="bi bi-check-lg"></i> 更新音色
+                                            </button>
+                                        </div>
+                                        <div class="form-text">更改音色ID后，数字人将使用新的声音说话</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="settings-panel mt-3">
                                 <div class="row">
                                     <div class="col-md-12">
@@ -726,6 +742,56 @@
                     updateConnectionStatus('disconnected');
                 };
             }
+
+            // 添加音色ID更新功能
+            $('#update-voice-btn').on('click', function() {
+                const voiceType = $('#voice-type').val();
+                if (!voiceType) {
+                    alert('请输入有效的音色ID');
+                    return;
+                }
+                
+                fetch('/update_voice', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionid: parseInt(document.getElementById('sessionid').value),
+                        voice_type: voiceType
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0) {
+                        const messageElement = $(`
+                            <div class="asr-text system-message">
+                                系统: 音色更新成功，ID: ${voiceType}
+                            </div>
+                        `);
+                        $('#chat-messages').append(messageElement);
+                        $('#chat-messages').scrollTop($('#chat-messages')[0].scrollHeight);
+                    } else {
+                        const messageElement = $(`
+                            <div class="asr-text system-message">
+                                系统: 音色更新失败: ${data.message}
+                            </div>
+                        `);
+                        $('#chat-messages').append(messageElement);
+                        $('#chat-messages').scrollTop($('#chat-messages')[0].scrollHeight);
+                    }
+                })
+                .catch(error => {
+                    console.error('更新音色时出错:', error);
+                    const messageElement = $(`
+                        <div class="asr-text system-message">
+                            系统: 更新音色时发生错误
+                        </div>
+                    `);
+                    $('#chat-messages').append(messageElement);
+                    $('#chat-messages').scrollTop($('#chat-messages')[0].scrollHeight);
+                });
+            });
 
             // SRS WebRTC播放功能
             var sdk = null; // 全局处理器，用于在重新发布时进行清理

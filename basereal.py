@@ -276,3 +276,9 @@ class BaseReal:
     #             self.custom_index=0
     #     else:
     #         self.custom_index+=1
+    
+    def update_tts_voice(self, voice_type):
+        """更新TTS音色ID"""
+        if hasattr(self.tts, 'update_voice_type'):
+            return self.tts.update_voice_type(voice_type)
+        return False
