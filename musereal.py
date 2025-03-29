@@ -286,10 +286,10 @@ class MuseReal(BaseReal):
                 # 检测状态变化
                 current_speaking = not (audio_frames[0][1]!=0 and audio_frames[1][1]!=0)
                 if current_speaking != self.last_speaking:
-                    logger.info(f"状态切换：{'静音' if self.last_speaking else '说话'} → {'说话' if current_speaking else '静音'}")
+                    logger.info(f"状态切换：{'说话' if self.last_speaking else '静音'} → {'说话' if current_speaking else '静音'}")
                     self.transition_start = time.time()
                 self.last_speaking = current_speaking
-            
+
             if audio_frames[0][1]!=0 and audio_frames[1][1]!=0: 
                 self.speaking = False
                 audiotype = audio_frames[0][1]
