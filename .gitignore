@@ -19,3 +19,4 @@ workspace/log_ngp.txt
 keep_gpu.py
 models/
 *.log
+prepared_data/

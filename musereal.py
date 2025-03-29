@@ -267,12 +267,14 @@ class MuseReal(BaseReal):
       
 
     def process_frames(self,quit_event,loop=None,audio_track=None,video_track=None):
-        # 新增状态跟踪变量
-        self.last_speaking = False
-        self.transition_start = time.time()
-        self.transition_duration = 0.1  # 过渡时间
-        self.last_silent_frame = None  # 静音帧缓存
-        self.last_speaking_frame = None  # 说话帧缓存
+        enable_transition = True  # 设置为False禁用过渡效果，True启用
+        
+        if enable_transition:
+            self.last_speaking = False
+            self.transition_start = time.time()
+            self.transition_duration = 0.1  # 过渡时间
+            self.last_silent_frame = None  # 静音帧缓存
+            self.last_speaking_frame = None  # 说话帧缓存
         
         while not quit_event.is_set():
             try:
@@ -280,12 +282,13 @@ class MuseReal(BaseReal):
             except queue.Empty:
                 continue
             
-            # 检测状态变化
-            current_speaking = not (audio_frames[0][1]!=0 and audio_frames[1][1]!=0)
-            if current_speaking != self.last_speaking:
-                logger.info(f"状态切换：{'静音' if self.last_speaking else '说话'} → {'说话' if current_speaking else '静音'}")
-                self.transition_start = time.time()
-            self.last_speaking = current_speaking
+            if enable_transition:
+                # 检测状态变化
+                current_speaking = not (audio_frames[0][1]!=0 and audio_frames[1][1]!=0)
+                if current_speaking != self.last_speaking:
+                    logger.info(f"状态切换：{'静音' if self.last_speaking else '说话'} → {'说话' if current_speaking else '静音'}")
+                    self.transition_start = time.time()
+                self.last_speaking = current_speaking
             
             if audio_frames[0][1]!=0 and audio_frames[1][1]!=0: 
                 self.speaking = False
@@ -297,14 +300,17 @@ class MuseReal(BaseReal):
                 else:
                     target_frame = self.frame_list_cycle[idx]
                 
-                # 说话→静音过渡
-                if time.time() - self.transition_start < self.transition_duration and self.last_speaking_frame is not None:
-                    alpha = min(1.0, (time.time() - self.transition_start) / self.transition_duration)
-                    combine_frame = cv2.addWeighted(self.last_speaking_frame, 1-alpha, target_frame, alpha, 0)
+                if enable_transition:
+                    # 说话→静音过渡
+                    if time.time() - self.transition_start < self.transition_duration and self.last_speaking_frame is not None:
+                        alpha = min(1.0, (time.time() - self.transition_start) / self.transition_duration)
+                        combine_frame = cv2.addWeighted(self.last_speaking_frame, 1-alpha, target_frame, alpha, 0)
+                    else:
+                        combine_frame = target_frame
+                    # 缓存静音帧
+                    self.last_silent_frame = combine_frame.copy()
                 else:
                     combine_frame = target_frame
-                # 缓存静音帧
-                self.last_silent_frame = combine_frame.copy()
             else:
                 self.speaking = True
                 bbox = self.coord_list_cycle[idx]
@@ -318,15 +324,18 @@ class MuseReal(BaseReal):
                 mask = self.mask_list_cycle[idx]
                 mask_crop_box = self.mask_coords_list_cycle[idx]
 
-                # 静音→说话过渡
                 current_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
-                if time.time() - self.transition_start < self.transition_duration and self.last_silent_frame is not None:
-                    alpha = min(1.0, (time.time() - self.transition_start) / self.transition_duration)
-                    combine_frame = cv2.addWeighted(self.last_silent_frame, 1-alpha, current_frame, alpha, 0)
+                if enable_transition:
+                    # 静音→说话过渡
+                    if time.time() - self.transition_start < self.transition_duration and self.last_silent_frame is not None:
+                        alpha = min(1.0, (time.time() - self.transition_start) / self.transition_duration)
+                        combine_frame = cv2.addWeighted(self.last_silent_frame, 1-alpha, current_frame, alpha, 0)
+                    else:
+                        combine_frame = current_frame
+                    # 缓存说话帧
+                    self.last_speaking_frame = combine_frame.copy()
                 else:
                     combine_frame = current_frame
-                # 缓存说话帧
-                self.last_speaking_frame = combine_frame.copy()
 
             image = combine_frame
             new_frame = VideoFrame.from_ndarray(image, format="bgr24")
