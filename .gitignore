@@ -20,3 +20,6 @@ keep_gpu.py
 models/
 *.log
 prepared_data/
+models/
+*.log
+dist
