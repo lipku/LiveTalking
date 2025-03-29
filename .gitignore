@@ -16,6 +16,6 @@ pretrained
 .DS_Store
 workspace/log_ngp.txt
 .idea
-keep_gpu.py
 models/
 *.log
+dist
