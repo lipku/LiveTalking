@@ -35,7 +35,7 @@ import soundfile as sf
 import av
 from fractions import Fraction
 
-from ttsreal import EdgeTTS,VoitsTTS,XTTS,CosyVoiceTTS,FishTTS,TencentTTS
+from ttsreal import EdgeTTS,SovitsTTS,XTTS,CosyVoiceTTS,FishTTS,TencentTTS
 from logger import logger
 
 from tqdm import tqdm
@@ -57,7 +57,7 @@ class BaseReal:
         if opt.tts == "edgetts":
             self.tts = EdgeTTS(opt,self)
         elif opt.tts == "gpt-sovits":
-            self.tts = VoitsTTS(opt,self)
+            self.tts = SovitsTTS(opt,self)
         elif opt.tts == "xtts":
             self.tts = XTTS(opt,self)
         elif opt.tts == "cosyvoice":

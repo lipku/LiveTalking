@@ -44,7 +44,7 @@ For setting up the linux cuda environment, you can refer to this article https:/
 
 ## 2. Quick Start
 - Download the models  
-Baidu Cloud Disk <https://pan.baidu.com/s/1yOsQ06-RIDTJd3HFCw4wtA> Password: ltua  
+Quark Cloud Disk <https://pan.quark.cn/s/83a750323ef0>    
 Google Drive <https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P9NlSAJ?usp=sharing>  
 Copy wav2lip256.pth to the models folder of this project and rename it to wav2lip.pth;  
 Extract wav2lip256_avatar1.tar.gz and copy the entire folder to the data/avatars folder of this project.

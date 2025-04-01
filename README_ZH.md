@@ -45,7 +45,7 @@ linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/6749
 
 ## 2. Quick Start
 - 下载模型  
-百度云盘<https://pan.baidu.com/s/1yOsQ06-RIDTJd3HFCw4wtA> 密码: ltua  
+夸克云盘<https://pan.quark.cn/s/83a750323ef0>    
 GoogleDriver <https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P9NlSAJ?usp=sharing>  
 将wav2lip256.pth拷到本项目的models下, 重命名为wav2lip.pth;  
 将wav2lip256_avatar1.tar.gz解压后整个文件夹拷到本项目的data/avatars下

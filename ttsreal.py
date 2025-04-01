@@ -107,9 +107,9 @@ class EdgeTTS(BaseTTS):
             eventpoint=None
             streamlen -= self.chunk
             if idx==0:
-                eventpoint={'status':'start','text':text,'msgenvent':textevent}
+                eventpoint={'status':'start','text':text,'msgevent':textevent}
             elif streamlen<self.chunk:
-                eventpoint={'status':'end','text':text,'msgenvent':textevent}
+                eventpoint={'status':'end','text':text,'msgevent':textevent}
             self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
             idx += self.chunk
         #if streamlen>0:  #skip last frame(not 20ms)
@@ -219,16 +219,16 @@ class FishTTS(BaseTTS):
                 while streamlen >= self.chunk:
                     eventpoint=None
                     if first:
-                        eventpoint={'status':'start','text':text,'msgenvent':textevent}
+                        eventpoint={'status':'start','text':text,'msgevent':textevent}
                         first = False
                     self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
-        eventpoint={'status':'end','text':text,'msgenvent':textevent}
+        eventpoint={'status':'end','text':text,'msgevent':textevent}
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint) 
 
 ###########################################################################################
-class VoitsTTS(BaseTTS):
+class SovitsTTS(BaseTTS):
     def txt_to_audio(self,msg): 
         text,textevent = msg
         self.stream_tts(
@@ -316,12 +316,12 @@ class VoitsTTS(BaseTTS):
                 while streamlen >= self.chunk:
                     eventpoint=None
                     if first:
-                        eventpoint={'status':'start','text':text,'msgenvent':textevent}
+                        eventpoint={'status':'start','text':text,'msgevent':textevent}
                         first = False
                     self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
-        eventpoint={'status':'end','text':text,'msgenvent':textevent}
+        eventpoint={'status':'end','text':text,'msgevent':textevent}
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint)
 
 ###########################################################################################
@@ -382,12 +382,12 @@ class CosyVoiceTTS(BaseTTS):
                 while streamlen >= self.chunk:
                     eventpoint=None
                     if first:
-                        eventpoint={'status':'start','text':text,'msgenvent':textevent}
+                        eventpoint={'status':'start','text':text,'msgevent':textevent}
                         first = False
                     self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
-        eventpoint={'status':'end','text':text,'msgenvent':textevent}
+        eventpoint={'status':'end','text':text,'msgevent':textevent}
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint) 
 
 ###########################################################################################
@@ -505,13 +505,13 @@ class TencentTTS(BaseTTS):
                 while streamlen >= self.chunk:
                     eventpoint=None
                     if first:
-                        eventpoint={'status':'start','text':text,'msgenvent':textevent}
+                        eventpoint={'status':'start','text':text,'msgevent':textevent}
                         first = False
                     self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
                 last_stream = stream[idx:] #get the remain stream
-        eventpoint={'status':'end','text':text,'msgenvent':textevent}
+        eventpoint={'status':'end','text':text,'msgevent':textevent}
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint) 
 
 ###########################################################################################
@@ -583,10 +583,10 @@ class XTTS(BaseTTS):
                 while streamlen >= self.chunk:
                     eventpoint=None
                     if first:
-                        eventpoint={'status':'start','text':text,'msgenvent':textevent}
+                        eventpoint={'status':'start','text':text,'msgevent':textevent}
                         first = False
                     self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
-        eventpoint={'status':'end','text':text,'msgenvent':textevent}
+        eventpoint={'status':'end','text':text,'msgevent':textevent}
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint)  
