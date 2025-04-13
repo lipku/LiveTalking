@@ -1,6 +1,6 @@
  实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果
 
-[wav2lip效果](https://www.bilibili.com/video/BV1Bw4m1e74P/) | [ernerf效果](https://www.bilibili.com/video/BV1PM4m1y7Q2/) | [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)
+[wav2lip效果](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf效果](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)
 
 ## 为避免与3d数字人混淆，原项目metahuman-stream改名为livetalking，原有链接地址继续可用
 
@@ -53,7 +53,7 @@ GoogleDriver <https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P
 python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1  
 用浏览器打开http://serverip:8010/webrtcapi.html , 先点‘start',播放数字人视频；然后在文本框输入任意文字，提交。数字人播报该段文字  
 <font color=red>服务端需要开放端口 tcp:8010; udp:1-65536 </font>  
-如果需要商用高清wav2lip模型，可以与我联系购买  
+如果需要商用高清wav2lip模型，[链接](https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html#wav2lip) 
 
 - 快速体验  
 <https://www.compshare.cn/images-detail?ImageID=compshareImage-18tpjhhxoq3j&referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking1.3> 用该镜像创建实例即可运行成功

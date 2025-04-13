@@ -1,6 +1,6 @@
 Real-time interactive streaming digital human enables synchronous audio and video dialogue. It can basically achieve commercial effects.
 
-[Effect of wav2lip](https://www.bilibili.com/video/BV1Bw4m1e74P/) | [Effect of ernerf](https://www.bilibili.com/video/BV1PM4m1y7Q2/) |  [Effect of musetalk](https://www.bilibili.com/video/BV1gm421N7vQ/)  
+[Effect of wav2lip](https://www.bilibili.com/video/BV1scwBeyELA/) | [Effect of ernerf](https://www.bilibili.com/video/BV1G1421z73r/) |  [Effect of musetalk](https://www.bilibili.com/video/BV1gm421N7vQ/)  
 
 [中文版](./README_ZH.md)
 ## News
@@ -52,7 +52,7 @@ Extract wav2lip256_avatar1.tar.gz and copy the entire folder to the data/avatars
 python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1  
 Open http://serverip:8010/webrtcapi.html in a browser. First click'start' to play the digital human video; then enter any text in the text box and submit it. The digital human will broadcast this text.  
 <font color=red>The server side needs to open ports tcp:8010; udp:1-65536</font>  
-If you need to purchase a high-definition wav2lip model for commercial use, you can contact me to make the purchase.  
+If you need to purchase a high-definition wav2lip model for commercial use, [Link](https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html#wav2lip).  
 
 - Quick experience  
 <https://www.compshare.cn/images-detail?ImageID=compshareImage-18tpjhhxoq3j&referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking1.3> Create an instance with this image to run it.
