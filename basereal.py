@@ -262,8 +262,8 @@ class BaseReal:
             self.curr_state = 1  #当前视频不循环播放，切换到静音状态
         return stream
     
-    def set_curr_state(self,audiotype, reinit):
-        print('set_curr_state:',audiotype)
+    def set_custom_state(self,audiotype, reinit=True):
+        print('set_custom_state:',audiotype)
         self.curr_state = audiotype
         if reinit:
             self.custom_audio_index[audiotype] = 0

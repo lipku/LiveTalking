@@ -179,7 +179,7 @@ async def set_audiotype(request):
     params = await request.json()
 
     sessionid = params.get('sessionid',0)    
-    nerfreals[sessionid].set_curr_state(params['audiotype'],params['reinit'])
+    nerfreals[sessionid].set_custom_state(params['audiotype'],params['reinit'])
 
     return web.Response(
         content_type="application/json",

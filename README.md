@@ -1,96 +1,98 @@
-Real-time interactive streaming digital human enables synchronous audio and video dialogue. It can basically achieve commercial effects.
+ [English](./README-EN.md) | 中文版   
+ 实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果
+[wav2lip效果](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf效果](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)
 
-[Effect of wav2lip](https://www.bilibili.com/video/BV1scwBeyELA/) | [Effect of ernerf](https://www.bilibili.com/video/BV1G1421z73r/) |  [Effect of musetalk](https://www.bilibili.com/video/BV1gm421N7vQ/)  
+## 为避免与3d数字人混淆，原项目metahuman-stream改名为livetalking，原有链接地址继续可用
 
-[中文版](./README_ZH.md)
 ## News
-- December 8, 2024: Improved multi-concurrency, and the video memory does not increase with the number of concurrent connections.
-- December 21, 2024: Added model warm-up for wav2lip and musetalk to solve the problem of stuttering during the first inference. Thanks to [@heimaojinzhangyz](https://github.com/heimaojinzhangyz)
-- December 28, 2024: Added the digital human model Ultralight-Digital-Human. Thanks to [@lijihua2017](https://github.com/lijihua2017)
-- February 7, 2025: Added fish-speech tts
-- February 21, 2025: Added the open-source model wav2lip256. Thanks to @不蠢不蠢
-- March 2, 2025: Added Tencent's speech synthesis service
-- March 16, 2025: Supports mac gpu inference. Thanks to [@GcsSloop](https://github.com/GcsSloop) 
+- 2024.12.8 完善多并发，显存不随并发数增加
+- 2024.12.21 添加wav2lip、musetalk模型预热，解决第一次推理卡顿问题。感谢[@heimaojinzhangyz](https://github.com/heimaojinzhangyz)
+- 2024.12.28 添加数字人模型Ultralight-Digital-Human。 感谢[@lijihua2017](https://github.com/lijihua2017)
+- 2025.2.7 添加fish-speech tts
+- 2025.2.21 添加wav2lip256开源模型 感谢@不蠢不蠢
+- 2025.3.2 添加腾讯语音合成服务
+- 2025.3.16 支持mac gpu推理，感谢[@GcsSloop](https://github.com/GcsSloop) 
 
 ## Features
-1. Supports multiple digital human models: ernerf, musetalk, wav2lip, Ultralight-Digital-Human
-2. Supports voice cloning
-3. Supports interrupting the digital human while it is speaking
-4. Supports full-body video stitching
-5. Supports rtmp and webrtc
-6. Supports video arrangement: Play custom videos when not speaking
-7. Supports multi-concurrency
+1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
+2. 支持声音克隆
+3. 支持数字人说话被打断
+4. 支持全身视频拼接
+5. 支持rtmp和webrtc
+6. 支持视频编排：不说话时播放自定义视频
+7. 支持多并发
 
 ## 1. Installation
 
-Tested on Ubuntu 20.04, Python 3.10, Pytorch 1.12 and CUDA 11.3
+Tested on Ubuntu 20.04, Python3.10, Pytorch 1.12 and CUDA 11.3
 
 ### 1.1 Install dependency
 
 ```bash
 conda create -n nerfstream python=3.10
 conda activate nerfstream
-# If the cuda version is not 11.3 (confirm the version by running nvidia-smi), install the corresponding version of pytorch according to <https://pytorch.org/get-started/previous-versions/> 
+#如果cuda版本不为11.3(运行nvidia-smi确认版本)，根据<https://pytorch.org/get-started/previous-versions/>安装对应版本的pytorch 
 conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
 pip install -r requirements.txt
-# If you need to train the ernerf model, install the following libraries
+#如果需要训练ernerf模型，安装下面的库
 # pip install "git+https://github.com/facebookresearch/pytorch3d.git"
 # pip install tensorflow-gpu==2.8.0
 # pip install --upgrade "protobuf<=3.20.1"
 ``` 
-Common installation issues [FAQ](https://livetalking-doc.readthedocs.io/en/latest/faq.html)  
-For setting up the linux cuda environment, you can refer to this article https://zhuanlan.zhihu.com/p/674972886
+安装常见问题[FAQ](https://livetalking-doc.readthedocs.io/en/latest/faq.html)  
+linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/674972886
 
 
 ## 2. Quick Start
-- Download the models  
-Quark Cloud Disk <https://pan.quark.cn/s/83a750323ef0>    
-Google Drive <https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P9NlSAJ?usp=sharing>  
-Copy wav2lip256.pth to the models folder of this project and rename it to wav2lip.pth;  
-Extract wav2lip256_avatar1.tar.gz and copy the entire folder to the data/avatars folder of this project.
-- Run  
+- 下载模型  
+夸克云盘<https://pan.quark.cn/s/83a750323ef0>    
+GoogleDriver <https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P9NlSAJ?usp=sharing>  
+将wav2lip256.pth拷到本项目的models下, 重命名为wav2lip.pth;  
+将wav2lip256_avatar1.tar.gz解压后整个文件夹拷到本项目的data/avatars下
+- 运行  
 python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1  
-Open http://serverip:8010/webrtcapi.html in a browser. First click'start' to play the digital human video; then enter any text in the text box and submit it. The digital human will broadcast this text.  
-<font color=red>The server side needs to open ports tcp:8010; udp:1-65536</font>  
-If you need to purchase a high-definition wav2lip model for commercial use, [Link](https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html#wav2lip).  
+用浏览器打开http://serverip:8010/webrtcapi.html , 先点‘start',播放数字人视频；然后在文本框输入任意文字，提交。数字人播报该段文字  
+<font color=red>服务端需要开放端口 tcp:8010; udp:1-65536 </font>  
+如果需要商用高清wav2lip模型，[链接](https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html#wav2lip) 
 
-- Quick experience  
-<https://www.compshare.cn/images-detail?ImageID=compshareImage-18tpjhhxoq3j&referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking1.3> Create an instance with this image to run it.
+- 快速体验  
+<https://www.compshare.cn/images-detail?ImageID=compshareImage-18tpjhhxoq3j&referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking1.3> 用该镜像创建实例即可运行成功
 
-If you can't access huggingface, before running
+如果访问不了huggingface，在运行前
 ```
 export HF_ENDPOINT=https://hf-mirror.com
 ``` 
 
 
 ## 3. More Usage
-Usage instructions: <https://livetalking-doc.readthedocs.io/en/latest>
+使用说明: <https://livetalking-doc.readthedocs.io/>
   
 ## 4. Docker Run  
-No need for the previous installation, just run directly.
+不需要前面的安装，直接运行。
 ```
 docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/lipku-metahuman-stream:2K9qaMBu8v
 ```
-The code is in /root/metahuman-stream. First, git pull to get the latest code, and then execute the commands as in steps 2 and 3. 
+代码在/root/metahuman-stream，先git pull拉一下最新代码，然后执行命令同第2、3步 
 
-The following images are provided:
-- autodl image: <https://www.codewithgpu.com/i/lipku/metahuman-stream/base>   
-[autodl Tutorial](https://livetalking-doc.readthedocs.io/en/latest/autodl/README.html)
-- ucloud image: <https://www.compshare.cn/images-detail?ImageID=compshareImage-18tpjhhxoq3j&referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_livetalking1.3>  
-Any port can be opened, and there is no need to deploy an srs service additionally.  
-[ucloud Tutorial](https://livetalking-doc.readthedocs.io/en/latest/ucloud/ucloud.html) 
+提供如下镜像
+- autodl镜像: <https://www.codewithgpu.com/i/lipku/metahuman-stream/base>   
+[autodl教程](https://livetalking-doc.readthedocs.io/en/latest/autodl/README.html)
+- ucloud镜像: <https://www.compshare.cn/images-detail?ImageID=compshareImage-18tpjhhxoq3j&referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_livetalking1.3>  
+可以开放任意端口，不需要另外部署srs服务.  
+[ucloud教程](https://livetalking-doc.readthedocs.io/en/latest/ucloud/ucloud.html) 
 
 
 ## 5. TODO
-- [x] Added chatgpt to enable digital human dialogue
-- [x] Voice cloning
-- [x] Replace the digital human with a video when it is silent
+- [x] 添加chatgpt实现数字人对话
+- [x] 声音克隆
+- [x] 数字人静音时用一段视频代替
 - [x] MuseTalk
 - [x] Wav2Lip
 - [x] Ultralight-Digital-Human
 
 ---
-If this project is helpful to you, please give it a star. Friends who are interested are also welcome to join in and improve this project together.
-* Knowledge Planet: https://t.zsxq.com/7NMyO, where high-quality common problems, best practice experiences, and problem solutions are accumulated.
-* WeChat Official Account: Digital Human Technology  
-![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyfaiaLZGuMGQXnhLWxibpJUS2gfs8Dje6JuMY8zu2tVyU9n8Zx1yaNncvKHBMibX0ocehoITy5qQEZg/640?wxfrom=12&tp=wxpic&usePicPrefetch=1&wx_fmt=jpeg&amp;from=appmsg) 
+如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.
+* 知识星球: https://t.zsxq.com/7NMyO 沉淀高质量常见问题、最佳实践经验、问题解答  
+* 微信公众号：数字人技术  
+![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyfaiaLZGuMGQXnhLWxibpJUS2gfs8Dje6JuMY8zu2tVyU9n8Zx1yaNncvKHBMibX0ocehoITy5qQEZg/640?wxfrom=12&tp=wxpic&usePicPrefetch=1&wx_fmt=jpeg&amp;from=appmsg)  
+
