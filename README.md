@@ -12,6 +12,7 @@
 - 2025.2.21 添加wav2lip256开源模型 感谢@不蠢不蠢
 - 2025.3.2 添加腾讯语音合成服务
 - 2025.3.16 支持mac gpu推理，感谢[@GcsSloop](https://github.com/GcsSloop) 
+- 2025.5.1 精简运行参数，ernerf模型移至git分支ernerf-rtmp
 
 ## Features
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
@@ -39,8 +40,9 @@ pip install -r requirements.txt
 # pip install tensorflow-gpu==2.8.0
 # pip install --upgrade "protobuf<=3.20.1"
 ``` 
-安装常见问题[FAQ](https://livetalking-doc.readthedocs.io/en/latest/faq.html)  
-linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/674972886
+安装常见问题[FAQ](https://livetalking-doc.readthedocs.io/zh-cn/latest/faq.html)  
+linux cuda环境搭建可以参考这篇文章 <https://zhuanlan.zhihu.com/p/674972886>  
+视频连不上解决方法 <https://mp.weixin.qq.com/s/MVUkxxhV2cgMMHalphr2cg>
 
 
 ## 2. Quick Start

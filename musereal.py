@@ -211,8 +211,8 @@ class MuseReal(BaseReal):
     def __init__(self, opt, model, avatar):
         super().__init__(opt)
         #self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.
-        self.W = opt.W
-        self.H = opt.H
+        # self.W = opt.W
+        # self.H = opt.H
 
         self.fps = opt.fps # 20 ms per frame
 
@@ -338,6 +338,7 @@ class MuseReal(BaseReal):
                     combine_frame = current_frame
 
             image = combine_frame
+            image[0,:] &= 0xFE
             new_frame = VideoFrame.from_ndarray(image, format="bgr24")
             asyncio.run_coroutine_threadsafe(video_track._queue.put((new_frame,None)), loop)
             self.record_video_data(image)

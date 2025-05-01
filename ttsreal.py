@@ -90,7 +90,7 @@ class BaseTTS:
 ###########################################################################################
 class EdgeTTS(BaseTTS):
     def txt_to_audio(self,msg):
-        voicename = "zh-CN-YunxiaNeural"
+        voicename = self.opt.REF_FILE #"zh-CN-YunxiaNeural"
         text,textevent = msg
         t = time.time()
         asyncio.new_event_loop().run_until_complete(self.__main(voicename,text))
