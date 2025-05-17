@@ -84,13 +84,22 @@ docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/c
 [ucloud教程](https://livetalking-doc.readthedocs.io/en/latest/ucloud/ucloud.html) 
 
 
-## 5. TODO
-- [x] 添加chatgpt实现数字人对话
-- [x] 声音克隆
-- [x] 数字人静音时用一段视频代替
-- [x] MuseTalk
-- [x] Wav2Lip
-- [x] Ultralight-Digital-Human
+## 5. 性能
+- 性能主要跟cpu和gpu相关，每路视频压缩需要消耗cpu，cpu性能与视频分辨率正相关；每路口型推理跟gpu性能相关。  
+- 不说话时的并发数跟cpu相关，同时说话的并发数跟gpu相关。  
+- 后端日志inferfps表示显卡推理帧率，finalfps表示最终推流帧率。两者都要在25以上才能实时。如果inferfps在25以上，finalfps达不到25表示cpu性能不足。  
+- 实时推理性能  
+
+模型    |显卡型号   |fps
+:----   |:---   |:---
+wav2lip256 | 3060    | 60
+musetalk   | 3080Ti  | 45
+wav2lip256 | 3080Ti  | 120 
+
+wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。  
+
+## 6. 声明
+基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上LiveTalking水印和标识，如需去除请联系作者备案授权。
 
 ---
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.

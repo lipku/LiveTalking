@@ -328,7 +328,7 @@ if __name__ == '__main__':
     #     rendthrd.start()
 
     #############################################################################
-    appasync = web.Application()
+    appasync = web.Application(client_max_size=1024**2*100)
     appasync.on_shutdown.append(on_shutdown)
     appasync.router.add_post("/offer", offer)
     appasync.router.add_post("/human", human)
