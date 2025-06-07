@@ -266,92 +266,17 @@ class MuseReal(BaseReal):
         recon = self.vae.decode_latents(pred_latents)
       
 
-    def process_frames(self,quit_event,loop=None,audio_track=None,video_track=None):
-        enable_transition = True  # 设置为False禁用过渡效果，True启用
-        
-        if enable_transition:
-            self.last_speaking = False
-            self.transition_start = time.time()
-            self.transition_duration = 0.1  # 过渡时间
-            self.last_silent_frame = None  # 静音帧缓存
-            self.last_speaking_frame = None  # 说话帧缓存
-        
-        while not quit_event.is_set():
-            try:
-                res_frame,idx,audio_frames = self.res_frame_queue.get(block=True, timeout=1)
-            except queue.Empty:
-                continue
-            
-            if enable_transition:
-                # 检测状态变化
-                current_speaking = not (audio_frames[0][1]!=0 and audio_frames[1][1]!=0)
-                if current_speaking != self.last_speaking:
-                    logger.info(f"状态切换：{'说话' if self.last_speaking else '静音'} → {'说话' if current_speaking else '静音'}")
-                    self.transition_start = time.time()
-                self.last_speaking = current_speaking
+    def paste_back_frame(self,pred_frame,idx:int):
+        bbox = self.coord_list_cycle[idx]
+        ori_frame = copy.deepcopy(self.frame_list_cycle[idx])
+        x1, y1, x2, y2 = bbox
 
-            if audio_frames[0][1]!=0 and audio_frames[1][1]!=0: 
-                self.speaking = False
-                audiotype = audio_frames[0][1]
-                if self.custom_index.get(audiotype) is not None:
-                    mirindex = self.mirror_index(len(self.custom_img_cycle[audiotype]),self.custom_index[audiotype])
-                    target_frame = self.custom_img_cycle[audiotype][mirindex]
-                    self.custom_index[audiotype] += 1
-                else:
-                    target_frame = self.frame_list_cycle[idx]
-                
-                if enable_transition:
-                    # 说话→静音过渡
-                    if time.time() - self.transition_start < self.transition_duration and self.last_speaking_frame is not None:
-                        alpha = min(1.0, (time.time() - self.transition_start) / self.transition_duration)
-                        combine_frame = cv2.addWeighted(self.last_speaking_frame, 1-alpha, target_frame, alpha, 0)
-                    else:
-                        combine_frame = target_frame
-                    # 缓存静音帧
-                    self.last_silent_frame = combine_frame.copy()
-                else:
-                    combine_frame = target_frame
-            else:
-                self.speaking = True
-                bbox = self.coord_list_cycle[idx]
-                ori_frame = copy.deepcopy(self.frame_list_cycle[idx])
-                x1, y1, x2, y2 = bbox
-                try:
-                    res_frame = cv2.resize(res_frame.astype(np.uint8),(x2-x1,y2-y1))
-                except Exception as e:
-                    logger.warning(f"resize error: {e}")
-                    continue
-                mask = self.mask_list_cycle[idx]
-                mask_crop_box = self.mask_coords_list_cycle[idx]
+        res_frame = cv2.resize(pred_frame.astype(np.uint8),(x2-x1,y2-y1))
+        mask = self.mask_list_cycle[idx]
+        mask_crop_box = self.mask_coords_list_cycle[idx]
 
-                current_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
-                if enable_transition:
-                    # 静音→说话过渡
-                    if time.time() - self.transition_start < self.transition_duration and self.last_silent_frame is not None:
-                        alpha = min(1.0, (time.time() - self.transition_start) / self.transition_duration)
-                        combine_frame = cv2.addWeighted(self.last_silent_frame, 1-alpha, current_frame, alpha, 0)
-                    else:
-                        combine_frame = current_frame
-                    # 缓存说话帧
-                    self.last_speaking_frame = combine_frame.copy()
-                else:
-                    combine_frame = current_frame
-
-            image = combine_frame
-            image[0,:] &= 0xFE
-            new_frame = VideoFrame.from_ndarray(image, format="bgr24")
-            asyncio.run_coroutine_threadsafe(video_track._queue.put((new_frame,None)), loop)
-            self.record_video_data(image)
-
-            for audio_frame in audio_frames:
-                frame,type,eventpoint = audio_frame
-                frame = (frame * 32767).astype(np.int16)
-                new_frame = AudioFrame(format='s16', layout='mono', samples=frame.shape[0])
-                new_frame.planes[0].update(frame.tobytes())
-                new_frame.sample_rate=16000
-                asyncio.run_coroutine_threadsafe(audio_track._queue.put((new_frame,eventpoint)), loop)
-                self.record_audio_data(frame)
-        logger.info('musereal process_frames thread stop') 
+        combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
+        return combine_frame
             
     def render(self,quit_event,loop=None,audio_track=None,video_track=None):
         #if self.opt.asr:
@@ -382,7 +307,7 @@ class MuseReal(BaseReal):
             #     print(f"------actual avg infer fps:{count/totaltime:.4f}")
             #     count=0
             #     totaltime=0
-            if video_track._queue.qsize()>=1.5*self.opt.batch_size:
+            if video_track and video_track._queue.qsize()>=1.5*self.opt.batch_size:
                 logger.debug('sleep qsize=%d',video_track._queue.qsize())
                 time.sleep(0.04*video_track._queue.qsize()*0.8)
             # if video_track._queue.qsize()>=5:

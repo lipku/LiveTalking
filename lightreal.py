@@ -248,60 +248,19 @@ class LightReal(BaseReal):
     def __del__(self):
         logger.info(f'lightreal({self.sessionid}) delete')
 
-   
-    def process_frames(self,quit_event,loop=None,audio_track=None,video_track=None):
-        
-        while not quit_event.is_set():
-            try:
-                res_frame,idx,audio_frames = self.res_frame_queue.get(block=True, timeout=1)
-            except queue.Empty:
-                continue
-            if audio_frames[0][1]!=0 and audio_frames[1][1]!=0: #全为静音数据，只需要取fullimg
-                self.speaking = False
-                audiotype = audio_frames[0][1]
-                if self.custom_index.get(audiotype) is not None: #有自定义视频
-                    mirindex = self.mirror_index(len(self.custom_img_cycle[audiotype]),self.custom_index[audiotype])
-                    combine_frame = self.custom_img_cycle[audiotype][mirindex]
-                    self.custom_index[audiotype] += 1
-                    # if not self.custom_opt[audiotype].loop and self.custom_index[audiotype]>=len(self.custom_img_cycle[audiotype]):
-                    #     self.curr_state = 1  #当前视频不循环播放，切换到静音状态
-                else:
-                    combine_frame = self.frame_list_cycle[idx]
-                    #combine_frame = self.imagecache.get_img(idx)
-            else:
-                self.speaking = True
-                bbox = self.coord_list_cycle[idx]
-                combine_frame = copy.deepcopy(self.frame_list_cycle[idx])
-                x1, y1, x2, y2 = bbox
+    def paste_back_frame(self,pred_frame,idx:int):
+        bbox = self.coord_list_cycle[idx]
+        combine_frame = copy.deepcopy(self.frame_list_cycle[idx])
+        x1, y1, x2, y2 = bbox
 
-                crop_img = self.face_list_cycle[idx]
-                crop_img_ori = crop_img.copy()
-                #res_frame = np.array(res_frame, dtype=np.uint8)
-                try:
-                    crop_img_ori[4:164, 4:164] = res_frame.astype(np.uint8)
-                    crop_img_ori = cv2.resize(crop_img_ori, (x2-x1,y2-y1))
-                except:
-                    continue
-                combine_frame[y1:y2, x1:x2] = crop_img_ori
-                #print('blending time:',time.perf_counter()-t)
+        crop_img = self.face_list_cycle[idx]
+        crop_img_ori = crop_img.copy()
+        #res_frame = np.array(res_frame, dtype=np.uint8)
 
-            combine_frame[0,:] &= 0xFE
-            new_frame = VideoFrame.from_ndarray(combine_frame, format="bgr24")
-            asyncio.run_coroutine_threadsafe(video_track._queue.put((new_frame,None)), loop)
-            self.record_video_data(combine_frame)
-
-            for audio_frame in audio_frames:
-                frame,type_,eventpoint = audio_frame
-                frame = (frame * 32767).astype(np.int16)
-                new_frame = AudioFrame(format='s16', layout='mono', samples=frame.shape[0])
-                new_frame.planes[0].update(frame.tobytes())
-                new_frame.sample_rate=16000
-                # if audio_track._queue.qsize()>10:
-                #     time.sleep(0.1)
-                asyncio.run_coroutine_threadsafe(audio_track._queue.put((new_frame,eventpoint)), loop)
-                self.record_audio_data(frame)
-                #self.notify(eventpoint)
-        logger.info('lightreal process_frames thread stop') 
+        crop_img_ori[4:164, 4:164] = pred_frame.astype(np.uint8)
+        crop_img_ori = cv2.resize(crop_img_ori, (x2-x1,y2-y1))
+        combine_frame[y1:y2, x1:x2] = crop_img_ori
+        return combine_frame
             
     def render(self,quit_event,loop=None,audio_track=None,video_track=None):
         #if self.opt.asr:
@@ -329,7 +288,7 @@ class LightReal(BaseReal):
             # if video_track._queue.qsize()>=2*self.opt.batch_size:
             #     print('sleep qsize=',video_track._queue.qsize())
             #     time.sleep(0.04*video_track._queue.qsize()*0.8)
-            if video_track._queue.qsize()>=5:
+            if video_track and video_track._queue.qsize()>=5:
                 logger.debug('sleep qsize=%d',video_track._queue.qsize())
                 time.sleep(0.04*video_track._queue.qsize()*0.8)
                 

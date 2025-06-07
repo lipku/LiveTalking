@@ -284,7 +284,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--model', type=str, default='musetalk') #musetalk wav2lip ultralight
 
-    parser.add_argument('--transport', type=str, default='rtcpush') #rtmp webrtc rtcpush
+    parser.add_argument('--transport', type=str, default='rtcpush') #webrtc rtcpush virtualcam
     parser.add_argument('--push_url', type=str, default='http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream') #rtmp://localhost/live/livestream
 
     parser.add_argument('--max_session', type=int, default=1)  #multi session count
@@ -326,6 +326,11 @@ if __name__ == '__main__':
     #     nerfreals[0] = build_nerfreal(0)
     #     rendthrd = Thread(target=nerfreals[0].render,args=(thread_quit,))
     #     rendthrd.start()
+    if opt.transport=='virtualcam':
+        thread_quit = Event()
+        nerfreals[0] = build_nerfreal(0)
+        rendthrd = Thread(target=nerfreals[0].render,args=(thread_quit,))
+        rendthrd.start()
 
     #############################################################################
     appasync = web.Application(client_max_size=1024**2*100)

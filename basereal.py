@@ -32,6 +32,9 @@ from threading import Thread, Event
 from io import BytesIO
 import soundfile as sf
 
+import asyncio
+from av import AudioFrame, VideoFrame
+
 import av
 from fractions import Fraction
 
@@ -46,6 +49,23 @@ def read_imgs(img_list):
         frame = cv2.imread(img_path)
         frames.append(frame)
     return frames
+
+def play_audio(quit_event,queue):        
+    import pyaudio
+    p = pyaudio.PyAudio()
+    stream = p.open(
+        rate=16000,
+        channels=1,
+        format=8,
+        output=True,
+        output_device_index=1,
+    )
+    stream.start_stream()
+    # while queue.qsize() <= 0:
+    #     time.sleep(0.1)
+    while not quit_event.is_set():
+        stream.write(queue.get(block=True))
+    stream.close()
 
 class BaseReal:
     def __init__(self, opt):
@@ -268,6 +288,109 @@ class BaseReal:
         if reinit:
             self.custom_audio_index[audiotype] = 0
             self.custom_index[audiotype] = 0
+
+    def process_frames(self,quit_event,loop=None,audio_track=None,video_track=None):
+        enable_transition = False  # 设置为False禁用过渡效果，True启用
+        
+        if enable_transition:
+            _last_speaking = False
+            _transition_start = time.time()
+            _transition_duration = 0.1  # 过渡时间
+            _last_silent_frame = None  # 静音帧缓存
+            _last_speaking_frame = None  # 说话帧缓存
+        
+        if self.opt.transport=='virtualcam':
+            import pyvirtualcam
+            vircam = None
+
+            audio_tmp = queue.Queue(maxsize=3000)
+            audio_thread = Thread(target=play_audio, args=(quit_event,audio_tmp,), daemon=True, name="pyaudio_stream")
+            audio_thread.start()
+        
+        while not quit_event.is_set():
+            try:
+                res_frame,idx,audio_frames = self.res_frame_queue.get(block=True, timeout=1)
+            except queue.Empty:
+                continue
+            
+            if enable_transition:
+                # 检测状态变化
+                current_speaking = not (audio_frames[0][1]!=0 and audio_frames[1][1]!=0)
+                if current_speaking != _last_speaking:
+                    logger.info(f"状态切换：{'说话' if _last_speaking else '静音'} → {'说话' if current_speaking else '静音'}")
+                    _transition_start = time.time()
+                _last_speaking = current_speaking
+
+            if audio_frames[0][1]!=0 and audio_frames[1][1]!=0: #全为静音数据，只需要取fullimg
+                self.speaking = False
+                audiotype = audio_frames[0][1]
+                if self.custom_index.get(audiotype) is not None: #有自定义视频
+                    mirindex = self.mirror_index(len(self.custom_img_cycle[audiotype]),self.custom_index[audiotype])
+                    target_frame = self.custom_img_cycle[audiotype][mirindex]
+                    self.custom_index[audiotype] += 1
+                else:
+                    target_frame = self.frame_list_cycle[idx]
+                
+                if enable_transition:
+                    # 说话→静音过渡
+                    if time.time() - _transition_start < _transition_duration and _last_speaking_frame is not None:
+                        alpha = min(1.0, (time.time() - _transition_start) / _transition_duration)
+                        combine_frame = cv2.addWeighted(_last_speaking_frame, 1-alpha, target_frame, alpha, 0)
+                    else:
+                        combine_frame = target_frame
+                    # 缓存静音帧
+                    _last_silent_frame = combine_frame.copy()
+                else:
+                    combine_frame = target_frame
+            else:
+                self.speaking = True
+                try:
+                    current_frame = self.paste_back_frame(res_frame,idx)
+                except Exception as e:
+                    logger.warning(f"paste_back_frame error: {e}")
+                    continue
+                if enable_transition:
+                    # 静音→说话过渡
+                    if time.time() - _transition_start < _transition_duration and _last_silent_frame is not None:
+                        alpha = min(1.0, (time.time() - _transition_start) / _transition_duration)
+                        combine_frame = cv2.addWeighted(_last_silent_frame, 1-alpha, current_frame, alpha, 0)
+                    else:
+                        combine_frame = current_frame
+                    # 缓存说话帧
+                    _last_speaking_frame = combine_frame.copy()
+                else:
+                    combine_frame = current_frame
+
+            if self.opt.transport=='virtualcam':
+                if vircam==None:
+                    height, width,_= combine_frame.shape
+                    vircam = pyvirtualcam.Camera(width=width, height=height, fps=25, fmt=pyvirtualcam.PixelFormat.BGR,print_fps=True)
+                vircam.send(combine_frame)
+            else: #webrtc
+                image = combine_frame
+                image[0,:] &= 0xFE
+                new_frame = VideoFrame.from_ndarray(image, format="bgr24")
+                asyncio.run_coroutine_threadsafe(video_track._queue.put((new_frame,None)), loop)
+            self.record_video_data(combine_frame)
+
+            for audio_frame in audio_frames:
+                frame,type,eventpoint = audio_frame
+                frame = (frame * 32767).astype(np.int16)
+
+                if self.opt.transport=='virtualcam':
+                    audio_tmp.put(frame.tobytes()) #TODO
+                else: #webrtc
+                    new_frame = AudioFrame(format='s16', layout='mono', samples=frame.shape[0])
+                    new_frame.planes[0].update(frame.tobytes())
+                    new_frame.sample_rate=16000
+                    asyncio.run_coroutine_threadsafe(audio_track._queue.put((new_frame,eventpoint)), loop)
+                self.record_audio_data(frame)
+            if self.opt.transport=='virtualcam':
+                vircam.sleep_until_next_frame()
+        if self.opt.transport=='virtualcam':
+            audio_thread.join()
+            vircam.close()
+        logger.info('basereal process_frames thread stop') 
     
     # def process_custom(self,audiotype:int,idx:int):
     #     if self.curr_state!=audiotype: #从推理切到口播

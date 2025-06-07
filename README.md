@@ -13,27 +13,28 @@
 - 2025.3.2 添加腾讯语音合成服务
 - 2025.3.16 支持mac gpu推理，感谢[@GcsSloop](https://github.com/GcsSloop) 
 - 2025.5.1 精简运行参数，ernerf模型移至git分支ernerf-rtmp
+- 2025.6.7 添加虚拟摄像头输出
 
 ## Features
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
 2. 支持声音克隆
 3. 支持数字人说话被打断
 4. 支持全身视频拼接
-5. 支持rtmp和webrtc
-6. 支持视频编排：不说话时播放自定义视频
+5. 支持webrtc、虚拟摄像头输出
+6. 支持动作编排：不说话时播放自定义视频
 7. 支持多并发
 
 ## 1. Installation
 
-Tested on Ubuntu 20.04, Python3.10, Pytorch 1.12 and CUDA 11.3
+Tested on Ubuntu 24.04, Python3.10, Pytorch 2.5.0 and CUDA 12.4
 
 ### 1.1 Install dependency
 
 ```bash
 conda create -n nerfstream python=3.10
 conda activate nerfstream
-#如果cuda版本不为11.3(运行nvidia-smi确认版本)，根据<https://pytorch.org/get-started/previous-versions/>安装对应版本的pytorch 
-conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
+#如果cuda版本不为12.4(运行nvidia-smi确认版本)，根据<https://pytorch.org/get-started/previous-versions/>安装对应版本的pytorch 
+conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 pytorch-cuda=12.4 -c pytorch -c nvidia
 pip install -r requirements.txt
 #如果需要训练ernerf模型，安装下面的库
 # pip install "git+https://github.com/facebookresearch/pytorch3d.git"
