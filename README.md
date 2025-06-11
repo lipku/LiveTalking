@@ -59,7 +59,7 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 如果需要商用高清wav2lip模型，[链接](https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html#wav2lip) 
 
 - 快速体验  
-<https://www.compshare.cn/images-detail?ImageID=compshareImage-18tpjhhxoq3j&referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking1.3> 用该镜像创建实例即可运行成功
+<https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking> 用该镜像创建实例即可运行成功
 
 如果访问不了huggingface，在运行前
 ```
@@ -80,7 +80,7 @@ docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/c
 提供如下镜像
 - autodl镜像: <https://www.codewithgpu.com/i/lipku/metahuman-stream/base>   
 [autodl教程](https://livetalking-doc.readthedocs.io/en/latest/autodl/README.html)
-- ucloud镜像: <https://www.compshare.cn/images-detail?ImageID=compshareImage-18tpjhhxoq3j&referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_livetalking1.3>  
+- ucloud镜像: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking>  
 可以开放任意端口，不需要另外部署srs服务.  
 [ucloud教程](https://livetalking-doc.readthedocs.io/en/latest/ucloud/ucloud.html) 
 
