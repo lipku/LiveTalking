@@ -32,7 +32,7 @@ import torch.multiprocessing as mp
 from aiohttp import web
 import aiohttp
 import aiohttp_cors
-from aiortc import RTCPeerConnection, RTCSessionDescription
+from aiortc import RTCPeerConnection, RTCSessionDescription,RTCIceServer,RTCConfiguration
 from aiortc.rtcrtpsender import RTCRtpSender
 from webrtc import HumanPlayer
 from basereal import BaseReal
@@ -94,7 +94,9 @@ async def offer(request):
     nerfreal = await asyncio.get_event_loop().run_in_executor(None, build_nerfreal,sessionid)
     nerfreals[sessionid] = nerfreal
     
-    pc = RTCPeerConnection()
+    #ice_server = RTCIceServer(urls='stun:stun.l.google.com:19302')
+    ice_server = RTCIceServer(urls='stun:stun.miwifi.com:3478')
+    pc = RTCPeerConnection(configuration=RTCConfiguration(iceServers=[ice_server]))
     pcs.add(pc)
 
     @pc.on("connectionstatechange")
