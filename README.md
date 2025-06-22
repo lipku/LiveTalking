@@ -1,6 +1,7 @@
  [English](./README-EN.md) | 中文版   
  实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果
-[wav2lip效果](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf效果](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)
+[wav2lip效果](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf效果](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)  
+国内镜像地址:<https://gitee.com/lipku/LiveTalking> 
 
 ## 为避免与3d数字人混淆，原项目metahuman-stream改名为livetalking，原有链接地址继续可用
 
@@ -54,9 +55,10 @@ GoogleDriver <https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P
 将wav2lip256_avatar1.tar.gz解压后整个文件夹拷到本项目的data/avatars下
 - 运行  
 python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1  
-用浏览器打开http://serverip:8010/webrtcapi.html , 先点‘start',播放数字人视频；然后在文本框输入任意文字，提交。数字人播报该段文字  
 <font color=red>服务端需要开放端口 tcp:8010; udp:1-65536 </font>  
-如果需要商用高清wav2lip模型，[链接](https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html#wav2lip) 
+客户端可以选用以下两种方式:  
+(1)用浏览器打开http://serverip:8010/webrtcapi.html , 先点‘start',播放数字人视频；然后在文本框输入任意文字，提交。数字人播报该段文字  
+(2)用客户端方式, 下载地址<https://pan.quark.cn/s/d7192d8ac19b>   
 
 - 快速体验  
 <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking> 用该镜像创建实例即可运行成功
@@ -108,6 +110,7 @@ wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。
 5. 动作编排：不说话时动作、唤醒时动作、思考时动作、进入休眠动作
 6. 支持不限时长的数字人形象avatar
 7. 提供实时音频流输入接口
+8. 数字人透明背景，能叠加动态背景
 
 ## 7. 声明
 基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上LiveTalking水印和标识，如需去除请联系作者备案授权。

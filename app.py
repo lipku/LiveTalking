@@ -45,6 +45,7 @@ import asyncio
 import torch
 from typing import Dict
 from logger import logger
+import gc
 
 
 app = Flask(__name__)
@@ -87,7 +88,12 @@ async def offer(request):
 
     if len(nerfreals) >= opt.max_session:
         logger.info('reach max session')
-        return -1
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "msg": "reach max session"}
+            ),
+        )
     sessionid = randN(6) #len(nerfreals)
     logger.info('sessionid=%d',sessionid)
     nerfreals[sessionid] = None
@@ -109,6 +115,7 @@ async def offer(request):
         if pc.connectionState == "closed":
             pcs.discard(pc)
             del nerfreals[sessionid]
+            gc.collect()
 
     player = HumanPlayer(nerfreals[sessionid])
     audio_sender = pc.addTrack(player.audio)
@@ -135,24 +142,55 @@ async def offer(request):
     )
 
 async def human(request):
-    params = await request.json()
+    try:
+        params = await request.json()
 
-    sessionid = params.get('sessionid',0)
-    if params.get('interrupt'):
+        sessionid = params.get('sessionid',0)
+        if params.get('interrupt'):
+            nerfreals[sessionid].flush_talk()
+
+        if params['type']=='echo':
+            nerfreals[sessionid].put_msg_txt(params['text'])
+        elif params['type']=='chat':
+            asyncio.get_event_loop().run_in_executor(None, llm_response, params['text'],nerfreals[sessionid])                         
+            #nerfreals[sessionid].put_msg_txt(res)
+
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": 0, "msg":"ok"}
+            ),
+        )
+    except Exception as e:
+        logger.exception('exception:')
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "msg": str(e)}
+            ),
+        )
+
+async def interrupt_talk(request):
+    try:
+        params = await request.json()
+
+        sessionid = params.get('sessionid',0)
         nerfreals[sessionid].flush_talk()
-
-    if params['type']=='echo':
-        nerfreals[sessionid].put_msg_txt(params['text'])
-    elif params['type']=='chat':
-        res=await asyncio.get_event_loop().run_in_executor(None, llm_response, params['text'],nerfreals[sessionid])                         
-        #nerfreals[sessionid].put_msg_txt(res)
-
-    return web.Response(
-        content_type="application/json",
-        text=json.dumps(
-            {"code": 0, "data":"ok"}
-        ),
-    )
+        
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": 0, "msg":"ok"}
+            ),
+        )
+    except Exception as e:
+        logger.exception('exception:')
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "msg": str(e)}
+            ),
+        )
 
 async def humanaudio(request):
     try:
@@ -170,41 +208,60 @@ async def humanaudio(request):
             ),
         )
     except Exception as e:
+        logger.exception('exception:')
         return web.Response(
             content_type="application/json",
             text=json.dumps(
-                {"code": -1, "msg":"err","data": ""+e.args[0]+""}
+                {"code": -1, "msg": str(e)}
             ),
         )
 
 async def set_audiotype(request):
-    params = await request.json()
+    try:
+        params = await request.json()
 
-    sessionid = params.get('sessionid',0)    
-    nerfreals[sessionid].set_custom_state(params['audiotype'],params['reinit'])
+        sessionid = params.get('sessionid',0)    
+        nerfreals[sessionid].set_custom_state(params['audiotype'],params['reinit'])
 
-    return web.Response(
-        content_type="application/json",
-        text=json.dumps(
-            {"code": 0, "data":"ok"}
-        ),
-    )
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": 0, "msg":"ok"}
+            ),
+        )
+    except Exception as e:
+        logger.exception('exception:')
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "msg": str(e)}
+            ),
+        )
 
 async def record(request):
-    params = await request.json()
+    try:
+        params = await request.json()
 
-    sessionid = params.get('sessionid',0)
-    if params['type']=='start_record':
-        # nerfreals[sessionid].put_msg_txt(params['text'])
-        nerfreals[sessionid].start_recording()
-    elif params['type']=='end_record':
-        nerfreals[sessionid].stop_recording()
-    return web.Response(
-        content_type="application/json",
-        text=json.dumps(
-            {"code": 0, "data":"ok"}
-        ),
-    )
+        sessionid = params.get('sessionid',0)
+        if params['type']=='start_record':
+            # nerfreals[sessionid].put_msg_txt(params['text'])
+            nerfreals[sessionid].start_recording()
+        elif params['type']=='end_record':
+            nerfreals[sessionid].stop_recording()
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": 0, "msg":"ok"}
+            ),
+        )
+    except Exception as e:
+        logger.exception('exception:')
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "msg": str(e)}
+            ),
+        )
 
 async def is_speaking(request):
     params = await request.json()
@@ -342,6 +399,7 @@ if __name__ == '__main__':
     appasync.router.add_post("/humanaudio", humanaudio)
     appasync.router.add_post("/set_audiotype", set_audiotype)
     appasync.router.add_post("/record", record)
+    appasync.router.add_post("/interrupt_talk", interrupt_talk)
     appasync.router.add_post("/is_speaking", is_speaking)
     appasync.router.add_static('/',path='web')
 
