@@ -36,6 +36,9 @@ import requests
 import queue
 from queue import Queue
 from io import BytesIO
+from urllib3 import Retry
+from requests.adapters import HTTPAdapter
+
 from threading import Thread, Event
 from enum import Enum
 
@@ -233,14 +236,15 @@ class SovitsTTS(BaseTTS):
         text,textevent = msg
         self.stream_tts(
             self.gpt_sovits(
-                text,
-                self.opt.REF_FILE,  
-                self.opt.REF_TEXT,
-                "zh", #en args.language,
-                self.opt.TTS_SERVER, #"http://127.0.0.1:5000", #args.server_url,
+                text=text,
+                reffile=str(request['voice']),
+                reftext=str(request['emotion']),
+                language="zh", #en args.language,
+                server_url=self.opt.TTS_SERVER, #"http://127.0.0.1:5000", #args.server_url,
             ),
             msg
         )
+
 
     def gpt_sovits(self, text, reffile, reftext,language, server_url) -> Iterator[bytes]:
         start = time.perf_counter()
@@ -515,6 +519,149 @@ class TencentTTS(BaseTTS):
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint) 
 
 ###########################################################################################
+
+
+class DoubaoTTS(BaseTTS):
+    def __init__(self, opt, parent):
+        super().__init__(opt, parent)
+        # 从配置中读取火山引擎参数
+        self.appid = self.parent.config["TTS"]["DoubaoTTS"]["appid"]
+        self.token = self.parent.config["TTS"]["DoubaoTTS"]["access_token"]
+        self.cluster = self.parent.config["TTS"]["DoubaoTTS"]["cluster"]
+        self.host = "openspeech.bytedance.com"
+        self.api_url = f"https://{self.host}/api/v1/tts"
+        self.voice_type = self.parent.config["TTS"]["DoubaoTTS"]["voice"]
+        # 创建连接池和重试策略
+        self.retry_strategy = Retry(
+            total=3,  # 总的重试次数
+            backoff_factor=0.5,  # 重试之间的延迟时间因子
+            status_forcelist=[500, 502, 503, 504],  # 需要重试的HTTP状态码
+            allowed_methods=["POST", "HEAD"]  # 允许重试的HTTP方法
+        )
+
+        #   在程序启动时创建全局Session并配置
+        self.SESSION = requests.Session()
+        # 配置最大连接数和连接超时
+        self.ADAPTER = HTTPAdapter(
+            max_retries=self.retry_strategy,
+            pool_connections=10,  # 连接池中连接的最大数量
+            pool_maxsize=20,  # 连接池中保持的最大连接数
+            pool_block=False  # 连接池满时不阻塞
+        )
+        self.SESSION.mount('http://', self.ADAPTER)
+        self.SESSION.mount('https://', self.ADAPTER)
+
+        # 更新会话头信息
+        self.SESSION.headers.update({
+            "Authorization": f"Bearer; {self.token}",
+            "Content-Type": "application/json",
+        })
+
+        self.Post = self.PostChat(self.appid, self.cluster, self.SESSION)
+
+    class PostChat:
+        def __init__(self, appid, cluster, session):
+            # 配置参数
+            self.appid = appid
+            self.cluster = cluster
+            self.voice_type = None  # 可根据需要修改发音人
+            self.session = session
+
+            # 基础请求模板
+            self.payload = {
+                "app": {
+                    "appid": appid,
+                    "token": "access_token",
+                    "cluster": cluster
+                },
+                "user": {
+                    "uid": "user"
+                },
+                "audio": {
+                    "voice_type": "zh_female_linjianvhai_moon_bigtts",
+                    "encoding": "wav",
+                    "speed_ratio": 1.0,
+                    "volume_ratio": 1.0,
+                    "pitch_ratio": 1.0,
+                },
+                "request": {
+                    "reqid": "uuid",
+                    "text": "字节跳动语音合成。",
+                    "text_type": "plain",
+                    "operation": "query"
+                }
+            }
+
+        def uuidv4(self):
+            """生成UUIDv4"""
+            return str(uuid.uuid4())
+
+        def Post(self, user, text, voice_type, url):
+            # 基础请求模板
+            self.payload["user"]["uid"] = user
+            self.payload["request"]["text"] = text
+            self.payload["audio"]["voice_type"] = voice_type
+            self.payload["request"]["reqid"] = self.uuidv4()
+
+            timeout = (3.0, 10.0)  # (连接超时，读取超时)
+            self.response = self.session.post(
+                url,
+                json=self.payload,
+                stream=False,
+                timeout=timeout
+            )
+            return self.response
+
+        def PrintAnswer(self):
+            return self.response.text  # 返回存储的响应内容
+
+    def doubao_voice(self, request) -> Iterator[bytes]:
+        start = time.perf_counter()
+        text = request['text']
+        print(text)
+        voice_type = request['voice']
+        # 创建请求对象
+        post = self.Post
+        response = post.Post(self.parent.sessionid, text, voice_type, self.api_url)
+        # 检查响应状态码
+        if response.status_code == 200:
+            # 处理响应数据
+            audio_data = base64.b64decode(response.json().get('data'))
+            yield audio_data
+        else:
+            logger.error(f"请求失败，状态码: {response.status_code}")
+            return
+
+    def txt_to_audio(self, msg):
+        request, textevent = msg
+        self.stream_tts(
+            self.doubao_voice(request),
+            msg
+        )
+
+    def stream_tts(self, audio_stream, msg):
+        request, textevent = msg
+        text = request['text']
+        first = True
+        for chunk in audio_stream:
+            if chunk is not None and len(chunk) > 0:
+                stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
+                stream = resampy.resample(x=stream, sr_orig=24000, sr_new=self.sample_rate)
+                # byte_stream=BytesIO(buffer)
+                # stream = self.__create_bytes_stream(byte_stream)
+                streamlen = stream.shape[0]
+                idx = 0
+                while streamlen >= self.chunk:
+                    eventpoint = None
+                    if first:
+                        eventpoint = {'status': 'start', 'text': text, 'msgenvent': textevent}
+                        first = False
+                    self.parent.put_audio_frame(stream[idx:idx + self.chunk], eventpoint)
+                    streamlen -= self.chunk
+                    idx += self.chunk
+        eventpoint = {'status': 'end', 'text': text, 'msgenvent': textevent}
+        self.parent.put_audio_frame(np.zeros(self.chunk, np.float32), eventpoint)
+
 
 class XTTS(BaseTTS):
     def __init__(self, opt, parent):

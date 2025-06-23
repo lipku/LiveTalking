@@ -208,8 +208,8 @@ def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,a
 
 class MuseReal(BaseReal):
     @torch.no_grad()
-    def __init__(self, opt, model, avatar):
-        super().__init__(opt)
+    def __init__(self, opt, model, avatar,config):
+        super().__init__(opt,config)
         #self.opt = opt # shared with the trainer's opt to support in-place modification of rendering parameters.
         # self.W = opt.W
         # self.H = opt.H
