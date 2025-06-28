@@ -284,6 +284,8 @@ class BaseReal:
     
     def set_custom_state(self,audiotype, reinit=True):
         print('set_custom_state:',audiotype)
+        if self.custom_audio_index.get(audiotype) is None:
+            return
         self.curr_state = audiotype
         if reinit:
             self.custom_audio_index[audiotype] = 0
