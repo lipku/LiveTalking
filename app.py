@@ -45,6 +45,7 @@ import asyncio
 import torch
 from typing import Dict
 from logger import logger
+from settings import read_config
 import gc
 
 
@@ -54,6 +55,7 @@ nerfreals:Dict[int, BaseReal] = {} #sessionid:BaseReal
 opt = None
 model = None
 avatar = None
+config = None
         
 
 #####webrtc###############################
@@ -69,16 +71,16 @@ def build_nerfreal(sessionid:int)->BaseReal:
     opt.sessionid=sessionid
     if opt.model == 'wav2lip':
         from lipreal import LipReal
-        nerfreal = LipReal(opt,model,avatar)
+        nerfreal = LipReal(opt,model,avatar,config)
     elif opt.model == 'musetalk':
         from musereal import MuseReal
-        nerfreal = MuseReal(opt,model,avatar)
+        nerfreal = MuseReal(opt,model,avatar,config)
     # elif opt.model == 'ernerf':
     #     from nerfreal import NeRFReal
-    #     nerfreal = NeRFReal(opt,model,avatar)
+    #     nerfreal = NeRFReal(opt,model,avatar,config)
     elif opt.model == 'ultralight':
         from lightreal import LightReal
-        nerfreal = LightReal(opt,model,avatar)
+        nerfreal = LightReal(opt,model,avatar,config)
     return nerfreal
 
 #@app.route('/offer', methods=['POST'])
@@ -150,9 +152,9 @@ async def human(request):
             nerfreals[sessionid].flush_talk()
 
         if params['type']=='echo':
-            nerfreals[sessionid].put_msg_txt(params['text'])
+            nerfreals[sessionid].put_msg_txt(params)
         elif params['type']=='chat':
-            asyncio.get_event_loop().run_in_executor(None, llm_response, params['text'],nerfreals[sessionid])                         
+            asyncio.get_event_loop().run_in_executor(None, llm_response, params,nerfreals[sessionid])
             #nerfreals[sessionid].put_msg_txt(res)
 
         return web.Response(
@@ -348,6 +350,12 @@ if __name__ == '__main__':
 
     parser.add_argument('--max_session', type=int, default=1)  #multi session count
     parser.add_argument('--listenport', type=int, default=8010, help="web listen port")
+
+    #############################################################################
+    config = read_config()
+    #############################################################################
+
+
 
     opt = parser.parse_args()
     #app.config.from_object(opt)

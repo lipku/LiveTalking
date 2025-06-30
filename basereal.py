@@ -38,7 +38,7 @@ from av import AudioFrame, VideoFrame
 import av
 from fractions import Fraction
 
-from ttsreal import EdgeTTS,SovitsTTS,XTTS,CosyVoiceTTS,FishTTS,TencentTTS
+from ttsreal import EdgeTTS,SovitsTTS,XTTS,CosyVoiceTTS,FishTTS,TencentTTS,DoubaoTTS
 from logger import logger
 
 from tqdm import tqdm
@@ -68,8 +68,9 @@ def play_audio(quit_event,queue):
     stream.close()
 
 class BaseReal:
-    def __init__(self, opt):
+    def __init__(self, opt,config):
         self.opt = opt
+        self.config = config
         self.sample_rate = 16000
         self.chunk = self.sample_rate // opt.fps # 320 samples per chunk (20ms * 16000 / 1000)
         self.sessionid = self.opt.sessionid
@@ -86,6 +87,8 @@ class BaseReal:
             self.tts = FishTTS(opt,self)
         elif opt.tts == "tencent":
             self.tts = TencentTTS(opt,self)
+        elif opt.tts == "doubao":
+            self.tts = DoubaoTTS(opt,self)
         
         self.speaking = False
 

@@ -19,3 +19,4 @@ workspace/log_ngp.txt
 models/
 *.log
 dist
+config.yaml
