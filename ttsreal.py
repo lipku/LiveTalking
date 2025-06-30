@@ -232,13 +232,27 @@ class FishTTS(BaseTTS):
 
 ###########################################################################################
 class SovitsTTS(BaseTTS):
-    def txt_to_audio(self,msg): 
-        text,textevent = msg
+
+    def __init__(self, opt, parent):
+        super().__init__(opt,parent)
+        self.voice_type = self.parent.config["TTS"]["GPT_SOVITS_V2"]["ref_audio_path"]
+        self.emotion_type = self.parent.config["TTS"]["GPT_SOVITS_V2"]["prompt_text"]
+    def txt_to_audio(self,msg):
+        request,textevent = msg
+
+        voice_type = self.voice_type
+        emotion_type = self.emotion_type
+        if request['voice'] is not None and request['voice'] != '':
+            voice_type = request['voice']
+
+        if request['emotion'] is not None and request['emotion'] != '':
+            emotion_type = request['emotion']
+
         self.stream_tts(
             self.gpt_sovits(
                 text=text,
-                reffile=str(request['voice']),
-                reftext=str(request['emotion']),
+                reffile=str(voice_type),
+                reftext=str(emotion_type),
                 language="zh", #en args.language,
                 server_url=self.opt.TTS_SERVER, #"http://127.0.0.1:5000", #args.server_url,
             ),
@@ -619,7 +633,9 @@ class DoubaoTTS(BaseTTS):
         start = time.perf_counter()
         text = request['text']
         print(text)
-        voice_type = request['voice']
+        voice_type = self.voice_type
+        if request['voice'] is not None and request['voice'] != '':
+            voice_type = request['voice']
         # 创建请求对象
         post = self.Post
         response = post.Post(self.parent.sessionid, text, voice_type, self.api_url)
