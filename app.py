@@ -86,17 +86,17 @@ async def offer(request):
     params = await request.json()
     offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
 
-    if len(nerfreals) >= opt.max_session:
-        logger.info('reach max session')
-        return web.Response(
-            content_type="application/json",
-            text=json.dumps(
-                {"code": -1, "msg": "reach max session"}
-            ),
-        )
+    # if len(nerfreals) >= opt.max_session:
+    #     logger.info('reach max session')
+    #     return web.Response(
+    #         content_type="application/json",
+    #         text=json.dumps(
+    #             {"code": -1, "msg": "reach max session"}
+    #         ),
+    #     )
     sessionid = randN(6) #len(nerfreals)
-    logger.info('sessionid=%d',sessionid)
     nerfreals[sessionid] = None
+    logger.info('sessionid=%d, session num=%d',sessionid,len(nerfreals))
     nerfreal = await asyncio.get_event_loop().run_in_executor(None, build_nerfreal,sessionid)
     nerfreals[sessionid] = nerfreal
     
