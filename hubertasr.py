@@ -2,11 +2,12 @@ import time
 import torch
 import numpy as np
 from baseasr import BaseASR
+from ultralight.audio2feature import Audio2Feature
 
 # hubert audio feature
 class HubertASR(BaseASR):
     #audio_feat_length: select audio feature before and after
-    def __init__(self, opt, parent, audio_processor,audio_feat_length = [8,8]):
+    def __init__(self, opt, parent, audio_processor:Audio2Feature,audio_feat_length = [8,8]):
         super().__init__(opt, parent)
         self.audio_processor = audio_processor
         #self.stride_left_size = 32

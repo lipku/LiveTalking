@@ -8,13 +8,17 @@ import shutil
 import cv2
 import numpy as np
 import torch
-import torchvision.transforms as transforms
-from PIL import Image
-from diffusers import AutoencoderKL
-from face_alignment import NetworkSize
-from mmpose.apis import inference_topdown, init_model
-from mmpose.structures import merge_data_samples
+# import torchvision.transforms as transforms
+# from PIL import Image
+# from diffusers import AutoencoderKL
+# from face_alignment import NetworkSize
+# from mmpose.apis import inference_topdown, init_model
+# from mmpose.structures import merge_data_samples
 from tqdm import tqdm
+
+from musetalk.utils.preprocessing import get_landmark_and_bbox, read_imgs
+from musetalk.utils.blending import get_image_prepare_material
+from musetalk.utils.utils import load_all_model
 
 try:
     from utils.face_parsing import FaceParsing
@@ -36,7 +40,7 @@ def video2imgs(vid_path, save_path, ext='.png', cut_frame=10000000):
         else:
             break
 
-
+'''
 def read_imgs(img_list):
     frames = []
     print('reading images...')
@@ -237,7 +241,7 @@ def get_image_prepare_material(image, face_box, upper_boundary_ratio=0.5, expand
     blur_kernel_size = int(0.1 * ori_shape[0] // 2 * 2) + 1
     mask_array = cv2.GaussianBlur(np.array(modified_mask_image), (blur_kernel_size, blur_kernel_size), 0)
     return mask_array, crop_box
-
+'''
 
 ##todo 简单根据文件后缀判断  要更精确的可以自己修改 使用 magic
 def is_video_file(file_path):
@@ -256,11 +260,11 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 def create_musetalk_human(file, avatar_id):
     # 保存文件设置 可以不动
-    save_path = os.path.join(current_dir, f'../data/avatars/avator_{avatar_id}')
-    save_full_path = os.path.join(current_dir, f'../data/avatars/avator_{avatar_id}/full_imgs')
+    save_path = os.path.join(current_dir, f'./data/avatars/{avatar_id}')
+    save_full_path = os.path.join(current_dir, f'./data/avatars/{avatar_id}/full_imgs')
     create_dir(save_path)
     create_dir(save_full_path)
-    mask_out_path = os.path.join(current_dir, f'../data/avatars/avator_{avatar_id}/mask')
+    mask_out_path = os.path.join(current_dir, f'./data/avatars/{avatar_id}/mask')
     create_dir(mask_out_path)
 
     # 模型
@@ -272,7 +276,7 @@ def create_musetalk_human(file, avatar_id):
         json.dump({
             "avatar_id": avatar_id,
             "video_path": file,
-            "bbox_shift": 5
+            "bbox_shift": args.bbox_shift
         }, f)
 
     if os.path.isfile(file):
@@ -288,7 +292,7 @@ def create_musetalk_human(file, avatar_id):
             shutil.copyfile(f"{file}/{filename}", f"{save_full_path}/{filename}")
     input_img_list = sorted(glob.glob(os.path.join(save_full_path, '*.[jpJP][pnPN]*[gG]')))
     print("extracting landmarks...")
-    coord_list, frame_list = get_landmark_and_bbox(input_img_list, 5)
+    coord_list, frame_list = get_landmark_and_bbox(input_img_list, args.bbox_shift)
     input_latent_list = []
     idx = -1
     # maker if the bbox is not sufficient
@@ -298,9 +302,13 @@ def create_musetalk_human(file, avatar_id):
         if bbox == coord_placeholder:
             continue
         x1, y1, x2, y2 = bbox
+        if args.version == "v15":
+            y2 = y2 + args.extra_margin
+            y2 = min(y2, frame.shape[0])
+            coord_list[idx] = [x1, y1, x2, y2]  # 更新coord_list中的bbox
         crop_frame = frame[y1:y2, x1:x2]
         resized_crop_frame = cv2.resize(crop_frame, (256, 256), interpolation=cv2.INTER_LANCZOS4)
-        latents = get_latents_for_unet(resized_crop_frame)
+        latents = vae.get_latents_for_unet(resized_crop_frame)
         input_latent_list.append(latents)
 
     frame_list_cycle = frame_list #+ frame_list[::-1]
@@ -310,9 +318,15 @@ def create_musetalk_human(file, avatar_id):
     mask_list_cycle = []
     for i, frame in enumerate(tqdm(frame_list_cycle)):
         cv2.imwrite(f"{save_full_path}/{str(i).zfill(8)}.png", frame)
-        face_box = coord_list_cycle[i]
-        mask, crop_box = get_image_prepare_material(frame, face_box)
+
+        x1, y1, x2, y2 = coord_list_cycle[i]
+        if args.version == "v15":
+            mode = args.parsing_mode
+        else:
+            mode = "raw"
+        mask, crop_box = get_image_prepare_material(frame, [x1, y1, x2, y2], fp=fp, mode=mode)
         cv2.imwrite(f"{mask_out_path}/{str(i).zfill(8)}.png", mask)
+
         mask_coords_list_cycle += [crop_box]
         mask_list_cycle.append(mask)
 
@@ -325,15 +339,15 @@ def create_musetalk_human(file, avatar_id):
 
 
 # initialize the mmpose model
-device = "cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu")
-fa = FaceAlignment(1, flip_input=False, device=device)
-config_file = os.path.join(current_dir, 'utils/dwpose/rtmpose-l_8xb32-270e_coco-ubody-wholebody-384x288.py')
-checkpoint_file = os.path.abspath(os.path.join(current_dir, '../models/dwpose/dw-ll_ucoco_384.pth'))
-model = init_model(config_file, checkpoint_file, device=device)
-vae = AutoencoderKL.from_pretrained(os.path.abspath(os.path.join(current_dir, '../models/sd-vae-ft-mse')))
-vae.to(device)
-fp = FaceParsing(os.path.abspath(os.path.join(current_dir, '../models/face-parse-bisent/resnet18-5c106cde.pth')),
-                 os.path.abspath(os.path.join(current_dir, '../models/face-parse-bisent/79999_iter.pth')))
+# device = "cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu")
+# fa = FaceAlignment(1, flip_input=False, device=device)
+# config_file = os.path.join(current_dir, 'utils/dwpose/rtmpose-l_8xb32-270e_coco-ubody-wholebody-384x288.py')
+# checkpoint_file = os.path.abspath(os.path.join(current_dir, '../models/dwpose/dw-ll_ucoco_384.pth'))
+# model = init_model(config_file, checkpoint_file, device=device)
+# vae = AutoencoderKL.from_pretrained(os.path.abspath(os.path.join(current_dir, '../models/sd-vae-ft-mse')))
+# vae.to(device)
+# fp = FaceParsing(os.path.abspath(os.path.join(current_dir, '../models/face-parse-bisent/resnet18-5c106cde.pth')),
+#                  os.path.abspath(os.path.join(current_dir, '../models/face-parse-bisent/79999_iter.pth')))
 if __name__ == '__main__':
     # 视频文件地址
     parser = argparse.ArgumentParser()
@@ -343,7 +357,32 @@ if __name__ == '__main__':
                         )
     parser.add_argument("--avatar_id",
                         type=str,
-                        default='3',
+                        default='musetalk_avatar1',
                         )
+    parser.add_argument("--version", type=str, default="v15", choices=["v1", "v15"], help="Version of MuseTalk: v1 or v15")
+    parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use")
+    parser.add_argument("--left_cheek_width", type=int, default=90, help="Width of left cheek region")
+    parser.add_argument("--right_cheek_width", type=int, default=90, help="Width of right cheek region")
+    parser.add_argument("--bbox_shift", type=int, default=0, help="Bounding box shift value")
+    parser.add_argument("--extra_margin", type=int, default=10, help="Extra margin for face cropping")
+    parser.add_argument("--parsing_mode", default='jaw', help="Face blending parsing mode")
     args = parser.parse_args()
+
+    # Set computing device
+    device = torch.device(f"cuda:{args.gpu_id}" if torch.cuda.is_available() else "cpu")
+
+    # Load model weights
+    vae, unet, pe = load_all_model(
+        device=device
+    )
+    vae.vae = vae.vae.half().to(device)
+    # Initialize face parser with configurable parameters based on version
+    if args.version == "v15":
+        fp = FaceParsing(
+            left_cheek_width=args.left_cheek_width,
+            right_cheek_width=args.right_cheek_width
+        )
+    else:  # v1
+        fp = FaceParsing()
+
     create_musetalk_human(args.file, args.avatar_id)

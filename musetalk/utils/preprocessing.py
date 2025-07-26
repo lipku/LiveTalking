@@ -13,14 +13,14 @@ import torch
 from tqdm import tqdm
 
 # initialize the mmpose model
-device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu"))
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 config_file = './musetalk/utils/dwpose/rtmpose-l_8xb32-270e_coco-ubody-wholebody-384x288.py'
 checkpoint_file = './models/dwpose/dw-ll_ucoco_384.pth'
 model = init_model(config_file, checkpoint_file, device=device)
 
 # initialize the face detection model
-device = "cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu")
-fa = FaceAlignment(LandmarksType._2D, flip_input=False, device=device)
+device = "cuda" if torch.cuda.is_available() else "cpu"
+fa = FaceAlignment(LandmarksType._2D, flip_input=False,device=device)
 
 # maker if the bbox is not sufficient 
 coord_placeholder = (0.0,0.0,0.0,0.0)
@@ -118,7 +118,8 @@ def get_landmark_and_bbox(img_list,upperbondrange =0):
             if upperbondrange != 0:
                 half_face_coord[1] = upperbondrange+half_face_coord[1] #手动调整  + 向下（偏29）  - 向上（偏28）
             half_face_dist = np.max(face_land_mark[:,1]) - half_face_coord[1]
-            upper_bond = half_face_coord[1]-half_face_dist
+            min_upper_bond = 0
+            upper_bond = max(min_upper_bond, half_face_coord[1] - half_face_dist)
             
             f_landmark = (np.min(face_land_mark[:, 0]),int(upper_bond),np.max(face_land_mark[:, 0]),np.max(face_land_mark[:,1]))
             x1, y1, x2, y2 = f_landmark

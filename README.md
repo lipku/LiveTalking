@@ -16,6 +16,7 @@
 - 2025.5.1 精简运行参数，ernerf模型移至git分支ernerf-rtmp
 - 2025.6.7 添加虚拟摄像头输出
 - 2025.7.5 添加豆包语音合成, 感谢[@ELK-milu](https://github.com/ELK-milu)
+- 2025.7.26 支持musetalk v1.5版本
 
 ## Features
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
