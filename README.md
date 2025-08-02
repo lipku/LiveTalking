@@ -77,12 +77,12 @@ export HF_ENDPOINT=https://hf-mirror.com
 ## 4. Docker Run  
 不需要前面的安装，直接运行。
 ```
-docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/lipku-metahuman-stream:2K9qaMBu8v
+docker run --gpus all -it --network=host --rm registry.cn-zhangjiakou.aliyuncs.com/codewithgpu3/lipku-livetalking:toza2irpHZ
 ```
-代码在/root/metahuman-stream，先git pull拉一下最新代码，然后执行命令同第2、3步 
+代码在/root/livetalking，先git pull拉一下最新代码，然后执行命令同第2、3步 
 
 提供如下镜像
-- autodl镜像: <https://www.codewithgpu.com/i/lipku/metahuman-stream/base>   
+- autodl镜像: <https://www.codewithgpu.com/i/lipku/livetalking/base>   
 [autodl教程](https://livetalking-doc.readthedocs.io/en/latest/autodl/README.html)
 - ucloud镜像: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking>  
 可以开放任意端口，不需要另外部署srs服务.  
@@ -98,8 +98,10 @@ docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/c
 模型    |显卡型号   |fps
 :----   |:---   |:---
 wav2lip256 | 3060    | 60
-musetalk   | 3080Ti  | 45
-wav2lip256 | 3080Ti  | 120 
+wav2lip256 | 3080Ti  | 120
+musetalk   | 3080Ti  | 42
+musetalk   | 3090    | 45
+musetalk   | 4090    | 72 
 
 wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。 
 
