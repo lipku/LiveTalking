@@ -522,9 +522,9 @@ class TencentTTS(BaseTTS):
 class DoubaoTTS(BaseTTS):
     def __init__(self, opt, parent):
         super().__init__(opt, parent)
-        # 从配置中读取火山引擎参数
-        self.appid = os.getenv("DOUBAO_APPID")
-        self.token = os.getenv("DOUBAO_TOKEN")
+        # 使用提供的 APP ID 和 Access Token
+        self.appid = "7082366049"  # 也可以从环境变量读取: os.getenv("DOUBAO_APPID", "7082366049")
+        self.token = "1fE0k8y_gCudCL8b9CLK4YXaFANOWrcH"  # 也可以从环境变量读取: os.getenv("DOUBAO_TOKEN", "1fE0k8y_gCudCL8b9CLK4YXaFANOWrcH")
         _cluster = 'volcano_tts'
         _host = "openspeech.bytedance.com"
         self.api_url = f"wss://{_host}/api/v1/tts/ws_binary"

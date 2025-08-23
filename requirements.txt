@@ -1,44 +1,76 @@
-torch-ema
-ninja
-trimesh
-opencv-python
-tensorboardX
-numpy 
-pandas
-tqdm
-matplotlib
-PyMCubes
-rich
-dearpygui
-packaging
-scipy
-scikit-learn
+# Core dependencies
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
 
-face_alignment
-python_speech_features
-numba
-resampy
-#pyaudio
+# Image and video processing
+opencv-python==4.8.1.78
+opencv-python-headless==4.8.1.78
+imageio-ffmpeg==0.4.9
+ffmpeg-python==0.2.0
+Pillow>=10.0.0
+
+# Audio processing
 soundfile==0.12.1
-einops
-configargparse
-
-lpips==0.1.3
-imageio-ffmpeg
-
-transformers==4.46.2
-edge_tts
-flask
-flask_sockets
-opencv-python-headless
-aiortc
-aiohttp_cors
-
-ffmpeg-python
-omegaconf
-diffusers
-accelerate
-
-librosa
-openai
+librosa==0.10.1
+resampy==0.4.2
+edge-tts==6.1.9
 websockets==12.0
+
+# Scientific computing
+numpy==1.24.3
+scipy==1.11.4
+pandas==2.1.3
+scikit-learn==1.3.2
+einops==0.7.0
+
+# Deep learning utilities
+transformers==4.46.2
+diffusers==0.24.0
+accelerate==0.25.0
+omegaconf==2.3.0
+
+# 3D and visualization
+trimesh==4.0.5
+PyMCubes==0.1.4
+matplotlib==3.8.2
+tensorboardX==2.6.2
+
+# Web and networking
+flask==3.0.0
+flask-sockets==0.2.1
+aiohttp==3.9.1
+aiohttp-cors==0.7.0
+aiortc==1.5.0
+
+# Face processing
+face-alignment==1.4.1
+dlib==19.24.2
+
+# Utilities
+tqdm==4.66.1
+rich==13.7.0
+packaging==23.2
+configargparse==1.7
+python-dotenv==1.0.0
+
+# LLM integration
+openai==1.6.1
+
+# GPU monitoring (optional but recommended)
+nvidia-ml-py==12.535.133
+pynvml==11.5.0
+
+# UI and visualization
+dearpygui==1.10.1
+lpips==0.1.3
+
+# Additional utilities
+ninja==1.11.1
+numba==0.58.1
+python-speech-features==0.6
+
+# Development tools (optional)
+pytest==7.4.3
+black==23.12.0
+flake8==6.1.0

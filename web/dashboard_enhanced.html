@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveTalking 数字人交互平台 - 增强版</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --background-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --border-radius: 15px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background-gradient);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 比例 */
+            background: #000;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gpu-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.3; }
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .stat-unit {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .progress-container {
+            margin-top: 15px;
+        }
+
+        .progress {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.8);
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 5px;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-custom {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-custom::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-custom:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary-custom {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .btn-success-custom {
+            background: var(--success-gradient);
+            color: white;
+        }
+
+        .btn-danger-custom {
+            background: var(--secondary-gradient);
+            color: white;
+        }
+
+        .btn-info-custom {
+            background: var(--info-gradient);
+            color: white;
+        }
+
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: right;
+            margin-left: 20%;
+        }
+
+        .system-message {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-right: 20%;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .status-connected {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+
+        .status-disconnected {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .status-connecting {
+            background: linear-gradient(135deg, #ffd200 0%, #f7971e 100%);
+            color: white;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: white;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .input-custom {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-custom:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .gpu-chart-container {
+            position: relative;
+            height: 200px;
+            margin-top: 20px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .feature-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            font-size: 0.85rem;
+            margin-left: 10px;
+        }
+
+        .recording-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ff4444;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            animation: pulse-record 1.5s infinite;
+        }
+
+        @keyframes pulse-record {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
+        }
+
+        .recording-indicator.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>🤖 LiveTalking 数字人交互平台</h1>
+            <p>增强版界面 - 实时 GPU 监控 & 美化设计</p>
+        </div>
+
+        <!-- 主要内容区 -->
+        <div class="main-content">
+            <!-- 左侧：视频和控制 -->
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="bi bi-camera-video"></i> 数字人视频</span>
+                    <div class="status-indicator status-disconnected">
+                        <span class="status-dot"></span>
+                        <span id="connectionStatus">未连接</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="video-container">
+                        <video id="remoteVideo" autoplay playsinline></video>
+                        <div class="recording-indicator" id="recordingIndicator">
+                            <i class="bi bi-record-circle"></i>
+                            录制中
+                        </div>
+                    </div>
+                    
+                    <div class="control-panel">
+                        <h5 class="mb-3">控制面板</h5>
+                        <div class="btn-group">
+                            <button class="btn-custom btn-primary-custom" onclick="startWebRTC()">
+                                <i class="bi bi-play-circle"></i> 连接数字人
+                            </button>
+                            <button class="btn-custom btn-danger-custom" onclick="stopWebRTC()">
+                                <i class="bi bi-stop-circle"></i> 断开连接
+                            </button>
+                            <button class="btn-custom btn-success-custom" onclick="startRecording()">
+                                <i class="bi bi-record-circle"></i> 开始录制
+                            </button>
+                            <button class="btn-custom btn-info-custom" onclick="stopRecording()">
+                                <i class="bi bi-stop-fill"></i> 停止录制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：GPU监控和聊天 -->
+            <div>
+                <!-- GPU 监控卡片 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <span><i class="bi bi-gpu-card"></i> GPU 实时监控</span>
+                        <span class="feature-badge">CUDA</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="gpu-stats">
+                            <div class="stat-card">
+                                <div class="stat-label">GPU 使用率</div>
+                                <div class="stat-value">
+                                    <span id="gpuUsage">0</span>
+                                    <span class="stat-unit">%</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress">
+                                        <div class="progress-bar" id="gpuUsageBar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <div class="stat-label">显存使用</div>
+                                <div class="stat-value">
+                                    <span id="memUsage">0</span>
+                                    <span class="stat-unit">GB</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress">
+                                        <div class="progress-bar" id="memUsageBar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="gpu-stats mt-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <div class="stat-label">GPU 温度</div>
+                                <div class="stat-value">
+                                    <span id="gpuTemp">0</span>
+                                    <span class="stat-unit">°C</span>
+                                </div>
+                            </div>
+                            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                <div class="stat-label">功耗</div>
+                                <div class="stat-value">
+                                    <span id="gpuPower">0</span>
+                                    <span class="stat-unit">W</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="gpu-chart-container">
+                            <canvas id="gpuChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 聊天卡片 -->
+                <div class="card">
+                    <div class="card-header">
+                        <span><i class="bi bi-chat-dots"></i> 对话交互</span>
+                        <span class="feature-badge">AI 驱动</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="chat-container" id="chatContainer">
+                            <div class="message system-message">
+                                👋 你好！我是数字人助手，有什么可以帮助你的吗？
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <input type="text" class="input-custom" id="messageInput" 
+                                   placeholder="输入消息..." onkeypress="handleKeyPress(event)">
+                            <button class="btn-custom btn-primary-custom" onclick="sendMessage()">
+                                <i class="bi bi-send"></i> 发送
+                            </button>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <label class="form-check-label">
+                                <input type="checkbox" id="useLLM" class="form-check-input">
+                                使用 AI 生成回复
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pc = null;
+        let sessionId = null;
+        let gpuChart = null;
+        let gpuUpdateInterval = null;
+
+        // 初始化 GPU 图表
+        function initGPUChart() {
+            const ctx = document.getElementById('gpuChart').getContext('2d');
+            gpuChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'GPU 使用率',
+                        data: [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: '显存使用率',
+                        data: [],
+                        borderColor: '#f5576c',
+                        backgroundColor: 'rgba(245, 87, 108, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 更新 GPU 状态
+        async function updateGPUStatus() {
+            try {
+                const response = await fetch('/gpu_status');
+                const data = await response.json();
+                
+                // 更新数值
+                document.getElementById('gpuUsage').textContent = data.gpu_usage || 0;
+                document.getElementById('gpuUsageBar').style.width = `${data.gpu_usage || 0}%`;
+                
+                const memUsed = (data.mem_used / 1024).toFixed(2);
+                const memTotal = (data.mem_total / 1024).toFixed(2);
+                const memPercent = (data.mem_used / data.mem_total * 100).toFixed(1);
+                
+                document.getElementById('memUsage').textContent = `${memUsed}/${memTotal}`;
+                document.getElementById('memUsageBar').style.width = `${memPercent}%`;
+                
+                document.getElementById('gpuTemp').textContent = data.temperature || 0;
+                document.getElementById('gpuPower').textContent = data.power || 0;
+                
+                // 更新图表
+                if (gpuChart) {
+                    const now = new Date().toLocaleTimeString();
+                    gpuChart.data.labels.push(now);
+                    gpuChart.data.datasets[0].data.push(data.gpu_usage || 0);
+                    gpuChart.data.datasets[1].data.push(memPercent);
+                    
+                    // 保持最近30个数据点
+                    if (gpuChart.data.labels.length > 30) {
+                        gpuChart.data.labels.shift();
+                        gpuChart.data.datasets[0].data.shift();
+                        gpuChart.data.datasets[1].data.shift();
+                    }
+                    
+                    gpuChart.update();
+                }
+            } catch (error) {
+                console.error('Failed to update GPU status:', error);
+                // 模拟数据（用于演示）
+                const mockGpuUsage = Math.random() * 100;
+                const mockMemUsage = Math.random() * 100;
+                
+                document.getElementById('gpuUsage').textContent = mockGpuUsage.toFixed(1);
+                document.getElementById('gpuUsageBar').style.width = `${mockGpuUsage}%`;
+                
+                document.getElementById('memUsage').textContent = `${(mockMemUsage * 0.24).toFixed(2)}/24.00`;
+                document.getElementById('memUsageBar').style.width = `${mockMemUsage}%`;
+                
+                document.getElementById('gpuTemp').textContent = (50 + Math.random() * 30).toFixed(0);
+                document.getElementById('gpuPower').textContent = (100 + Math.random() * 200).toFixed(0);
+                
+                // 更新模拟图表数据
+                if (gpuChart) {
+                    const now = new Date().toLocaleTimeString();
+                    gpuChart.data.labels.push(now);
+                    gpuChart.data.datasets[0].data.push(mockGpuUsage);
+                    gpuChart.data.datasets[1].data.push(mockMemUsage);
+                    
+                    if (gpuChart.data.labels.length > 30) {
+                        gpuChart.data.labels.shift();
+                        gpuChart.data.datasets[0].data.shift();
+                        gpuChart.data.datasets[1].data.shift();
+                    }
+                    
+                    gpuChart.update();
+                }
+            }
+        }
+
+        // WebRTC 连接
+        async function startWebRTC() {
+            try {
+                updateConnectionStatus('connecting');
+                
+                pc = new RTCPeerConnection({
+                    iceServers: [{urls: 'stun:stun.l.google.com:19302'}]
+                });
+                
+                pc.ontrack = function(event) {
+                    const video = document.getElementById('remoteVideo');
+                    video.srcObject = event.streams[0];
+                };
+                
+                pc.oniceconnectionstatechange = function() {
+                    if (pc.iceConnectionState === 'connected') {
+                        updateConnectionStatus('connected');
+                    } else if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+                        updateConnectionStatus('disconnected');
+                    }
+                };
+                
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                
+                const response = await fetch('/offer', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        sdp: pc.localDescription.sdp,
+                        type: pc.localDescription.type
+                    })
+                });
+                
+                const answer = await response.json();
+                sessionId = answer.sessionid;
+                await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                
+                console.log('WebRTC connected, session:', sessionId);
+                
+            } catch (error) {
+                console.error('WebRTC connection failed:', error);
+                updateConnectionStatus('disconnected');
+            }
+        }
+
+        function stopWebRTC() {
+            if (pc) {
+                pc.close();
+                pc = null;
+            }
+            sessionId = null;
+            updateConnectionStatus('disconnected');
+        }
+
+        function updateConnectionStatus(status) {
+            const statusElement = document.getElementById('connectionStatus');
+            const statusContainer = statusElement.parentElement;
+            
+            statusContainer.className = 'status-indicator';
+            
+            if (status === 'connected') {
+                statusContainer.classList.add('status-connected');
+                statusElement.textContent = '已连接';
+            } else if (status === 'connecting') {
+                statusContainer.classList.add('status-connecting');
+                statusElement.textContent = '连接中...';
+            } else {
+                statusContainer.classList.add('status-disconnected');
+                statusElement.textContent = '未连接';
+            }
+        }
+
+        // 录制功能
+        async function startRecording() {
+            if (!sessionId) {
+                alert('请先连接数字人');
+                return;
+            }
+            
+            const response = await fetch('/record', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    sessionid: sessionId,
+                    type: 'start_record'
+                })
+            });
+            
+            if (response.ok) {
+                document.getElementById('recordingIndicator').classList.add('active');
+            }
+        }
+
+        async function stopRecording() {
+            if (!sessionId) return;
+            
+            const response = await fetch('/record', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    sessionid: sessionId,
+                    type: 'end_record'
+                })
+            });
+            
+            if (response.ok) {
+                document.getElementById('recordingIndicator').classList.remove('active');
+            }
+        }
+
+        // 聊天功能
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            if (!sessionId) {
+                alert('请先连接数字人');
+                return;
+            }
+            
+            // 添加用户消息到聊天框
+            addMessage(message, 'user');
+            input.value = '';
+            
+            const useLLM = document.getElementById('useLLM').checked;
+            const type = useLLM ? 'chat' : 'echo';
+            
+            // 发送消息到数字人
+            const response = await fetch('/human', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    sessionid: sessionId,
+                    type: type,
+                    text: message
+                })
+            });
+            
+            if (response.ok && useLLM) {
+                // 如果使用 LLM，等待回复
+                setTimeout(() => {
+                    addMessage('AI 正在思考回复...', 'system');
+                }, 500);
+            }
+        }
+
+        function addMessage(text, type) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.textContent = text;
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // 页面加载时初始化
+        window.onload = function() {
+            initGPUChart();
+            
+            // 开始 GPU 状态更新
+            updateGPUStatus();
+            gpuUpdateInterval = setInterval(updateGPUStatus, 2000); // 每2秒更新一次
+        };
+
+        // 页面卸载时清理
+        window.onbeforeunload = function() {
+            if (gpuUpdateInterval) {
+                clearInterval(gpuUpdateInterval);
+            }
+            stopWebRTC();
+        };
+    </script>
+</body>
+</html>

@@ -1,129 +1,231 @@
- [English](./README-EN.md) | 中文版   
- 实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果
-[wav2lip效果](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf效果](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)  
-国内镜像地址:<https://gitee.com/lipku/LiveTalking> 
+# LiveTalking 数字人系统
 
-## 为避免与3d数字人混淆，原项目metahuman-stream改名为livetalking，原有链接地址继续可用
+实时交互式数字人系统，支持语音识别、TTS、LLM 对话和 WebRTC 流媒体。
 
-## News
-- 2024.12.8 完善多并发，显存不随并发数增加
-- 2024.12.21 添加wav2lip、musetalk模型预热，解决第一次推理卡顿问题。感谢[@heimaojinzhangyz](https://github.com/heimaojinzhangyz)
-- 2024.12.28 添加数字人模型Ultralight-Digital-Human。 感谢[@lijihua2017](https://github.com/lijihua2017)
-- 2025.2.7 添加fish-speech tts
-- 2025.2.21 添加wav2lip256开源模型 感谢@不蠢不蠢
-- 2025.3.2 添加腾讯语音合成服务
-- 2025.3.16 支持mac gpu推理，感谢[@GcsSloop](https://github.com/GcsSloop) 
-- 2025.5.1 精简运行参数，ernerf模型移至git分支ernerf-rtmp
-- 2025.6.7 添加虚拟摄像头输出
-- 2025.7.5 添加豆包语音合成, 感谢[@ELK-milu](https://github.com/ELK-milu)
-- 2025.7.26 支持musetalk v1.5版本
+## 系统要求
 
-## Features
-1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
-2. 支持声音克隆
-3. 支持数字人说话被打断
-4. 支持全身视频拼接
-5. 支持webrtc、虚拟摄像头输出
-6. 支持动作编排：不说话时播放自定义视频
-7. 支持多并发
+- **操作系统**: Ubuntu 20.04+ / CentOS 7+
+- **GPU**: NVIDIA GPU with CUDA 11.8+
+- **显存**: 至少 8GB (推荐 24GB)
+- **Python**: 3.8 - 3.10
+- **CUDA**: 11.8 或更高版本
+- **cuDNN**: 8.6+
 
-## 1. Installation
+## 快速安装
 
-Tested on Ubuntu 24.04, Python3.10, Pytorch 2.5.0 and CUDA 12.4
-
-### 1.1 Install dependency
+### 1. 环境准备
 
 ```bash
-conda create -n nerfstream python=3.10
-conda activate nerfstream
-#如果cuda版本不为12.4(运行nvidia-smi确认版本)，根据<https://pytorch.org/get-started/previous-versions/>安装对应版本的pytorch 
-conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 pytorch-cuda=12.4 -c pytorch -c nvidia
+# 创建虚拟环境
+conda create -n livetalking python=3.10
+conda activate livetalking
+
+# 安装 PyTorch (CUDA 11.8)
+pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
+
+# 安装依赖
 pip install -r requirements.txt
-#如果需要训练ernerf模型，安装下面的库
-# pip install "git+https://github.com/facebookresearch/pytorch3d.git"
-# pip install tensorflow-gpu==2.8.0
-# pip install --upgrade "protobuf<=3.20.1"
-``` 
-安装常见问题[FAQ](https://livetalking-doc.readthedocs.io/zh-cn/latest/faq.html)  
-linux cuda环境搭建可以参考这篇文章 <https://zhuanlan.zhihu.com/p/674972886>  
-视频连不上解决方法 <https://mp.weixin.qq.com/s/MVUkxxhV2cgMMHalphr2cg>
-
-
-## 2. Quick Start
-- 下载模型  
-夸克云盘<https://pan.quark.cn/s/83a750323ef0>    
-GoogleDriver <https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P9NlSAJ?usp=sharing>  
-将wav2lip256.pth拷到本项目的models下, 重命名为wav2lip.pth;  
-将wav2lip256_avatar1.tar.gz解压后整个文件夹拷到本项目的data/avatars下
-- 运行  
-python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1  
-<font color=red>服务端需要开放端口 tcp:8010; udp:1-65536 </font>  
-客户端可以选用以下两种方式:  
-(1)用浏览器打开http://serverip:8010/webrtcapi.html , 先点‘start',播放数字人视频；然后在文本框输入任意文字，提交。数字人播报该段文字  
-(2)用客户端方式, 下载地址<https://pan.quark.cn/s/d7192d8ac19b>   
-
-- 快速体验  
-<https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking> 用该镜像创建实例即可运行成功
-
-如果访问不了huggingface，在运行前
 ```
-export HF_ENDPOINT=https://hf-mirror.com
-``` 
 
+### 2. 模型下载
 
-## 3. More Usage
-使用说明: <https://livetalking-doc.readthedocs.io/>
-  
-## 4. Docker Run  
-不需要前面的安装，直接运行。
+```bash
+# 创建模型目录
+mkdir -p models
+
+# 下载必要的模型文件
+# MuseTalk 模型
+wget -O models/musetalk.pth https://your-model-url/musetalk.pth
+
+# Wav2Lip 模型
+wget -O models/wav2lip.pth https://your-model-url/wav2lip.pth
+
+# 其他必要模型...
 ```
-docker run --gpus all -it --network=host --rm registry.cn-zhangjiakou.aliyuncs.com/codewithgpu3/lipku-livetalking:toza2irpHZ
+
+### 3. 配置设置
+
+```bash
+# 设置豆包 TTS 配置（已内置在代码中）
+# 目前限制 20000 字符，10并发
+# APP ID: 7082366049
+# Access Token: 1fE0k8y_gCudCL8b9CLK4YXaFANOWrcH
+
+# 如需修改，编辑 ttsreal.py 中的 DoubaoTTS 类
 ```
-代码在/root/livetalking，先git pull拉一下最新代码，然后执行命令同第2、3步 
 
-提供如下镜像
-- autodl镜像: <https://www.codewithgpu.com/i/lipku/livetalking/base>   
-[autodl教程](https://livetalking-doc.readthedocs.io/en/latest/autodl/README.html)
-- ucloud镜像: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking>  
-可以开放任意端口，不需要另外部署srs服务.  
-[ucloud教程](https://livetalking-doc.readthedocs.io/en/latest/ucloud/ucloud.html) 
+## 运行指南
 
+### 启动主服务
 
-## 5. 性能
-- 性能主要跟cpu和gpu相关，每路视频压缩需要消耗cpu，cpu性能与视频分辨率正相关；每路口型推理跟gpu性能相关。  
-- 不说话时的并发数跟cpu相关，同时说话的并发数跟gpu相关。  
-- 后端日志inferfps表示显卡推理帧率，finalfps表示最终推流帧率。两者都要在25以上才能实时。如果inferfps在25以上，finalfps达不到25表示cpu性能不足。  
-- 实时推理性能  
+```bash
+# 基础启动
+python app.py
 
-模型    |显卡型号   |fps
-:----   |:---   |:---
-wav2lip256 | 3060    | 60
-wav2lip256 | 3080Ti  | 120
-musetalk   | 3080Ti  | 42
-musetalk   | 3090    | 45
-musetalk   | 4090    | 72 
+# 指定参数启动
+python app.py \
+    --tts doubao \
+    --model musetalk \
+    --transport webrtc \
+    --listenport 8010
+```
 
-wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。 
+### 启动 MCP 服务器
 
-## 6. 商业版
-提供如下扩展功能，适用于对开源项目已经比较熟悉，需要扩展产品功能的用户
-1. 高清wav2lip模型
-2. 完全语音交互，数字人回答过程中支持通过唤醒词或者按钮打断提问
-3. 实时同步字幕，给前端提供数字人每句话播报开始、结束事件
-4. 每个连接可以指定对应avatar和音色，avatar图片加载加速
-5. 动作编排：不说话时动作、唤醒时动作、思考时动作
-6. 支持不限时长的数字人形象avatar
-7. 提供实时音频流输入接口
-8. 数字人透明背景，叠加动态背景  
+```bash
+# 在新终端启动 MCP 服务
+python mcp_server.py
+```
 
-更多详情<https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html#wav2lip>
+### 测试 MCP 接口
 
-## 7. 声明
-基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上LiveTalking水印和标识，如需去除请联系作者备案授权。
+```bash
+# 运行完整测试
+python test_mcp.py
 
----
-如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.
-* 知识星球: https://t.zsxq.com/7NMyO 沉淀高质量常见问题、最佳实践经验、问题解答  
-* 微信公众号：数字人技术  
-![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyfaiaLZGuMGQXnhLWxibpJUS2gfs8Dje6JuMY8zu2tVyU9n8Zx1yaNncvKHBMibX0ocehoITy5qQEZg/640?wxfrom=12&tp=wxpic&usePicPrefetch=1&wx_fmt=jpeg&amp;from=appmsg)  
+# 交互式测试
+python test_mcp.py --mode interactive
 
+# 性能测试
+python test_mcp.py --mode performance
+```
+
+## 访问界面
+
+- **主界面**: http://localhost:8010/dashboard.html
+- **增强版界面**: http://localhost:8010/dashboard_enhanced.html
+- **MCP 测试页**: http://localhost:8011/
+
+## 主要功能
+
+### 1. TTS 服务
+- 支持多种 TTS: EdgeTTS, 豆包, 腾讯云, CosyVoice 等
+- 流式音频输出
+- 低延迟实时合成
+
+### 2. MCP 接口
+- `POST /api/speak` - 让数字人说话
+- `POST /api/interrupt` - 打断数字人
+- `GET /api/status` - 获取说话状态
+
+### 3. GPU 监控
+- 实时 GPU 使用率
+- 显存占用监控
+- 温度和功耗显示
+- 历史曲线图表
+
+### 4. WebRTC 支持
+- 低延迟视频流
+- 双向音频通信
+- 自适应码率
+
+## 常用参数
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--tts` | doubao | TTS 服务类型 |
+| `--model` | musetalk | 数字人模型 |
+| `--transport` | webrtc | 传输协议 |
+| `--listenport` | 8010 | Web 服务端口 |
+| `--fps` | 50 | 音频帧率 |
+| `--batch_size` | 16 | 推理批大小 |
+| `--REF_FILE` | zh-CN-XiaoxiaoNeural | 语音类型 |
+
+## 故障排除
+
+### CUDA 未检测到
+```bash
+# 检查 CUDA 安装
+nvcc --version
+nvidia-smi
+
+# 重新安装 PyTorch
+pip uninstall torch torchvision torchaudio
+pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
+```
+
+### 端口被占用
+```bash
+# 查看端口占用
+lsof -i:8010
+lsof -i:8011
+
+# 终止占用进程
+kill -9 <PID>
+```
+
+### 模型加载失败
+```bash
+# 检查模型文件
+ls -la models/
+
+# 重新下载模型
+wget -O models/[model_name].pth [model_url]
+```
+
+## 性能优化
+
+### GPU 优化
+```bash
+# 设置 CUDA 缓存
+export CUDA_LAUNCH_BLOCKING=0
+export TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6"
+
+# 启用混合精度
+python app.py --mixed_precision
+```
+
+### 内存优化
+```bash
+# 限制 GPU 内存增长
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+
+# 清理缓存
+python -c "import torch; torch.cuda.empty_cache()"
+```
+
+## 开发调试
+
+### 日志级别
+```bash
+# 设置日志级别
+export LOG_LEVEL=DEBUG
+python app.py
+```
+
+### 测试模式
+```bash
+# 启用测试模式（使用模拟数据）
+python app.py --test_mode
+```
+
+## 项目结构
+
+```
+LiveTalking/
+├── app.py              # 主服务入口
+├── mcp_server.py       # MCP 接口服务
+├── test_mcp.py         # MCP 测试工具
+├── ttsreal.py          # TTS 实现
+├── basereal.py         # 基础数字人类
+├── gpu_monitor.py      # GPU 监控模块
+├── models/             # 模型文件目录
+├── web/                # Web 前端文件
+│   ├── dashboard_enhanced.html  # 增强版界面
+│   └── ...
+├── llm/                # LLM 集成
+│   └── one_api.py      # OneAPI 接口
+└── requirements.txt    # 依赖列表
+```
+
+## 更新日志
+
+查看 [CHANGELOG.md](CHANGELOG.md) 了解详细改动。
+
+## 许可证
+
+Apache License 2.0
+
+## 支持
+
+如有问题，请联系 waple0820@gmail.com
