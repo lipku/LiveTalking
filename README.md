@@ -1,5 +1,18 @@
- [English](./README-EN.md) | 中文版   
- 实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果
+ [English](./README-EN.md) | 中文版  
+ <p align="center">
+ <img src="./assets/LiveTalking-logo.jpg" align="middle" width = "600"/>
+<p align="center">
+<p align="center">
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
+    <a href="https://github.com/lipku/LiveTalking/releases"><img src="https://img.shields.io/github/v/release/lipku/LiveTalking?color=ffa"></a>
+    <a href=""><img src="https://img.shields.io/badge/python-3.10+-aff.svg"></a>
+    <a href=""><img src="https://img.shields.io/badge/os-linux%2C%20win%2C%20mac-pink.svg"></a>
+    <a href="https://github.com/lipku/LiveTalking/graphs/contributors"><img src="https://img.shields.io/github/contributors/lipku/LiveTalking?color=c4f042&style=flat-square"></a>
+    <a href="https://github.com/lipku/LiveTalking/network/members"><img src="https://img.shields.io/github/forks/lipku/LiveTalking?color=8ae8ff"></a>
+    <a href="https://github.com/lipku/LiveTalking/stargazers"><img src="https://img.shields.io/github/stars/lipku/LiveTalking?color=ccf"></a>
+</p>
+
+ 实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果  
 [wav2lip效果](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf效果](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)  
 国内镜像地址:<https://gitee.com/lipku/LiveTalking> 
 
@@ -111,10 +124,10 @@ wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。
 2. 完全语音交互，数字人回答过程中支持通过唤醒词或者按钮打断提问
 3. 实时同步字幕，给前端提供数字人每句话播报开始、结束事件
 4. 每个连接可以指定对应avatar和音色，avatar图片加载加速
-5. 动作编排：不说话时动作、唤醒时动作、思考时动作
-6. 支持不限时长的数字人形象avatar
-7. 提供实时音频流输入接口
-8. 数字人透明背景，叠加动态背景  
+5. 支持不限时长的数字人形象avatar
+6. 提供实时音频流输入接口
+7. 数字人透明背景，叠加动态背景  
+8. python客户端  
 
 更多详情<https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html#wav2lip>
 

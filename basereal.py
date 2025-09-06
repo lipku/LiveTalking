@@ -104,19 +104,19 @@ class BaseReal:
         self.custom_opt = {}
         self.__loadcustom()
 
-    def put_msg_txt(self,msg,eventpoint=None):
-        self.tts.put_msg_txt(msg,eventpoint)
+    def put_msg_txt(self,msg,datainfo:dict={}):
+        self.tts.put_msg_txt(msg,datainfo)
     
-    def put_audio_frame(self,audio_chunk,eventpoint=None): #16khz 20ms pcm
-        self.asr.put_audio_frame(audio_chunk,eventpoint)
+    def put_audio_frame(self,audio_chunk,datainfo:dict={}): #16khz 20ms pcm
+        self.asr.put_audio_frame(audio_chunk,datainfo)
 
-    def put_audio_file(self,filebyte): 
+    def put_audio_file(self,filebyte,datainfo:dict={}): 
         input_stream = BytesIO(filebyte)
         stream = self.__create_bytes_stream(input_stream)
         streamlen = stream.shape[0]
         idx=0
         while streamlen >= self.chunk:  #and self.state==State.RUNNING
-            self.put_audio_frame(stream[idx:idx+self.chunk])
+            self.put_audio_frame(stream[idx:idx+self.chunk],datainfo)
             streamlen -= self.chunk
             idx += self.chunk
     

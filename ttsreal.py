@@ -67,9 +67,9 @@ class BaseTTS:
         self.msgqueue.queue.clear()
         self.state = State.PAUSE
 
-    def put_msg_txt(self,msg:str,eventpoint=None): 
+    def put_msg_txt(self,msg:str,datainfo:dict={}): 
         if len(msg)>0:
-            self.msgqueue.put((msg,eventpoint))
+            self.msgqueue.put((msg,datainfo))
 
     def render(self,quit_event):
         process_thread = Thread(target=self.process_tts, args=(quit_event,))
@@ -78,20 +78,20 @@ class BaseTTS:
     def process_tts(self,quit_event):        
         while not quit_event.is_set():
             try:
-                msg = self.msgqueue.get(block=True, timeout=1)
+                msg:tuple[str, dict] = self.msgqueue.get(block=True, timeout=1)
                 self.state=State.RUNNING
             except queue.Empty:
                 continue
             self.txt_to_audio(msg)
         logger.info('ttsreal thread stop')
     
-    def txt_to_audio(self,msg):
+    def txt_to_audio(self,msg:tuple[str, dict]):
         pass
     
 
 ###########################################################################################
 class EdgeTTS(BaseTTS):
-    def txt_to_audio(self,msg):
+    def txt_to_audio(self,msg:tuple[str, dict]):
         voicename = self.opt.REF_FILE #"zh-CN-YunxiaNeural"
         text,textevent = msg
         t = time.time()
@@ -106,12 +106,14 @@ class EdgeTTS(BaseTTS):
         streamlen = stream.shape[0]
         idx=0
         while streamlen >= self.chunk and self.state==State.RUNNING:
-            eventpoint=None
+            eventpoint={}
             streamlen -= self.chunk
             if idx==0:
-                eventpoint={'status':'start','text':text,'msgevent':textevent}
+                eventpoint={'status':'start','text':text}
+                eventpoint.update(**textevent) #eventpoint={'status':'start','text':text,'msgevent':textevent}
             elif streamlen<self.chunk:
-                eventpoint={'status':'end','text':text,'msgevent':textevent}
+                eventpoint={'status':'end','text':text}
+                eventpoint.update(**textevent) #eventpoint={'status':'end','text':text,'msgevent':textevent}
             self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
             idx += self.chunk
         #if streamlen>0:  #skip last frame(not 20ms)
@@ -155,7 +157,7 @@ class EdgeTTS(BaseTTS):
 
 ###########################################################################################
 class FishTTS(BaseTTS):
-    def txt_to_audio(self,msg): 
+    def txt_to_audio(self,msg:tuple[str, dict]): 
         text,textevent = msg
         self.stream_tts(
             self.fish_speech(
@@ -207,7 +209,7 @@ class FishTTS(BaseTTS):
         except Exception as e:
             logger.exception('fishtts')
 
-    def stream_tts(self,audio_stream,msg):
+    def stream_tts(self,audio_stream,msg:tuple[str, dict]):
         text,textevent = msg
         first = True
         for chunk in audio_stream:
@@ -219,19 +221,21 @@ class FishTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
-                    eventpoint=None
+                    eventpoint={}
                     if first:
-                        eventpoint={'status':'start','text':text,'msgevent':textevent}
+                        eventpoint={'status':'start','text':text}
+                        eventpoint.update(**textevent) #eventpoint={'status':'start','text':text,'msgevent':textevent}
                         first = False
                     self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
-        eventpoint={'status':'end','text':text,'msgevent':textevent}
+        eventpoint={'status':'end','text':text}
+        eventpoint.update(**textevent) #eventpoint={'status':'end','text':text,'msgevent':textevent}
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint) 
 
 ###########################################################################################
 class SovitsTTS(BaseTTS):
-    def txt_to_audio(self,msg): 
+    def txt_to_audio(self,msg:tuple[str, dict]): 
         text,textevent = msg
         self.stream_tts(
             self.gpt_sovits(
@@ -304,7 +308,7 @@ class SovitsTTS(BaseTTS):
 
         return stream
 
-    def stream_tts(self,audio_stream,msg):
+    def stream_tts(self,audio_stream,msg:tuple[str, dict]):
         text,textevent = msg
         first = True
         for chunk in audio_stream:
@@ -316,19 +320,21 @@ class SovitsTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
-                    eventpoint=None
+                    eventpoint={}
                     if first:
-                        eventpoint={'status':'start','text':text,'msgevent':textevent}
+                        eventpoint={'status':'start','text':text}
+                        eventpoint.update(**textevent) 
                         first = False
                     self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
-        eventpoint={'status':'end','text':text,'msgevent':textevent}
+        eventpoint={'status':'end','text':text}
+        eventpoint.update(**textevent) 
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint)
 
 ###########################################################################################
 class CosyVoiceTTS(BaseTTS):
-    def txt_to_audio(self,msg):
+    def txt_to_audio(self,msg:tuple[str, dict]):
         text,textevent = msg 
         self.stream_tts(
             self.cosy_voice(
@@ -370,7 +376,7 @@ class CosyVoiceTTS(BaseTTS):
         except Exception as e:
             logger.exception('cosyvoice')
 
-    def stream_tts(self,audio_stream,msg):
+    def stream_tts(self,audio_stream,msg:tuple[str, dict]):
         text,textevent = msg
         first = True
         for chunk in audio_stream:
@@ -382,14 +388,16 @@ class CosyVoiceTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
-                    eventpoint=None
+                    eventpoint={}
                     if first:
-                        eventpoint={'status':'start','text':text,'msgevent':textevent}
+                        eventpoint={'status':'start','text':text}
+                        eventpoint.update(**textevent) 
                         first = False
                     self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
-        eventpoint={'status':'end','text':text,'msgevent':textevent}
+        eventpoint={'status':'end','text':text}
+        eventpoint.update(**textevent) 
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint) 
 
 ###########################################################################################
@@ -441,7 +449,7 @@ class TencentTTS(BaseTTS):
         params['Expired'] = timestamp + 24 * 60 * 60
         return params
 
-    def txt_to_audio(self,msg):
+    def txt_to_audio(self,msg:tuple[str, dict]):
         text,textevent = msg 
         self.stream_tts(
             self.tencent_voice(
@@ -491,7 +499,7 @@ class TencentTTS(BaseTTS):
         except Exception as e:
             logger.exception('tencent')
 
-    def stream_tts(self,audio_stream,msg):
+    def stream_tts(self,audio_stream,msg:tuple[str, dict]):
         text,textevent = msg
         first = True
         last_stream = np.array([],dtype=np.float32)
@@ -505,15 +513,17 @@ class TencentTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
-                    eventpoint=None
+                    eventpoint={}
                     if first:
-                        eventpoint={'status':'start','text':text,'msgevent':textevent}
+                        eventpoint={'status':'start','text':text}
+                        eventpoint.update(**textevent) 
                         first = False
                     self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
                 last_stream = stream[idx:] #get the remain stream
-        eventpoint={'status':'end','text':text,'msgevent':textevent}
+        eventpoint={'status':'end','text':text}
+        eventpoint.update(**textevent) 
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint) 
 
 ###########################################################################################
@@ -612,7 +622,7 @@ class DoubaoTTS(BaseTTS):
         #     logger.error(f"请求失败，状态码: {response.status_code}")
         #     return
 
-    def txt_to_audio(self, msg):
+    def txt_to_audio(self, msg:tuple[str, dict]):
         text, textevent = msg
         asyncio.new_event_loop().run_until_complete(
             self.stream_tts(
@@ -621,7 +631,7 @@ class DoubaoTTS(BaseTTS):
             )
         )
 
-    async def stream_tts(self, audio_stream, msg):
+    async def stream_tts(self, audio_stream, msg:tuple[str, dict]):
         text, textevent = msg
         first = True
         last_stream = np.array([],dtype=np.float32)
@@ -635,15 +645,17 @@ class DoubaoTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx = 0
                 while streamlen >= self.chunk:
-                    eventpoint = None
+                    eventpoint = {}
                     if first:
-                        eventpoint = {'status': 'start', 'text': text, 'msgenvent': textevent}
+                        eventpoint={'status':'start','text':text}
+                        eventpoint.update(**textevent) 
                         first = False
                     self.parent.put_audio_frame(stream[idx:idx + self.chunk], eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
                 last_stream = stream[idx:] #get the remain stream
-        eventpoint = {'status': 'end', 'text': text, 'msgenvent': textevent}
+        eventpoint={'status':'end','text':text}
+        eventpoint.update(**textevent) 
         self.parent.put_audio_frame(np.zeros(self.chunk, np.float32), eventpoint)
 
 ###########################################################################################
@@ -652,7 +664,7 @@ class XTTS(BaseTTS):
         super().__init__(opt,parent)
         self.speaker = self.get_speaker(opt.REF_FILE, opt.TTS_SERVER)
 
-    def txt_to_audio(self,msg):
+    def txt_to_audio(self,msg:tuple[str, dict]):
         text,textevent = msg  
         self.stream_tts(
             self.xtts(
@@ -700,7 +712,7 @@ class XTTS(BaseTTS):
         except Exception as e:
             print(e)
     
-    def stream_tts(self,audio_stream,msg):
+    def stream_tts(self,audio_stream,msg:tuple[str, dict]):
         text,textevent = msg
         first = True
         for chunk in audio_stream:
@@ -712,12 +724,14 @@ class XTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
-                    eventpoint=None
+                    eventpoint={}
                     if first:
-                        eventpoint={'status':'start','text':text,'msgevent':textevent}
+                        eventpoint={'status':'start','text':text}
+                        eventpoint.update(**textevent) 
                         first = False
                     self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
-        eventpoint={'status':'end','text':text,'msgevent':textevent}
+        eventpoint={'status':'end','text':text}
+        eventpoint.update(**textevent) 
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint)  

@@ -49,8 +49,8 @@ class BaseASR:
     def flush_talk(self):
         self.queue.queue.clear()
 
-    def put_audio_frame(self,audio_chunk,eventpoint=None): #16khz 20ms pcm
-        self.queue.put((audio_chunk,eventpoint))
+    def put_audio_frame(self,audio_chunk,datainfo:dict): #16khz 20ms pcm
+        self.queue.put((audio_chunk,datainfo))
 
     #return frame:audio pcm; type: 0-normal speak, 1-silence; eventpoint:custom event sync with audio
     def get_audio_frame(self):        
