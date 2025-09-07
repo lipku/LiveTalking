@@ -52,10 +52,6 @@ conda activate nerfstream
 #如果cuda版本不为12.4(运行nvidia-smi确认版本)，根据<https://pytorch.org/get-started/previous-versions/>安装对应版本的pytorch 
 conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 pytorch-cuda=12.4 -c pytorch -c nvidia
 pip install -r requirements.txt
-#如果需要训练ernerf模型，安装下面的库
-# pip install "git+https://github.com/facebookresearch/pytorch3d.git"
-# pip install tensorflow-gpu==2.8.0
-# pip install --upgrade "protobuf<=3.20.1"
 ``` 
 安装常见问题[FAQ](https://livetalking-doc.readthedocs.io/zh-cn/latest/faq.html)  
 linux cuda环境搭建可以参考这篇文章 <https://zhuanlan.zhihu.com/p/674972886>  
@@ -126,13 +122,14 @@ wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。
 4. 每个连接可以指定对应avatar和音色，avatar图片加载加速
 5. 支持不限时长的数字人形象avatar
 6. 提供实时音频流输入接口
-7. 数字人透明背景，叠加动态背景  
-8. python客户端  
+7. 数字人透明背景，叠加动态背景 
+8. avatar实时切换  
+9. python客户端  
 
 更多详情<https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html#wav2lip>
 
 ## 7. 声明
-基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上LiveTalking水印和标识，如需去除请联系作者备案授权。
+基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上LiveTalking水印和标识。
 
 ---
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.

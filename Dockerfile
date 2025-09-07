@@ -39,16 +39,16 @@ Copy requirements.txt ./
 RUN pip install -r requirements.txt
 
 # additional libraries
-RUN pip install "git+https://github.com/facebookresearch/pytorch3d.git"
-RUN pip install tensorflow-gpu==2.8.0
+# RUN pip install "git+https://github.com/facebookresearch/pytorch3d.git"
+# RUN pip install tensorflow-gpu==2.8.0
 
-RUN pip uninstall protobuf
-RUN pip install protobuf==3.20.1
+# RUN pip uninstall protobuf
+# RUN pip install protobuf==3.20.1
 
-RUN conda install ffmpeg
-Copy ../python_rtmpstream /python_rtmpstream
-WORKDIR /python_rtmpstream/python
-RUN pip install .
+# RUN conda install ffmpeg
+# Copy ../python_rtmpstream /python_rtmpstream
+# WORKDIR /python_rtmpstream/python
+# RUN pip install .
 
 Copy ../nerfstream /nerfstream
 WORKDIR /nerfstream
