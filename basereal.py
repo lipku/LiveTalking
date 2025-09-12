@@ -38,7 +38,7 @@ from av import AudioFrame, VideoFrame
 import av
 from fractions import Fraction
 
-from ttsreal import EdgeTTS,SovitsTTS,XTTS,CosyVoiceTTS,FishTTS,TencentTTS,DoubaoTTS
+from ttsreal import EdgeTTS,SovitsTTS,XTTS,CosyVoiceTTS,FishTTS,TencentTTS,DoubaoTTS,IndexTTS2
 from logger import logger
 
 from tqdm import tqdm
@@ -88,7 +88,9 @@ class BaseReal:
             self.tts = TencentTTS(opt,self)
         elif opt.tts == "doubao":
             self.tts = DoubaoTTS(opt,self)
-        
+        elif opt.tts == "indextts2":
+            self.tts = IndexTTS2(opt,self)
+
         self.speaking = False
 
         self.recording = False

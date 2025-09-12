@@ -42,3 +42,4 @@ accelerate
 librosa
 openai
 websockets==12.0
+gradio_client
