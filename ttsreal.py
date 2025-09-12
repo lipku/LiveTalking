@@ -750,7 +750,7 @@ class IndexTTS2(BaseTTS):
         try:
             # 调用 gen_single API
             result = self.client.predict(
-                emo_control_method="与音色参考音频相同",
+                emo_control_method="Same as the voice reference",
                 prompt=self.handle_file(self.ref_audio_path),
                 text=text,
                 emo_ref_path=self.handle_file(self.ref_audio_path),
