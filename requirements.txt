@@ -43,3 +43,4 @@ librosa
 openai
 websockets==12.0
 gradio_client
+azure-cognitiveservices-speech
