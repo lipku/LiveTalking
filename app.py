@@ -115,7 +115,7 @@ async def offer(request):
         if pc.connectionState == "closed":
             pcs.discard(pc)
             del nerfreals[sessionid]
-            gc.collect()
+            # gc.collect()
 
     player = HumanPlayer(nerfreals[sessionid])
     audio_sender = pc.addTrack(player.audio)

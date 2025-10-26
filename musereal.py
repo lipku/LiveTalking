@@ -231,8 +231,8 @@ class MuseReal(BaseReal):
         
         self.render_event = mp.Event()
 
-    def __del__(self):
-        logger.info(f'musereal({self.sessionid}) delete')
+    # def __del__(self):
+    #     logger.info(f'musereal({self.sessionid}) delete')
     
 
     def __mirror_index(self, index):

@@ -245,8 +245,8 @@ class LightReal(BaseReal):
         
         self.render_event = mp.Event()
     
-    def __del__(self):
-        logger.info(f'lightreal({self.sessionid}) delete')
+    # def __del__(self):
+    #     logger.info(f'lightreal({self.sessionid}) delete')
 
     def paste_back_frame(self,pred_frame,idx:int):
         bbox = self.coord_list_cycle[idx]

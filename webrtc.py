@@ -54,7 +54,7 @@ class PlayerStreamTrack(MediaStreamTrack):
         super().__init__()  # don't forget this!
         self.kind = kind
         self._player = player
-        self._queue = asyncio.Queue()
+        self._queue = asyncio.Queue(maxsize=100)
         self.timelist = [] #记录最近包的时间戳
         self.current_frame_count = 0
         if self.kind == 'video':
@@ -130,7 +130,7 @@ class PlayerStreamTrack(MediaStreamTrack):
         pts, time_base = await self.next_timestamp()
         frame.pts = pts
         frame.time_base = time_base
-        if eventpoint:
+        if eventpoint and self._player is not None:
             self._player.notify(eventpoint)
         if frame is None:
             self.stop()
@@ -147,6 +147,10 @@ class PlayerStreamTrack(MediaStreamTrack):
     
     def stop(self):
         super().stop()
+        # Drain & delete remaining frames
+        while not self._queue.empty():
+            item = self._queue.get_nowait()
+            del item
         if self._player is not None:
             self._player._stop(self)
             self._player = None
@@ -179,7 +183,8 @@ class HumanPlayer:
         self.__container = nerfreal
 
     def notify(self,eventpoint):
-        self.__container.notify(eventpoint)
+        if self.__container is not None:
+            self.__container.notify(eventpoint)
 
     @property
     def audio(self) -> MediaStreamTrack:
