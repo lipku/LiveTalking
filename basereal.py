@@ -40,6 +40,7 @@ from fractions import Fraction
 
 from ttsreal import EdgeTTS,SovitsTTS,XTTS,CosyVoiceTTS,FishTTS,TencentTTS,DoubaoTTS,IndexTTS2
 from logger import logger
+from pause_controller import ImprovedPauseController, PauseMode
 
 from tqdm import tqdm
 def read_imgs(img_list):
@@ -74,22 +75,34 @@ class BaseReal:
         self.chunk = self.sample_rate // opt.fps # 320 samples per chunk (20ms * 16000 / 1000)
         self.sessionid = self.opt.sessionid
 
+        # 初始化暂停控制器
+        buffer_size = getattr(opt, 'pause_buffer_size', 1000)
+        max_buffer_age = getattr(opt, 'pause_max_buffer_age', 30.0)
+        pause_mode = PauseMode.IMMEDIATE  # 默认使用立即暂停模式
+        
+        self.pause_controller = ImprovedPauseController(
+            mode=pause_mode,
+            buffer_size=buffer_size,
+            max_buffer_age=max_buffer_age
+        )
+        logger.info(f"Session {self.sessionid}: Pause controller initialized")
+
         if opt.tts == "edgetts":
-            self.tts = EdgeTTS(opt,self)
+            self.tts = EdgeTTS(opt,self,self.pause_controller)
         elif opt.tts == "gpt-sovits":
-            self.tts = SovitsTTS(opt,self)
+            self.tts = SovitsTTS(opt,self,self.pause_controller)
         elif opt.tts == "xtts":
-            self.tts = XTTS(opt,self)
+            self.tts = XTTS(opt,self,self.pause_controller)
         elif opt.tts == "cosyvoice":
-            self.tts = CosyVoiceTTS(opt,self)
+            self.tts = CosyVoiceTTS(opt,self,self.pause_controller)
         elif opt.tts == "fishtts":
-            self.tts = FishTTS(opt,self)
+            self.tts = FishTTS(opt,self,self.pause_controller)
         elif opt.tts == "tencent":
-            self.tts = TencentTTS(opt,self)
+            self.tts = TencentTTS(opt,self,self.pause_controller)
         elif opt.tts == "doubao":
-            self.tts = DoubaoTTS(opt,self)
+            self.tts = DoubaoTTS(opt,self,self.pause_controller)
         elif opt.tts == "indextts2":
-            self.tts = IndexTTS2(opt,self)
+            self.tts = IndexTTS2(opt,self,self.pause_controller)
 
         self.speaking = False
 
@@ -139,11 +152,85 @@ class BaseReal:
         return stream
 
     def flush_talk(self):
+        """
+        清空对话缓冲区
+        
+        在清空前检查暂停状态，确保在暂停期间不会丢失数据
+        """
+        # 检查暂停状态并等待（如果需要）
+        self.pause_controller.check_and_wait()
+        
+        logger.info(f"Session {self.sessionid}: Flushing talk buffers")
         self.tts.flush_talk()
         self.asr.flush_talk()
+        
+        # 清空暂停控制器的缓冲区
+        self.pause_controller.clear_buffers()
+        logger.info(f"Session {self.sessionid}: Talk buffers flushed")
 
     def is_speaking(self)->bool:
         return self.speaking
+    
+    def pause(self) -> bool:
+        """
+        暂停处理
+        
+        Returns:
+            bool: 是否成功暂停
+        """
+        result = self.pause_controller.pause()
+        if result:
+            logger.info(f"Session {self.sessionid}: Paused successfully")
+        else:
+            logger.warning(f"Session {self.sessionid}: Pause request ignored (already paused)")
+        return result
+    
+    def resume(self) -> bool:
+        """
+        恢复处理
+        
+        Returns:
+            bool: 是否成功恢复
+        """
+        result = self.pause_controller.resume()
+        if result:
+            logger.info(f"Session {self.sessionid}: Resumed successfully")
+        else:
+            logger.warning(f"Session {self.sessionid}: Resume request ignored (already running)")
+        return result
+    
+    def is_paused(self) -> bool:
+        """
+        检查是否处于暂停状态
+        
+        Returns:
+            bool: True表示已暂停
+        """
+        return self.pause_controller.is_paused()
+    
+    def get_pause_state(self) -> dict:
+        """
+        获取暂停状态信息
+        
+        Returns:
+            dict: 包含暂停状态、统计信息和缓冲区状态的字典
+        """
+        metrics = self.pause_controller.get_metrics()
+        buffer_stats = self.pause_controller.get_buffer_stats()
+        
+        return {
+            'session_id': self.sessionid,
+            'is_paused': self.pause_controller.is_paused(),
+            'state': self.pause_controller.get_state().value,
+            'mode': self.pause_controller.get_mode().value,
+            'metrics': {
+                'pause_count': metrics.pause_count,
+                'total_pause_duration': metrics.total_pause_duration,
+                'last_pause_time': metrics.last_pause_time,
+                'last_resume_time': metrics.last_resume_time
+            },
+            'buffer_stats': buffer_stats
+        }
     
     def __loadcustom(self):
         for item in self.opt.customopt:
@@ -296,6 +383,11 @@ class BaseReal:
             self.custom_index[audiotype] = 0
 
     def process_frames(self,quit_event,loop=None,audio_track=None,video_track=None):
+        """
+        处理视频帧和音频帧
+        
+        集成了暂停控制功能，在关键处理点检查暂停状态
+        """
         enable_transition = False  # 设置为False禁用过渡效果，True启用
         
         if enable_transition:
@@ -313,9 +405,23 @@ class BaseReal:
             audio_thread = Thread(target=play_audio, args=(quit_event,audio_tmp,), daemon=True, name="pyaudio_stream")
             audio_thread.start()
         
+        logger.info(f"Session {self.sessionid}: Starting frame processing loop")
+        frame_count = 0
+        last_pause_log_time = time.time()
+        
         while not quit_event.is_set():
+            # 暂停检查点：在获取新帧前检查暂停状态
+            if not self.pause_controller.wait_if_paused(timeout=0.1):
+                # 暂停超时，记录日志并继续等待
+                current_time = time.time()
+                if current_time - last_pause_log_time > 5.0:  # 每5秒记录一次
+                    logger.info(f"Session {self.sessionid}: Frame processing paused")
+                    last_pause_log_time = current_time
+                continue
+            
             try:
                 res_frame,idx,audio_frames = self.res_frame_queue.get(block=True, timeout=1)
+                frame_count += 1
             except queue.Empty:
                 continue
             
@@ -327,6 +433,9 @@ class BaseReal:
                     _transition_start = time.time()
                 _last_speaking = current_speaking
 
+            # 暂停检查点：在处理帧前再次检查暂停状态
+            self.pause_controller.check_and_wait()
+            
             if audio_frames[0][1]!=0 and audio_frames[1][1]!=0: #全为静音数据，只需要取fullimg
                 self.speaking = False
                 audiotype = audio_frames[0][1]
@@ -396,6 +505,21 @@ class BaseReal:
         if self.opt.transport=='virtualcam':
             audio_thread.join()
             vircam.close()
+        
+        # 记录暂停控制统计信息
+        metrics = self.pause_controller.get_metrics()
+        buffer_stats = self.pause_controller.get_buffer_stats()
+        
+        logger.info(f"Session {self.sessionid}: Frame processing stopped")
+        logger.info(f"Session {self.sessionid}: Total frames processed: {frame_count}")
+        logger.info(f"Session {self.sessionid}: Pause metrics - "
+                   f"pause_count: {metrics.pause_count}, "
+                   f"total_pause_duration: {metrics.total_pause_duration:.2f}s")
+        logger.info(f"Session {self.sessionid}: Buffer stats - "
+                   f"audio_buffered: {buffer_stats['audio_frames_buffered']}, "
+                   f"inference_buffered: {buffer_stats['inference_data_buffered']}, "
+                   f"overflow_count: {buffer_stats['buffer_overflow_count']}")
+        
         logger.info('basereal process_frames thread stop') 
     
     # def process_custom(self,audiotype:int,idx:int):

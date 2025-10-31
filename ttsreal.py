@@ -46,12 +46,14 @@ if TYPE_CHECKING:
     from basereal import BaseReal
 
 from logger import logger
+from pause_controller import ImprovedPauseController
+
 class State(Enum):
     RUNNING=0
     PAUSE=1
 
 class BaseTTS:
-    def __init__(self, opt, parent:BaseReal):
+    def __init__(self, opt, parent:BaseReal, pause_controller: ImprovedPauseController = None):
         self.opt=opt
         self.parent = parent
 
@@ -62,6 +64,11 @@ class BaseTTS:
 
         self.msgqueue = Queue()
         self.state = State.RUNNING
+        
+        # 集成暂停控制器
+        self.pause_controller = pause_controller
+        if self.pause_controller:
+            logger.info("BaseTTS initialized with pause controller")
 
     def flush_talk(self):
         self.msgqueue.queue.clear()
@@ -77,11 +84,20 @@ class BaseTTS:
     
     def process_tts(self,quit_event):        
         while not quit_event.is_set():
+            # 暂停检查点：在获取新消息前检查暂停状态
+            if self.pause_controller:
+                self.pause_controller.check_and_wait()
+            
             try:
                 msg:tuple[str, dict] = self.msgqueue.get(block=True, timeout=1)
                 self.state=State.RUNNING
             except queue.Empty:
                 continue
+            
+            # 暂停检查点：在处理消息前再次检查
+            if self.pause_controller:
+                self.pause_controller.check_and_wait()
+            
             self.txt_to_audio(msg)
         logger.info('ttsreal thread stop')
     
@@ -94,6 +110,11 @@ class EdgeTTS(BaseTTS):
     def txt_to_audio(self,msg:tuple[str, dict]):
         voicename = self.opt.REF_FILE #"zh-CN-YunxiaNeural"
         text,textevent = msg
+        
+        # 暂停检查点：在开始TTS处理前检查
+        if self.pause_controller:
+            self.pause_controller.check_and_wait()
+        
         t = time.time()
         asyncio.new_event_loop().run_until_complete(self.__main(voicename,text))
         logger.info(f'-------edge tts time:{time.time()-t:.4f}s')
@@ -106,6 +127,10 @@ class EdgeTTS(BaseTTS):
         streamlen = stream.shape[0]
         idx=0
         while streamlen >= self.chunk and self.state==State.RUNNING:
+            # 暂停检查点：在处理每个音频块前检查
+            if self.pause_controller:
+                self.pause_controller.check_and_wait()
+            
             eventpoint={}
             streamlen -= self.chunk
             if idx==0:
@@ -144,6 +169,10 @@ class EdgeTTS(BaseTTS):
             #with open(OUTPUT_FILE, "wb") as file:
             first = True
             async for chunk in communicate.stream():
+                # 暂停检查点：在处理每个流式chunk前检查
+                if self.pause_controller:
+                    self.pause_controller.check_and_wait()
+                
                 if first:
                     first = False
                 if chunk["type"] == "audio" and self.state==State.RUNNING:
@@ -213,6 +242,10 @@ class FishTTS(BaseTTS):
         text,textevent = msg
         first = True
         for chunk in audio_stream:
+            # 暂停检查点：在处理每个chunk前检查
+            if self.pause_controller:
+                self.pause_controller.check_and_wait()
+            
             if chunk is not None and len(chunk)>0:          
                 stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
                 stream = resampy.resample(x=stream, sr_orig=44100, sr_new=self.sample_rate)
@@ -221,6 +254,10 @@ class FishTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
+                    # 暂停检查点：在处理每个音频块前检查
+                    if self.pause_controller:
+                        self.pause_controller.check_and_wait()
+                    
                     eventpoint={}
                     if first:
                         eventpoint={'status':'start','text':text}
@@ -312,6 +349,10 @@ class SovitsTTS(BaseTTS):
         text,textevent = msg
         first = True
         for chunk in audio_stream:
+            # 暂停检查点：在处理每个chunk前检查
+            if self.pause_controller:
+                self.pause_controller.check_and_wait()
+            
             if chunk is not None and len(chunk)>0:          
                 #stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
                 #stream = resampy.resample(x=stream, sr_orig=32000, sr_new=self.sample_rate)
@@ -320,6 +361,10 @@ class SovitsTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
+                    # 暂停检查点：在处理每个音频块前检查
+                    if self.pause_controller:
+                        self.pause_controller.check_and_wait()
+                    
                     eventpoint={}
                     if first:
                         eventpoint={'status':'start','text':text}
@@ -380,6 +425,10 @@ class CosyVoiceTTS(BaseTTS):
         text,textevent = msg
         first = True
         for chunk in audio_stream:
+            # 暂停检查点：在处理每个chunk前检查
+            if self.pause_controller:
+                self.pause_controller.check_and_wait()
+            
             if chunk is not None and len(chunk)>0:          
                 stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
                 stream = resampy.resample(x=stream, sr_orig=24000, sr_new=self.sample_rate)
@@ -388,6 +437,10 @@ class CosyVoiceTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
+                    # 暂停检查点：在处理每个音频块前检查
+                    if self.pause_controller:
+                        self.pause_controller.check_and_wait()
+                    
                     eventpoint={}
                     if first:
                         eventpoint={'status':'start','text':text}
@@ -504,6 +557,10 @@ class TencentTTS(BaseTTS):
         first = True
         last_stream = np.array([],dtype=np.float32)
         for chunk in audio_stream:
+            # 暂停检查点：在处理每个chunk前检查
+            if self.pause_controller:
+                self.pause_controller.check_and_wait()
+            
             if chunk is not None and len(chunk)>0:          
                 stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
                 stream = np.concatenate((last_stream,stream))
@@ -513,6 +570,10 @@ class TencentTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
+                    # 暂停检查点：在处理每个音频块前检查
+                    if self.pause_controller:
+                        self.pause_controller.check_and_wait()
+                    
                     eventpoint={}
                     if first:
                         eventpoint={'status':'start','text':text}
@@ -636,6 +697,10 @@ class DoubaoTTS(BaseTTS):
         first = True
         last_stream = np.array([],dtype=np.float32)
         async for chunk in audio_stream:
+            # 暂停检查点：在处理每个chunk前检查
+            if self.pause_controller:
+                self.pause_controller.check_and_wait()
+            
             if chunk is not None and len(chunk) > 0:
                 stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
                 stream = np.concatenate((last_stream,stream))
@@ -645,6 +710,10 @@ class DoubaoTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx = 0
                 while streamlen >= self.chunk:
+                    # 暂停检查点：在处理每个音频块前检查
+                    if self.pause_controller:
+                        self.pause_controller.check_and_wait()
+                    
                     eventpoint = {}
                     if first:
                         eventpoint={'status':'start','text':text}
@@ -683,6 +752,10 @@ class IndexTTS2(BaseTTS):
     def txt_to_audio(self, msg):
         text, textevent = msg
         try:
+            # 暂停检查点：在开始TTS处理前检查
+            if self.pause_controller:
+                self.pause_controller.check_and_wait()
+            
             # 先进行文本分割
             segments = self.split_text(text)
             if not segments:
@@ -693,6 +766,10 @@ class IndexTTS2(BaseTTS):
             
             # 循环生成每个片段的音频
             for i, segment_text in enumerate(segments):
+                # 暂停检查点：在处理每个片段前检查
+                if self.pause_controller:
+                    self.pause_controller.check_and_wait()
+                
                 if self.state != State.RUNNING:
                     break
                     
@@ -797,6 +874,10 @@ class IndexTTS2(BaseTTS):
         text, textevent = msg
         
         try:
+            # 暂停检查点：在开始处理音频文件前检查
+            if self.pause_controller:
+                self.pause_controller.check_and_wait()
+            
             # 读取音频文件
             stream, sample_rate = sf.read(audio_file)
             logger.info(f'IndexTTS2 音频文件 {sample_rate}Hz: {stream.shape}')
@@ -820,6 +901,10 @@ class IndexTTS2(BaseTTS):
             first_chunk = True
             
             while streamlen >= self.chunk and self.state == State.RUNNING:
+                # 暂停检查点：在处理每个音频块前检查
+                if self.pause_controller:
+                    self.pause_controller.check_and_wait()
+                
                 eventpoint = None
                 
                 # 只在第一个片段的第一个chunk发送start事件
@@ -905,6 +990,10 @@ class XTTS(BaseTTS):
         text,textevent = msg
         first = True
         for chunk in audio_stream:
+            # 暂停检查点：在处理每个chunk前检查
+            if self.pause_controller:
+                self.pause_controller.check_and_wait()
+            
             if chunk is not None and len(chunk)>0:          
                 stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
                 stream = resampy.resample(x=stream, sr_orig=24000, sr_new=self.sample_rate)
@@ -913,6 +1002,10 @@ class XTTS(BaseTTS):
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
+                    # 暂停检查点：在处理每个音频块前检查
+                    if self.pause_controller:
+                        self.pause_controller.check_and_wait()
+                    
                     eventpoint={}
                     if first:
                         eventpoint={'status':'start','text':text}
