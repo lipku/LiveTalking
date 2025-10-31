@@ -1,4 +1,4 @@
- [English](./README-EN.md) | 中文版  
+ # [English](./README-EN.md) | 中文版  
  <p align="center">
  <img src="./assets/LiveTalking-logo.jpg" align="middle" width = "600"/>
 <p align="center">
@@ -92,10 +92,10 @@ docker run --gpus all -it --network=host --rm registry.cn-zhangjiakou.aliyuncs.c
 
 提供如下镜像
 - autodl镜像: <https://www.codewithgpu.com/i/lipku/livetalking/base>   
-[autodl教程](https://livetalking-doc.readthedocs.io/en/latest/autodl/README.html)
+[autodl教程](https://livetalking-doc.readthedocs.io/zh-cn/latest/autodl/README.html)
 - ucloud镜像: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking>  
 可以开放任意端口，不需要另外部署srs服务.  
-[ucloud教程](https://livetalking-doc.readthedocs.io/en/latest/ucloud/ucloud.html) 
+[ucloud教程](https://livetalking-doc.readthedocs.io/zh-cn/latest/ucloud/ucloud.html) 
 
 
 ## 5. 性能
@@ -126,7 +126,7 @@ wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。
 8. avatar实时切换  
 9. python客户端  
 
-更多详情<https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html#wav2lip>
+更多详情<https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html>
 
 ## 7. 声明
 基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上LiveTalking水印和标识。
@@ -134,6 +134,6 @@ wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。
 ---
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.
 * 知识星球: https://t.zsxq.com/7NMyO 沉淀高质量常见问题、最佳实践经验、问题解答  
-* 微信公众号：数字人技术  
-![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyfaiaLZGuMGQXnhLWxibpJUS2gfs8Dje6JuMY8zu2tVyU9n8Zx1yaNncvKHBMibX0ocehoITy5qQEZg/640?wxfrom=12&tp=wxpic&usePicPrefetch=1&wx_fmt=jpeg&amp;from=appmsg)  
+* 微信公众号：数字人技术    
+<img src="./assets/qrcode-wechat.jpg" align="middle" />
 

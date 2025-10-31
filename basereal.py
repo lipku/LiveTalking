@@ -38,7 +38,7 @@ from av import AudioFrame, VideoFrame
 import av
 from fractions import Fraction
 
-from ttsreal import EdgeTTS,SovitsTTS,XTTS,CosyVoiceTTS,FishTTS,TencentTTS,DoubaoTTS,IndexTTS2
+from ttsreal import EdgeTTS,SovitsTTS,XTTS,CosyVoiceTTS,FishTTS,TencentTTS,DoubaoTTS,IndexTTS2,AzureTTS
 from logger import logger
 from pause_controller import ImprovedPauseController, PauseMode
 
@@ -100,9 +100,11 @@ class BaseReal:
         elif opt.tts == "tencent":
             self.tts = TencentTTS(opt,self,self.pause_controller)
         elif opt.tts == "doubao":
-            self.tts = DoubaoTTS(opt,self,self.pause_controller)
+            self.tts = DoubaoTTS(opt,self)
         elif opt.tts == "indextts2":
-            self.tts = IndexTTS2(opt,self,self.pause_controller)
+            self.tts = IndexTTS2(opt,self)
+        elif opt.tts == "azuretts":
+            self.tts = AzureTTS(opt,self)
 
         self.speaking = False
 
