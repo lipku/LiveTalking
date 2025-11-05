@@ -223,9 +223,12 @@ class ImprovedPauseController:
             return True
 
     
-    def resume(self) -> bool:
+    def resume(self, clear_buffers: bool = True) -> bool:
         """
         恢复操作
+        
+        Args:
+            clear_buffers: 是否在恢复时清空缓冲区（默认True，避免音画不同步）
         
         Returns:
             bool: 是否成功恢复
@@ -239,6 +242,11 @@ class ImprovedPauseController:
             
             # 更新状态为恢复中
             self._state = PauseState.RESUMING
+            
+            # 清空缓冲区以避免音画不同步
+            if clear_buffers:
+                logger.info("Clearing buffers to prevent audio-video desync")
+                self.clear_buffers()
             
             # 设置事件，释放等待的线程
             self._pause_event.set()
@@ -313,20 +321,28 @@ class ImprovedPauseController:
         
         return result
     
-    def check_and_wait(self) -> bool:
+    def check_and_wait(self, timeout: Optional[float] = 0.5) -> bool:
         """
         检查暂停状态并等待（如果需要）
         
         这是一个便捷的检查点方法，用于在关键处理点检查暂停状态。
         如果处于暂停状态，会阻塞当前线程直到恢复。
         
+        Args:
+            timeout: 超时时间（秒），默认0.5秒。None表示无限等待
+        
         Returns:
-            bool: True表示可以继续执行，False表示应该停止（通常不会返回False）
+            bool: True表示可以继续执行，False表示超时
         """
         if self.is_paused():
             logger.debug("Checkpoint: paused, waiting for resume")
-            self._pause_event.wait()
-            logger.debug("Checkpoint: resumed, continuing execution")
+            result = self._pause_event.wait(timeout)
+            if result:
+                logger.debug("Checkpoint: resumed, continuing execution")
+            else:
+                # 使用debug级别而不是warning，避免日志过多
+                logger.debug(f"Checkpoint: wait timeout after {timeout}s, will retry")
+            return result
         
         return True
     

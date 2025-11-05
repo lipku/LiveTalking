@@ -189,12 +189,53 @@ class BaseReal:
         """
         恢复处理
         
+        在恢复时会清理所有队列缓冲区，避免音画不同步
+        
         Returns:
             bool: 是否成功恢复
         """
-        result = self.pause_controller.resume()
+        result = self.pause_controller.resume(clear_buffers=True)
         if result:
-            logger.info(f"Session {self.sessionid}: Resumed successfully")
+            logger.info(f"Session {self.sessionid}: Resuming and clearing buffers")
+            
+            # 使用更高效的方式清理队列
+            def clear_queue_fast(q, max_items=1000):
+                """快速清理队列，限制最大清理数量避免卡顿"""
+                count = 0
+                try:
+                    while count < max_items:
+                        q.get_nowait()
+                        count += 1
+                except:
+                    pass
+                return count
+            
+            # 清理所有队列以避免音画不同步
+            # 1. 清理TTS消息队列
+            if hasattr(self, 'tts') and hasattr(self.tts, 'msgqueue'):
+                cleared_msgs = clear_queue_fast(self.tts.msgqueue)
+                if cleared_msgs > 0:
+                    logger.info(f"Session {self.sessionid}: Cleared {cleared_msgs} TTS messages")
+            
+            # 2. 清理ASR队列
+            if hasattr(self, 'asr'):
+                if hasattr(self.asr, 'feat_queue'):
+                    cleared_feats = clear_queue_fast(self.asr.feat_queue)
+                    if cleared_feats > 0:
+                        logger.info(f"Session {self.sessionid}: Cleared {cleared_feats} ASR features")
+                
+                if hasattr(self.asr, 'output_queue'):
+                    cleared_outputs = clear_queue_fast(self.asr.output_queue)
+                    if cleared_outputs > 0:
+                        logger.info(f"Session {self.sessionid}: Cleared {cleared_outputs} ASR outputs")
+            
+            # 3. 清理视频帧队列
+            if hasattr(self, 'res_frame_queue'):
+                cleared_frames = clear_queue_fast(self.res_frame_queue)
+                if cleared_frames > 0:
+                    logger.info(f"Session {self.sessionid}: Cleared {cleared_frames} video frames")
+            
+            logger.info(f"Session {self.sessionid}: Resumed successfully, all buffers cleared")
         else:
             logger.warning(f"Session {self.sessionid}: Resume request ignored (already running)")
         return result

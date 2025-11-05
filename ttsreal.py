@@ -85,8 +85,11 @@ class BaseTTS:
     def process_tts(self,quit_event):        
         while not quit_event.is_set():
             # 暂停检查点：在获取新消息前检查暂停状态
+            # 使用较短的超时时间以快速响应恢复操作
             if self.pause_controller:
-                self.pause_controller.check_and_wait()
+                if not self.pause_controller.check_and_wait(timeout=0.1):
+                    # 超时但可能仍在暂停，继续循环检查
+                    continue
             
             try:
                 msg:tuple[str, dict] = self.msgqueue.get(block=True, timeout=1)
@@ -96,7 +99,14 @@ class BaseTTS:
             
             # 暂停检查点：在处理消息前再次检查
             if self.pause_controller:
-                self.pause_controller.check_and_wait()
+                if not self.pause_controller.check_and_wait(timeout=0.1):
+                    # 如果暂停，将消息放回队列
+                    try:
+                        self.msgqueue.put(msg, block=False)
+                        logger.debug("Message returned to queue due to pause")
+                    except queue.Full:
+                        logger.warning("Queue full, message may be lost")
+                    continue
             
             self.txt_to_audio(msg)
         logger.info('ttsreal thread stop')
@@ -124,6 +134,10 @@ class EdgeTTS(BaseTTS):
         
         self.input_stream.seek(0)
         stream = self.__create_bytes_stream(self.input_stream)
+        if stream is None or stream.shape[0] == 0:
+            logger.error('Failed to create audio stream, skipping this message')
+            return
+            
         streamlen = stream.shape[0]
         idx=0
         while streamlen >= self.chunk and self.state==State.RUNNING:
@@ -148,19 +162,39 @@ class EdgeTTS(BaseTTS):
 
     def __create_bytes_stream(self,byte_stream):
         #byte_stream=BytesIO(buffer)
-        stream, sample_rate = sf.read(byte_stream) # [T*sample_rate,] float64
-        logger.info(f'[INFO]tts audio stream {sample_rate}: {stream.shape}')
-        stream = stream.astype(np.float32)
+        try:
+            # 检查字节流大小
+            current_pos = byte_stream.tell()
+            byte_stream.seek(0, 2)  # 移动到末尾
+            stream_size = byte_stream.tell()
+            byte_stream.seek(current_pos)  # 回到原位置
+            
+            # 如果数据太大（超过100MB），记录警告并跳过
+            max_size = 100 * 1024 * 1024  # 100MB
+            if stream_size > max_size:
+                logger.error(f'[ERROR] Audio stream size is too large: {stream_size} bytes (max: {max_size}). Skipping this chunk.')
+                return np.zeros(0, dtype=np.float32)
+            
+            stream, sample_rate = sf.read(byte_stream) # [T*sample_rate,] float64
+            logger.info(f'[INFO]tts audio stream {sample_rate}: {stream.shape}')
+            stream = stream.astype(np.float32)
 
-        if stream.ndim > 1:
-            logger.info(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
-            stream = stream[:, 0]
-    
-        if sample_rate != self.sample_rate and stream.shape[0]>0:
-            logger.info(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
-            stream = resampy.resample(x=stream, sr_orig=sample_rate, sr_new=self.sample_rate)
+            if stream.ndim > 1:
+                logger.info(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
+                stream = stream[:, 0]
+        
+            if sample_rate != self.sample_rate and stream.shape[0]>0:
+                logger.info(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
+                stream = resampy.resample(x=stream, sr_orig=sample_rate, sr_new=self.sample_rate)
 
-        return stream
+            return stream
+            
+        except ValueError as e:
+            logger.error(f'[ERROR] Failed to create audio stream (ValueError): {e}. Stream size: {stream_size if "stream_size" in locals() else "unknown"} bytes')
+            return np.zeros(0, dtype=np.float32)
+        except Exception as e:
+            logger.exception(f'[ERROR] Unexpected error in __create_bytes_stream')
+            return np.zeros(0, dtype=np.float32)
     
     async def __main(self,voicename: str, text: str):
         try:
@@ -246,9 +280,19 @@ class FishTTS(BaseTTS):
             if self.pause_controller:
                 self.pause_controller.check_and_wait()
             
-            if chunk is not None and len(chunk)>0:          
-                stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
-                stream = resampy.resample(x=stream, sr_orig=44100, sr_new=self.sample_rate)
+            if chunk is not None and len(chunk)>0:
+                # 检查chunk大小，如果太大则跳过
+                if len(chunk) > 100 * 1024 * 1024:  # 100MB
+                    logger.error(f'[ERROR] Audio chunk is too large: {len(chunk)} bytes. Skipping this chunk.')
+                    continue
+                    
+                try:
+                    stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
+                    stream = resampy.resample(x=stream, sr_orig=44100, sr_new=self.sample_rate)
+                except (ValueError, MemoryError) as e:
+                    logger.error(f'[ERROR] Failed to process audio chunk: {e}. Chunk size: {len(chunk)} bytes')
+                    continue
+                    
                 #byte_stream=BytesIO(buffer)
                 #stream = self.__create_bytes_stream(byte_stream)
                 streamlen = stream.shape[0]
@@ -331,19 +375,39 @@ class SovitsTTS(BaseTTS):
 
     def __create_bytes_stream(self,byte_stream):
         #byte_stream=BytesIO(buffer)
-        stream, sample_rate = sf.read(byte_stream) # [T*sample_rate,] float64
-        logger.info(f'[INFO]tts audio stream {sample_rate}: {stream.shape}')
-        stream = stream.astype(np.float32)
+        try:
+            # 检查字节流大小
+            current_pos = byte_stream.tell()
+            byte_stream.seek(0, 2)  # 移动到末尾
+            stream_size = byte_stream.tell()
+            byte_stream.seek(current_pos)  # 回到原位置
+            
+            # 如果数据太大（超过100MB），记录警告并跳过
+            max_size = 100 * 1024 * 1024  # 100MB
+            if stream_size > max_size:
+                logger.error(f'[ERROR] Audio stream size is too large: {stream_size} bytes (max: {max_size}). Skipping this chunk.')
+                return np.zeros(0, dtype=np.float32)
+            
+            stream, sample_rate = sf.read(byte_stream) # [T*sample_rate,] float64
+            logger.info(f'[INFO]tts audio stream {sample_rate}: {stream.shape}')
+            stream = stream.astype(np.float32)
 
-        if stream.ndim > 1:
-            logger.info(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
-            stream = stream[:, 0]
-    
-        if sample_rate != self.sample_rate and stream.shape[0]>0:
-            logger.info(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
-            stream = resampy.resample(x=stream, sr_orig=sample_rate, sr_new=self.sample_rate)
+            if stream.ndim > 1:
+                logger.info(f'[WARN] audio has {stream.shape[1]} channels, only use the first.')
+                stream = stream[:, 0]
+        
+            if sample_rate != self.sample_rate and stream.shape[0]>0:
+                logger.info(f'[WARN] audio sample rate is {sample_rate}, resampling into {self.sample_rate}.')
+                stream = resampy.resample(x=stream, sr_orig=sample_rate, sr_new=self.sample_rate)
 
-        return stream
+            return stream
+            
+        except ValueError as e:
+            logger.error(f'[ERROR] Failed to create audio stream (ValueError): {e}. Stream size: {stream_size if "stream_size" in locals() else "unknown"} bytes')
+            return np.zeros(0, dtype=np.float32)
+        except Exception as e:
+            logger.exception(f'[ERROR] Unexpected error in __create_bytes_stream')
+            return np.zeros(0, dtype=np.float32)
 
     def stream_tts(self,audio_stream,msg:tuple[str, dict]):
         text,textevent = msg
@@ -353,11 +417,22 @@ class SovitsTTS(BaseTTS):
             if self.pause_controller:
                 self.pause_controller.check_and_wait()
             
-            if chunk is not None and len(chunk)>0:          
+            if chunk is not None and len(chunk)>0:
+                # 检查chunk大小，如果太大则跳过
+                if len(chunk) > 100 * 1024 * 1024:  # 100MB
+                    logger.error(f'[ERROR] Audio chunk is too large: {len(chunk)} bytes. Skipping this chunk.')
+                    continue
+                    
                 #stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
                 #stream = resampy.resample(x=stream, sr_orig=32000, sr_new=self.sample_rate)
                 byte_stream=BytesIO(chunk)
                 stream = self.__create_bytes_stream(byte_stream)
+                
+                # 检查stream是否有效
+                if stream is None or stream.shape[0] == 0:
+                    logger.warning('[WARN] Skipping invalid audio stream chunk')
+                    continue
+                    
                 streamlen = stream.shape[0]
                 idx=0
                 while streamlen >= self.chunk:
