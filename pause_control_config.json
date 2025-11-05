@@ -1,0 +1,72 @@
+{
+  // 暂停控制配置文件
+  
+  // 暂停模式: "immediate"(立即暂停) 或 "graceful"(优雅暂停)
+  "pause_mode": "immediate",
+  
+  // 缓冲区大小 (条目数量)
+  "buffer_size": 1000,
+  
+  // 缓冲区最大存活时间 (秒)
+  "max_buffer_age": 30.0,
+  
+  // 死锁超时时间 (秒)
+  "deadlock_timeout": 30.0,
+  
+  // 最大恢复尝试次数
+  "max_recovery_attempts": 3,
+  
+  // 启用自动恢复功能
+  "enable_auto_recovery": true,
+  
+  // 启用性能监控
+  "enable_performance_monitoring": true,
+  
+  // 监控间隔时间 (秒)
+  "monitoring_interval": 1.0,
+  
+  // 暂停持续时间警报阈值 (秒)
+  "alert_threshold_pause_duration": 60.0,
+  
+  // 缓冲区使用率警报阈值 (0.0-1.0)
+  "alert_threshold_buffer_usage": 0.8,
+  
+  // 日志级别: "DEBUG", "INFO", "WARNING", "ERROR"
+  "log_level": "INFO",
+  
+  // 是否记录日志到文件
+  "log_to_file": false,
+  
+  // 日志文件路径
+  "log_file_path": "pause_control.log",
+  
+  // 日志文件最大字节数 (10MB)
+  "log_max_bytes": 10485760,
+  
+  // 日志备份文件数量
+  "log_backup_count": 5,
+  
+  // 启用指标收集
+  "enable_metrics_collection": true,
+  
+  // 指标导出间隔 (秒)
+  "metrics_export_interval": 60.0,
+  
+  // 启用缓冲区溢出保护
+  "enable_buffer_overflow_protection": true,
+  
+  // 缓冲区溢出策略: "drop_oldest"(丢弃最旧) 或 "drop_newest"(丢弃最新)
+  "buffer_overflow_strategy": "drop_oldest",
+  
+  // 锁超时时间 (秒)
+  "lock_timeout": 5.0,
+  
+  // 启用死锁检测
+  "enable_deadlock_detection": true,
+  
+  // 调试模式
+  "debug_mode": false,
+  
+  // 详细日志记录
+  "verbose_logging": false
+}

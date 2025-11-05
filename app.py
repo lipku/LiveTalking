@@ -274,6 +274,246 @@ async def is_speaking(request):
         ),
     )
 
+async def pause_control(request):
+    """
+    新的统一暂停控制API
+    
+    支持的操作:
+    - pause: 暂停会话
+    - resume: 恢复会话
+    - toggle: 切换暂停/恢复状态
+    - status: 查询当前状态
+    
+    请求格式:
+    {
+        "sessionid": 123456,
+        "action": "pause|resume|toggle|status"
+    }
+    
+    响应格式:
+    {
+        "code": 0,
+        "msg": "ok",
+        "data": {
+            "state": "paused|running",
+            "action_performed": "pause|resume|none"
+        }
+    }
+    """
+    try:
+        params = await request.json()
+        
+        # 验证必需参数
+        sessionid = params.get('sessionid')
+        if sessionid is None:
+            return web.Response(
+                content_type="application/json",
+                text=json.dumps(
+                    {"code": -1, "msg": "Missing required parameter: sessionid"}
+                ),
+            )
+        
+        action = params.get('action', '').lower()
+        if not action:
+            return web.Response(
+                content_type="application/json",
+                text=json.dumps(
+                    {"code": -1, "msg": "Missing required parameter: action"}
+                ),
+            )
+        
+        # 验证action参数
+        valid_actions = ['pause', 'resume', 'toggle', 'status']
+        if action not in valid_actions:
+            return web.Response(
+                content_type="application/json",
+                text=json.dumps(
+                    {"code": -1, "msg": f"Invalid action. Must be one of: {', '.join(valid_actions)}"}
+                ),
+            )
+        
+        # 验证会话是否存在
+        if sessionid not in nerfreals or nerfreals[sessionid] is None:
+            return web.Response(
+                content_type="application/json",
+                text=json.dumps(
+                    {"code": -1, "msg": f"Session {sessionid} not found"}
+                ),
+            )
+        
+        nerfreal = nerfreals[sessionid]
+        
+        # 检查是否有暂停控制器
+        if not hasattr(nerfreal, 'pause_controller') or nerfreal.pause_controller is None:
+            return web.Response(
+                content_type="application/json",
+                text=json.dumps(
+                    {"code": -1, "msg": "Pause control not supported for this session"}
+                ),
+            )
+        
+        pause_controller = nerfreal.pause_controller
+        action_performed = "none"
+        
+        # 执行操作
+        if action == 'pause':
+            if pause_controller.pause():
+                action_performed = "pause"
+                logger.info(f"Session {sessionid} paused via API")
+            else:
+                logger.warning(f"Session {sessionid} pause request ignored (already paused)")
+        
+        elif action == 'resume':
+            if pause_controller.resume():
+                action_performed = "resume"
+                logger.info(f"Session {sessionid} resumed via API")
+            else:
+                logger.warning(f"Session {sessionid} resume request ignored (already running)")
+        
+        elif action == 'toggle':
+            if pause_controller.is_paused():
+                if pause_controller.resume():
+                    action_performed = "resume"
+                    logger.info(f"Session {sessionid} toggled to resume via API")
+            else:
+                if pause_controller.pause():
+                    action_performed = "pause"
+                    logger.info(f"Session {sessionid} toggled to pause via API")
+        
+        # 获取当前状态
+        current_state = pause_controller.get_state().value
+        
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {
+                    "code": 0,
+                    "msg": "ok",
+                    "data": {
+                        "state": current_state,
+                        "action_performed": action_performed,
+                        "sessionid": sessionid
+                    }
+                }
+            ),
+        )
+        
+    except Exception as e:
+        logger.exception('Exception in pause_control:')
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "msg": f"Internal error: {str(e)}"}
+            ),
+        )
+
+async def pause_status(request):
+    """
+    查询暂停状态API
+    
+    请求格式:
+    {
+        "sessionid": 123456
+    }
+    
+    响应格式:
+    {
+        "code": 0,
+        "msg": "ok",
+        "data": {
+            "state": "paused|running|resuming",
+            "is_paused": true|false,
+            "metrics": {
+                "pause_count": 5,
+                "total_pause_duration": 120.5,
+                "last_pause_time": 1234567890.123,
+                "last_resume_time": 1234567900.456
+            },
+            "buffer_stats": {
+                "audio_buffer_size": 10,
+                "inference_buffer_size": 5,
+                ...
+            }
+        }
+    }
+    """
+    try:
+        params = await request.json()
+        
+        # 验证必需参数
+        sessionid = params.get('sessionid')
+        if sessionid is None:
+            return web.Response(
+                content_type="application/json",
+                text=json.dumps(
+                    {"code": -1, "msg": "Missing required parameter: sessionid"}
+                ),
+            )
+        
+        # 验证会话是否存在
+        if sessionid not in nerfreals or nerfreals[sessionid] is None:
+            return web.Response(
+                content_type="application/json",
+                text=json.dumps(
+                    {"code": -1, "msg": f"Session {sessionid} not found"}
+                ),
+            )
+        
+        nerfreal = nerfreals[sessionid]
+        
+        # 检查是否有暂停控制器
+        if not hasattr(nerfreal, 'pause_controller') or nerfreal.pause_controller is None:
+            return web.Response(
+                content_type="application/json",
+                text=json.dumps(
+                    {"code": -1, "msg": "Pause control not supported for this session"}
+                ),
+            )
+        
+        pause_controller = nerfreal.pause_controller
+        
+        # 获取详细状态信息
+        state = pause_controller.get_state().value
+        is_paused = pause_controller.is_paused()
+        metrics = pause_controller.get_metrics()
+        buffer_stats = pause_controller.get_buffer_stats()
+        
+        # 构建响应数据
+        response_data = {
+            "state": state,
+            "is_paused": is_paused,
+            "metrics": {
+                "pause_count": metrics.pause_count,
+                "total_pause_duration": metrics.total_pause_duration,
+                "last_pause_time": metrics.last_pause_time,
+                "last_resume_time": metrics.last_resume_time
+            },
+            "buffer_stats": buffer_stats,
+            "sessionid": sessionid
+        }
+        
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {
+                    "code": 0,
+                    "msg": "ok",
+                    "data": response_data
+                }
+            ),
+        )
+        
+    except Exception as e:
+        logger.exception('Exception in pause_status:')
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"code": -1, "msg": f"Internal error: {str(e)}"}
+            ),
+        )
+
+
+
 
 async def on_shutdown(app):
     # close peer connections
@@ -401,6 +641,9 @@ if __name__ == '__main__':
     appasync.router.add_post("/record", record)
     appasync.router.add_post("/interrupt_talk", interrupt_talk)
     appasync.router.add_post("/is_speaking", is_speaking)
+    # 暂停控制API
+    appasync.router.add_post("/pause_control", pause_control)
+    appasync.router.add_post("/pause_status", pause_status)
     appasync.router.add_static('/',path='web')
 
     # Configure default CORS settings.

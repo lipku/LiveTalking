@@ -130,7 +130,7 @@ def __mirror_index(size, index):
 
 @torch.no_grad()
 def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,audio_out_queue,res_frame_queue,
-              vae, unet, pe,timesteps): #vae, unet, pe,timesteps
+              vae, unet, pe,timesteps, pause_controller=None): #vae, unet, pe,timesteps
     
     # vae, unet, pe = load_diffusion_model()
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -146,9 +146,26 @@ def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,a
     logger.info('start inference')
     while render_event.is_set():
         starttime=time.perf_counter()
+        
+        # 暂停检查点1：在获取新批次前检查暂停状态
+        if pause_controller is not None:
+            if not pause_controller.wait_if_paused(timeout=0.1):
+                # 暂停中，跳过这次处理
+                continue
+        
         try:
             whisper_chunks = audio_feat_queue.get(block=True, timeout=1)
         except queue.Empty:
+            continue
+        
+        # 暂停检查点2：获取音频特征后再次检查暂停状态
+        # 如果暂停，将数据放回队列以避免丢失
+        if pause_controller is not None and pause_controller.is_paused():
+            try:
+                audio_feat_queue.put(whisper_chunks, block=False)
+                logger.debug("Inference paused, audio features returned to queue")
+            except queue.Full:
+                logger.warning("Audio feature queue full, data may be lost")
             continue
         is_all_silence=True
         audio_frames = []
@@ -290,9 +307,11 @@ class MuseReal(BaseReal):
         process_thread.start()
 
         self.render_event.set() #start infer process render
+        # 传递暂停控制器到推理线程
+        pause_controller = getattr(self, 'pause_controller', None)
         Thread(target=inference, args=(self.render_event,self.batch_size,self.input_latent_list_cycle,
                                            self.asr.feat_queue,self.asr.output_queue,self.res_frame_queue,
-                                           self.vae, self.unet, self.pe,self.timesteps)).start() #mp.Process
+                                           self.vae, self.unet, self.pe,self.timesteps, pause_controller)).start() #mp.Process
         count=0
         totaltime=0
         _starttime=time.perf_counter()

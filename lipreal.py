@@ -111,7 +111,7 @@ def __mirror_index(size, index):
     else:
         return size - res - 1 
 
-def inference(quit_event,batch_size,face_list_cycle,audio_feat_queue,audio_out_queue,res_frame_queue,model):
+def inference(quit_event,batch_size,face_list_cycle,audio_feat_queue,audio_out_queue,res_frame_queue,model,pause_controller=None):
     
     #model = load_model("./models/wav2lip.pth")
     # input_face_list = glob.glob(os.path.join(face_imgs_path, '*.[jpJP][pnPN]*[gG]'))
@@ -126,10 +126,27 @@ def inference(quit_event,batch_size,face_list_cycle,audio_feat_queue,audio_out_q
     logger.info('start inference')
     while not quit_event.is_set():
         starttime=time.perf_counter()
+        
+        # 暂停检查点1：在获取新批次前检查暂停状态
+        if pause_controller is not None:
+            if not pause_controller.wait_if_paused(timeout=0.1):
+                # 暂停中，跳过这次处理
+                continue
+        
         mel_batch = []
         try:
             mel_batch = audio_feat_queue.get(block=True, timeout=1)
         except queue.Empty:
+            continue
+        
+        # 暂停检查点2：获取音频特征后再次检查暂停状态
+        # 如果暂停，将数据放回队列以避免丢失
+        if pause_controller is not None and pause_controller.is_paused():
+            try:
+                audio_feat_queue.put(mel_batch, block=False)
+                logger.debug("Inference paused, mel batch returned to queue")
+            except queue.Full:
+                logger.warning("Audio feature queue full, data may be lost")
             continue
             
         is_all_silence=True
@@ -226,9 +243,11 @@ class LipReal(BaseReal):
         process_thread = Thread(target=self.process_frames, args=(quit_event,loop,audio_track,video_track))
         process_thread.start()
 
+        # 传递暂停控制器到推理线程
+        pause_controller = getattr(self, 'pause_controller', None)
         Thread(target=inference, args=(quit_event,self.batch_size,self.face_list_cycle,
                                            self.asr.feat_queue,self.asr.output_queue,self.res_frame_queue,
-                                           self.model,)).start()  #mp.Process
+                                           self.model,pause_controller)).start()  #mp.Process
 
         #self.render_event.set() #start infer process render
         count=0

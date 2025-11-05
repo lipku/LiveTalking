@@ -275,6 +275,22 @@
                 box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
             }
         }
+
+        .session-paused {
+            background-color: #fff3cd !important;
+            border-color: #ffeaa7 !important;
+            color: #856404 !important;
+        }
+
+        .session-running {
+            background-color: #d1edff !important;
+            border-color: #bee5eb !important;
+            color: #0c5460 !important;
+        }
+
+        .btn-pause-control {
+            min-width: 120px;
+        }
     </style>
 </head>
 <body>
@@ -322,6 +338,39 @@
                                         <button class="btn btn-outline-danger flex-grow-1" id="btn_stop_record" disabled>
                                             <i class="bi bi-stop-fill"></i> 停止录制
                                         </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 暂停/恢复控制 -->
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <div class="d-flex justify-content-center">
+                                        <button class="btn btn-warning me-2" id="btn_pause" disabled>
+                                            <i class="bi bi-pause-fill"></i> 暂停会话
+                                        </button>
+                                        <button class="btn btn-success me-2" id="btn_resume" disabled>
+                                            <i class="bi bi-play-fill"></i> 恢复会话
+                                        </button>
+                                        <button class="btn btn-info" id="btn_toggle_pause" disabled>
+                                            <i class="bi bi-skip-end-fill"></i> 切换状态
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 会话状态显示 -->
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <div class="alert alert-info" id="session-status" style="display: none;">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>会话状态:</strong> <span id="session-state">未知</span>
+                                            </div>
+                                            <div>
+                                                <strong>会话ID:</strong> <span id="current-sessionid">未获取</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -476,10 +525,28 @@
                 // 添加定时器检查视频流是否已加载
                 let connectionCheckTimer = setInterval(function() {
                     const video = document.getElementById('video');
-                    // 检查视频是否有数据
-                    if (video.readyState >= 3 && video.videoWidth > 0) {
+                    const sessionIdInput = document.getElementById('sessionid');
+                    
+                    // 检查视频是否有数据并且sessionid已获取
+                    if (video.readyState >= 3 && video.videoWidth > 0 && sessionIdInput.value !== '0') {
                         updateConnectionStatus('connected');
                         clearInterval(connectionCheckTimer);
+                        
+                        // 获取并设置当前会话ID
+                        currentSessionId = parseInt(sessionIdInput.value);
+                        console.log('会话已建立，SessionID:', currentSessionId);
+                        
+                        // 启用暂停控制按钮
+                        enablePauseControls();
+                        // 显示会话状态
+                        $('#session-status').show();
+                        // 初始化会话状态显示
+                        updateSessionStatus('running', currentSessionId);
+                        // 开始定期更新会话状态
+                        startSessionStatusUpdates();
+                        
+                        // 添加连接成功消息
+                        addChatMessage(`会话连接成功，SessionID: ${currentSessionId}`, 'system');
                     }
                 }, 2000); // 每2秒检查一次
                 
@@ -496,6 +563,16 @@
                 $(this).hide();
                 $('#start').show();
                 updateConnectionStatus('disconnected');
+                // 禁用暂停控制按钮
+                disablePauseControls();
+                // 隐藏会话状态
+                $('#session-status').hide();
+                // 停止会话状态更新
+                stopSessionStatusUpdates();
+                // 清除会话ID
+                currentSessionId = null;
+                // 重置sessionid输入框
+                document.getElementById('sessionid').value = '0';
             });
 
             // 录制功能
@@ -504,7 +581,7 @@
                 fetch('/record', {
                     body: JSON.stringify({
                         type: 'start_record',
-                        sessionid: parseInt(document.getElementById('sessionid').value),
+                        sessionid: currentSessionId || parseInt(document.getElementById('sessionid').value),
                     }),
                     headers: {
                         'Content-Type': 'application/json'
@@ -529,7 +606,7 @@
                 fetch('/record', {
                     body: JSON.stringify({
                         type: 'end_record',
-                        sessionid: parseInt(document.getElementById('sessionid').value),
+                        sessionid: currentSessionId || parseInt(document.getElementById('sessionid').value),
                     }),
                     headers: {
                         'Content-Type': 'application/json'
@@ -561,7 +638,7 @@
                         text: message,
                         type: 'echo',
                         interrupt: true,
-                        sessionid: parseInt(document.getElementById('sessionid').value),
+                        sessionid: currentSessionId || parseInt(document.getElementById('sessionid').value),
                     }),
                     headers: {
                         'Content-Type': 'application/json'
@@ -586,7 +663,7 @@
                         text: message,
                         type: 'chat',
                         interrupt: true,
-                        sessionid: parseInt(document.getElementById('sessionid').value),
+                        sessionid: currentSessionId || parseInt(document.getElementById('sessionid').value),
                     }),
                     headers: {
                         'Content-Type': 'application/json'
@@ -705,7 +782,7 @@
                                 text: recognizedText,
                                 type: 'chat',
                                 interrupt: true,
-                                sessionid: parseInt(document.getElementById('sessionid').value),
+                                sessionid: currentSessionId || parseInt(document.getElementById('sessionid').value),
                             }),
                             headers: {
                                 'Content-Type': 'application/json'
@@ -744,6 +821,187 @@
                     updateConnectionStatus('disconnected');
                 };
             }
+
+            // 暂停控制相关变量
+            let sessionStatusTimer = null;
+            let currentSessionId = null;
+
+            // 启用暂停控制按钮
+            function enablePauseControls() {
+                $('#btn_pause').prop('disabled', false);
+                $('#btn_resume').prop('disabled', false);
+                $('#btn_toggle_pause').prop('disabled', false);
+            }
+
+            // 禁用暂停控制按钮
+            function disablePauseControls() {
+                $('#btn_pause').prop('disabled', true);
+                $('#btn_resume').prop('disabled', true);
+                $('#btn_toggle_pause').prop('disabled', true);
+            }
+
+            // 更新会话状态显示
+            function updateSessionStatus(state, sessionId) {
+                $('#session-state').text(state);
+                $('#current-sessionid').text(sessionId || '未获取');
+                
+                const statusAlert = $('#session-status');
+                statusAlert.removeClass('session-paused session-running');
+                
+                if (state === 'paused') {
+                    statusAlert.addClass('session-paused');
+                } else if (state === 'running') {
+                    statusAlert.addClass('session-running');
+                }
+            }
+
+            // 开始定期更新会话状态
+            function startSessionStatusUpdates() {
+                if (sessionStatusTimer) {
+                    clearInterval(sessionStatusTimer);
+                }
+                
+                sessionStatusTimer = setInterval(function() {
+                    if (currentSessionId) {
+                        updatePauseStatus();
+                    }
+                }, 3000); // 每3秒更新一次状态
+            }
+
+            // 停止会话状态更新
+            function stopSessionStatusUpdates() {
+                if (sessionStatusTimer) {
+                    clearInterval(sessionStatusTimer);
+                    sessionStatusTimer = null;
+                }
+            }
+
+            // 获取暂停状态
+            function updatePauseStatus() {
+                if (!currentSessionId) return;
+                
+                fetch('/pause_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionid: currentSessionId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0) {
+                        updateSessionStatus(data.data.state, data.data.sessionid);
+                    }
+                })
+                .catch(error => {
+                    console.error('获取暂停状态失败:', error);
+                });
+            }
+
+            // 暂停会话
+            $('#btn_pause').click(function() {
+                if (!currentSessionId) {
+                    alert('会话ID未获取，无法执行暂停操作');
+                    return;
+                }
+                
+                fetch('/pause_control', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionid: currentSessionId,
+                        action: 'pause'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0) {
+                        console.log('暂停成功:', data.data);
+                        updateSessionStatus(data.data.state, data.data.sessionid);
+                        addChatMessage('会话已暂停', 'system');
+                    } else {
+                        console.error('暂停失败:', data.msg);
+                        alert('暂停失败: ' + data.msg);
+                    }
+                })
+                .catch(error => {
+                    console.error('暂停请求失败:', error);
+                    alert('暂停请求失败，请检查网络连接');
+                });
+            });
+
+            // 恢复会话
+            $('#btn_resume').click(function() {
+                if (!currentSessionId) {
+                    alert('会话ID未获取，无法执行恢复操作');
+                    return;
+                }
+                
+                fetch('/pause_control', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionid: currentSessionId,
+                        action: 'resume'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0) {
+                        console.log('恢复成功:', data.data);
+                        updateSessionStatus(data.data.state, data.data.sessionid);
+                        addChatMessage('会话已恢复', 'system');
+                    } else {
+                        console.error('恢复失败:', data.msg);
+                        alert('恢复失败: ' + data.msg);
+                    }
+                })
+                .catch(error => {
+                    console.error('恢复请求失败:', error);
+                    alert('恢复请求失败，请检查网络连接');
+                });
+            });
+
+            // 切换暂停/恢复状态
+            $('#btn_toggle_pause').click(function() {
+                if (!currentSessionId) {
+                    alert('会话ID未获取，无法执行切换操作');
+                    return;
+                }
+                
+                fetch('/pause_control', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionid: currentSessionId,
+                        action: 'toggle'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0) {
+                        console.log('切换成功:', data.data);
+                        updateSessionStatus(data.data.state, data.data.sessionid);
+                        const action = data.data.action_performed === 'pause' ? '暂停' : '恢复';
+                        addChatMessage(`会话已${action}`, 'system');
+                    } else {
+                        console.error('切换失败:', data.msg);
+                        alert('切换失败: ' + data.msg);
+                    }
+                })
+                .catch(error => {
+                    console.error('切换请求失败:', error);
+                    alert('切换请求失败，请检查网络连接');
+                });
+            });
 
             // SRS WebRTC播放功能
             var sdk = null; // 全局处理器，用于在重新发布时进行清理
