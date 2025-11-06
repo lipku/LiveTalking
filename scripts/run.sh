@@ -27,12 +27,18 @@ if [ "$(sudo docker ps -aq -f name=${CONTAINER_NAME})" ]; then
 fi
 
 echo "启动新容器..."
-sudo docker run -it --rm \
+sudo docker run -d \
   --name ${CONTAINER_NAME} \
-  --gpus all \
   --net host \
+  --restart unless-stopped \
   -v ${PROJECT_DIR}:/nerfstream \
-  ${IMAGE_NAME}
+  ${IMAGE_NAME} \
+  /bin/bash -c "apt-get update -qq && apt-get install -y -qq libgl1-mesa-glx libglib2.0-0 > /dev/null 2>&1 && source /root/miniconda3/etc/profile.d/conda.sh && conda activate nerfstream && python app.py --transport webrtc --model wav2lip --avatar_id mil_person"
+
+echo ""
+echo "✅ 容器已启动"
+echo "查看日志: sudo docker logs -f ${CONTAINER_NAME}"
+echo "停止容器: sudo docker stop ${CONTAINER_NAME}"
 
 echo ""
 echo "容器已停止"

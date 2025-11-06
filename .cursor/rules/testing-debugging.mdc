@@ -1,0 +1,245 @@
+---
+description: 测试和调试指南
+---
+
+# 测试和调试指南
+
+## 测试策略
+
+### 单元测试
+
+为核心功能编写单元测试：
+- ASR 模块的音频处理
+- TTS 模块的文本转语音
+- 模型推理逻辑
+
+### 集成测试
+
+测试组件间的集成：
+- WebRTC 连接建立
+- 音视频同步
+- 端到端对话流程
+
+### 性能测试
+
+1. **推理性能**
+   - 测量 GPU 推理帧率 (inferfps)
+   - 监控显存使用
+   - 压力测试并发性能
+
+2. **网络性能**
+   - 测试不同网络条件下的表现
+   - 监控延迟和丢包率
+   - 测试 NAT 穿透
+
+## 调试工具
+
+### 日志调试
+
+使用 [logger.py](mdc:logger.py) 中的 logger：
+
+```python
+from logger import logger
+
+logger.info("信息日志")
+logger.warning("警告日志")
+logger.error("错误日志")
+logger.debug("调试日志")
+```
+
+### WebRTC 调试
+
+1. **浏览器工具**
+   - Chrome DevTools Console
+   - `chrome://webrtc-internals/`
+   - Network 面板
+
+2. **关键指标**
+   - ICE 连接状态
+   - 媒体流统计
+   - 丢包率和延迟
+
+### GPU 调试
+
+```bash
+# 监控 GPU 使用
+nvidia-smi -l 1
+
+# 查看详细信息
+nvidia-smi -q
+
+# 监控特定进程
+nvidia-smi pmon
+```
+
+### Python 调试
+
+1. **使用 pdb**
+```python
+import pdb; pdb.set_trace()
+```
+
+2. **使用 IPython**
+```python
+from IPython import embed; embed()
+```
+
+## 常见问题排查
+
+### 模型加载失败
+
+**症状**：启动时报错，无法加载模型
+
+**排查步骤**：
+1. 检查模型文件是否存在于 `models/` 目录
+2. 验证模型文件完整性（文件大小）
+3. 检查 CUDA 版本兼容性
+4. 查看详细错误日志
+
+### 显存不足 (OOM)
+
+**症状**：`CUDA out of memory` 错误
+
+**解决方案**：
+1. 减少并发会话数
+2. 降低视频分辨率
+3. 使用 FP16 推理
+4. 及时释放不用的模型
+
+```python
+import torch
+torch.cuda.empty_cache()
+import gc
+gc.collect()
+```
+
+### 音视频不同步
+
+**症状**：口型和声音对不上
+
+**排查步骤**：
+1. 检查音频采样率设置
+2. 验证时间戳对齐逻辑
+3. 调整音频缓冲区大小
+4. 检查 ASR 处理延迟
+
+### WebRTC 连接失败
+
+**症状**：无法建立视频连接
+
+**排查步骤**：
+1. 检查防火墙和端口配置
+2. 验证 UDP 端口可访问
+3. 测试 STUN 服务器连接
+4. 查看浏览器控制台错误
+5. 检查 ICE 候选交换
+
+### 推理速度慢
+
+**症状**：inferfps 低于 25
+
+**优化方法**：
+1. 检查 GPU 利用率
+2. 优化批处理大小
+3. 使用模型量化
+4. 检查是否有 CPU 瓶颈
+
+### 首次推理卡顿
+
+**症状**：第一次生成视频时明显卡顿
+
+**解决方案**：
+- 启动时进行模型预热
+- 预加载常用资源
+- 使用缓存机制
+
+## 性能分析
+
+### Python Profiling
+
+```python
+import cProfile
+import pstats
+
+profiler = cProfile.Profile()
+profiler.enable()
+
+# 要分析的代码
+
+profiler.disable()
+stats = pstats.Stats(profiler)
+stats.sort_stats('cumulative')
+stats.print_stats(20)
+```
+
+### PyTorch Profiling
+
+```python
+import torch.profiler as profiler
+
+with profiler.profile(
+    activities=[
+        profiler.ProfilerActivity.CPU,
+        profiler.ProfilerActivity.CUDA,
+    ],
+    record_shapes=True,
+) as prof:
+    # 要分析的代码
+    model(input_data)
+
+print(prof.key_averages().table(sort_by="cuda_time_total"))
+```
+
+## 日志分析
+
+### 关键日志信息
+
+1. **连接日志**
+   - `sessionid` - 会话 ID
+   - `session num` - 当前会话数
+
+2. **性能日志**
+   - `inferfps` - GPU 推理帧率
+   - `finalfps` - 最终推流帧率
+
+3. **错误日志**
+   - 异常堆栈信息
+   - 资源使用情况
+
+### 日志级别设置
+
+在 [logger.py](mdc:logger.py) 中调整日志级别：
+- DEBUG: 详细调试信息
+- INFO: 一般信息
+- WARNING: 警告信息
+- ERROR: 错误信息
+
+## 测试环境
+
+### 本地测试
+
+```bash
+# 启动服务
+python app.py --transport webrtc --model wav2lip --avatar_id test_avatar
+
+# 访问测试页面
+# http://localhost:8010/webrtcapi.html
+```
+
+### Docker 测试
+
+```bash
+# 构建镜像
+docker build -t livetalking-test .
+
+# 运行容器
+docker run --gpus all -p 8010:8010 livetalking-test
+```
+
+## 持续集成
+
+建议添加 CI/CD 流程：
+1. 代码风格检查 (flake8, black)
+2. 单元测试
+3. 集成测试
+4. 性能基准测试

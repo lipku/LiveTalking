@@ -1,0 +1,75 @@
+---
+description: ASR 和 TTS 模块开发指南
+---
+
+# ASR 和 TTS 开发指南
+
+## ASR (语音识别) 架构
+
+所有 ASR 实现都继承自 [baseasr.py](mdc:baseasr.py) 中的 `BaseASR` 类。
+
+### 现有 ASR 实现
+
+- [hubertasr.py](mdc:hubertasr.py) - Hubert 模型 ASR
+- [lipasr.py](mdc:lipasr.py) - Wav2Lip 专用 ASR
+- [museasr.py](mdc:museasr.py) - MuseTalk 专用 ASR
+
+### 添加新 ASR 的步骤
+
+1. **创建 ASR 类**
+   - 继承 `BaseASR` 类
+   - 实现 `run()` 方法处理音频流
+   - 实现 `get_audio_out()` 方法输出处理后的音频
+
+2. **音频处理**
+   - 输入：原始音频数据 (通常是 PCM 格式)
+   - 处理：特征提取、降噪、重采样等
+   - 输出：适合模型的音频特征
+
+3. **实时性要求**
+   - 使用队列进行异步处理
+   - 控制延迟在可接受范围内
+   - 处理音频流的断点和连续性
+
+## TTS (文本转语音)
+
+TTS 功能在 [ttsreal.py](mdc:ttsreal.py) 中实现。
+
+### 支持的 TTS 服务
+
+- Edge TTS
+- Azure TTS
+- 腾讯云 TTS
+- 豆包 TTS
+- Fish Speech
+
+### TTS 集成要点
+
+1. **API 配置**
+   - 在配置文件中设置 API 密钥
+   - 选择合适的语音模型和音色
+
+2. **音频格式**
+   - 采样率：通常 16kHz 或 22.05kHz
+   - 格式：WAV 或 MP3
+   - 转换为模型需要的格式
+
+3. **声音克隆**
+   - 提供参考音频样本
+   - 调整音色参数
+   - 测试合成效果
+
+## 音视频同步
+
+1. **时间戳对齐**
+   - 音频帧和视频帧使用统一时间基准
+   - 处理延迟补偿
+
+2. **缓冲区管理**
+   - 使用队列缓冲音频和视频帧
+   - 平衡延迟和流畅度
+
+3. **打断处理**
+   - 检测新的语音输入
+   - 清空当前播放队列
+   - 快速切换到新内容

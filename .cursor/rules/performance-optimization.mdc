@@ -1,0 +1,456 @@
+---
+description: 性能优化技巧和最佳实践
+---
+
+# 性能优化指南
+
+## GPU 优化
+
+### 显存管理
+
+1. **及时释放显存**
+
+```python
+import torch
+import gc
+
+# 删除不需要的张量
+del tensor
+torch.cuda.empty_cache()
+gc.collect()
+```
+
+2. **使用半精度推理 (FP16)**
+
+```python
+# 模型转换为半精度
+model = model.half()
+
+# 输入也需要转换
+input_tensor = input_tensor.half()
+```
+
+3. **批处理优化**
+
+```python
+# 根据显存动态调整批大小
+def get_optimal_batch_size(available_memory):
+    if available_memory > 10000:  # 10GB
+        return 8
+    elif available_memory > 6000:  # 6GB
+        return 4
+    else:
+        return 2
+```
+
+4. **梯度累积（训练时）**
+
+```python
+# 不需要梯度时使用 no_grad
+with torch.no_grad():
+    output = model(input)
+```
+
+### 推理优化
+
+1. **模型预热**
+
+在服务启动时预热模型，避免首次推理卡顿：
+
+```python
+def warmup_model(model, input_shape):
+    """模型预热"""
+    logger.info("开始模型预热...")
+    dummy_input = torch.randn(input_shape).cuda()
+    
+    # 预热几次
+    for _ in range(3):
+        with torch.no_grad():
+            _ = model(dummy_input)
+    
+    torch.cuda.synchronize()
+    logger.info("模型预热完成")
+```
+
+2. **使用 TorchScript**
+
+```python
+# 转换为 TorchScript
+traced_model = torch.jit.trace(model, example_input)
+traced_model = torch.jit.optimize_for_inference(traced_model)
+```
+
+3. **使用 CUDA Graphs（高级）**
+
+```python
+# CUDA Graphs 可以减少 CPU 开销
+static_input = torch.randn(batch_size, *input_shape).cuda()
+static_output = torch.randn(batch_size, *output_shape).cuda()
+
+# 预热
+for _ in range(3):
+    static_output = model(static_input)
+
+# 捕获图
+graph = torch.cuda.CUDAGraph()
+with torch.cuda.graph(graph):
+    static_output = model(static_input)
+
+# 重放图
+graph.replay()
+```
+
+### 并发优化
+
+1. **多进程推理**
+
+```python
+import torch.multiprocessing as mp
+
+# 每个进程使用独立的 GPU
+def worker(gpu_id, queue):
+    torch.cuda.set_device(gpu_id)
+    model = load_model().cuda()
+    
+    while True:
+        data = queue.get()
+        result = model(data)
+        # 处理结果
+```
+
+2. **显存隔离**
+
+```python
+# 为每个会话分配独立的显存空间
+torch.cuda.set_per_process_memory_fraction(0.3, device=0)
+```
+
+## CPU 优化
+
+### 视频编码优化
+
+1. **选择合适的编码器**
+
+```python
+# H.264 编码参数优化
+encoder_params = {
+    'preset': 'ultrafast',  # 编码速度优先
+    'tune': 'zerolatency',  # 低延迟
+    'crf': 23,              # 质量参数
+}
+```
+
+2. **多线程编码**
+
+```python
+# 使用多线程加速编码
+import concurrent.futures
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+    futures = [executor.submit(encode_frame, frame) for frame in frames]
+    results = [f.result() for f in futures]
+```
+
+### 音频处理优化
+
+1. **批量处理音频**
+
+```python
+# 一次处理多个音频帧
+def process_audio_batch(audio_frames):
+    # 合并为批次
+    batch = np.stack(audio_frames)
+    # 批量处理
+    features = extract_features(batch)
+    return features
+```
+
+2. **使用 Numba 加速**
+
+```python
+from numba import jit
+
+@jit(nopython=True)
+def fast_audio_process(audio_data):
+    # 使用 Numba 加速的音频处理
+    result = np.zeros_like(audio_data)
+    for i in range(len(audio_data)):
+        result[i] = audio_data[i] * 0.5
+    return result
+```
+
+## 网络优化
+
+### WebRTC 优化
+
+1. **码率控制**
+
+```python
+# 根据网络状况动态调整码率
+def adjust_bitrate(network_quality):
+    if network_quality > 0.8:
+        return 2000000  # 2 Mbps
+    elif network_quality > 0.5:
+        return 1000000  # 1 Mbps
+    else:
+        return 500000   # 500 Kbps
+```
+
+2. **分辨率自适应**
+
+```python
+# 根据性能动态调整分辨率
+def get_adaptive_resolution(fps, target_fps=25):
+    if fps >= target_fps:
+        return (512, 512)
+    elif fps >= target_fps * 0.8:
+        return (384, 384)
+    else:
+        return (256, 256)
+```
+
+### 缓冲区优化
+
+1. **音频缓冲**
+
+```python
+from queue import Queue
+
+# 使用有界队列防止内存溢出
+audio_queue = Queue(maxsize=100)
+
+# 动态调整缓冲区大小
+def adjust_buffer_size(latency):
+    if latency > 500:  # ms
+        return 50
+    elif latency > 200:
+        return 100
+    else:
+        return 200
+```
+
+2. **视频缓冲**
+
+```python
+# 使用环形缓冲区
+class RingBuffer:
+    def __init__(self, size):
+        self.size = size
+        self.buffer = [None] * size
+        self.index = 0
+    
+    def push(self, item):
+        self.buffer[self.index] = item
+        self.index = (self.index + 1) % self.size
+    
+    def get_latest(self, n):
+        return self.buffer[-n:]
+```
+
+## 内存优化
+
+### Python 内存管理
+
+1. **使用生成器**
+
+```python
+# 不要一次性加载所有数据
+def load_frames_generator(video_path):
+    cap = cv2.VideoCapture(video_path)
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        yield frame
+    cap.release()
+```
+
+2. **及时释放资源**
+
+```python
+# 使用上下文管理器
+class ResourceManager:
+    def __enter__(self):
+        self.resource = allocate_resource()
+        return self.resource
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        release_resource(self.resource)
+
+with ResourceManager() as resource:
+    # 使用资源
+    pass
+# 自动释放
+```
+
+### 数据结构优化
+
+1. **使用 NumPy 数组**
+
+```python
+# NumPy 比 Python 列表更高效
+import numpy as np
+
+# 好的做法
+frames = np.zeros((100, 256, 256, 3), dtype=np.uint8)
+
+# 避免
+# frames = [[[[0]*3]*256]*256]*100
+```
+
+2. **内存映射大文件**
+
+```python
+# 对于大文件使用内存映射
+import numpy as np
+
+# 不加载到内存，按需读取
+data = np.memmap('large_file.dat', dtype='float32', mode='r', shape=(1000000, 100))
+```
+
+## 并发和异步
+
+### 异步 I/O
+
+1. **使用 asyncio**
+
+```python
+import asyncio
+
+async def process_request(request):
+    # 异步处理请求
+    result = await async_inference(request)
+    return result
+
+# 并发处理多个请求
+async def handle_multiple_requests(requests):
+    tasks = [process_request(req) for req in requests]
+    results = await asyncio.gather(*tasks)
+    return results
+```
+
+2. **线程池**
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+# 创建线程池处理 I/O 密集型任务
+executor = ThreadPoolExecutor(max_workers=10)
+
+def io_task(data):
+    # I/O 操作
+    return result
+
+# 提交任务
+future = executor.submit(io_task, data)
+result = future.result()
+```
+
+## 性能监控
+
+### 性能指标
+
+1. **FPS 监控**
+
+```python
+import time
+
+class FPSCounter:
+    def __init__(self, window_size=30):
+        self.window_size = window_size
+        self.timestamps = []
+    
+    def tick(self):
+        now = time.time()
+        self.timestamps.append(now)
+        if len(self.timestamps) > self.window_size:
+            self.timestamps.pop(0)
+    
+    def get_fps(self):
+        if len(self.timestamps) < 2:
+            return 0
+        elapsed = self.timestamps[-1] - self.timestamps[0]
+        return len(self.timestamps) / elapsed if elapsed > 0 else 0
+```
+
+2. **延迟监控**
+
+```python
+class LatencyMonitor:
+    def __init__(self):
+        self.start_time = None
+    
+    def start(self):
+        self.start_time = time.time()
+    
+    def end(self):
+        if self.start_time:
+            latency = (time.time() - self.start_time) * 1000  # ms
+            logger.info(f"延迟: {latency:.2f}ms")
+            return latency
+```
+
+### 性能分析
+
+1. **定位瓶颈**
+
+```python
+import time
+
+def profile_function(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        logger.info(f"{func.__name__} 耗时: {(end-start)*1000:.2f}ms")
+        return result
+    return wrapper
+
+@profile_function
+def slow_function():
+    # 需要优化的函数
+    pass
+```
+
+2. **GPU 利用率监控**
+
+```python
+import subprocess
+
+def get_gpu_utilization():
+    result = subprocess.run(
+        ['nvidia-smi', '--query-gpu=utilization.gpu', '--format=csv,noheader,nounits'],
+        capture_output=True, text=True
+    )
+    return int(result.stdout.strip())
+```
+
+## 优化检查清单
+
+- [ ] 模型使用 FP16 推理
+- [ ] 实现模型预热
+- [ ] 优化批处理大小
+- [ ] 及时释放 GPU 显存
+- [ ] 使用 torch.no_grad()
+- [ ] 视频编码参数优化
+- [ ] 音频批量处理
+- [ ] 使用异步 I/O
+- [ ] 实现缓冲区管理
+- [ ] 监控 FPS 和延迟
+- [ ] 限制并发数
+- [ ] 使用生成器处理大数据
+- [ ] 优化数据结构
+- [ ] 实现资源清理
+
+## 性能目标
+
+- **inferfps**: >= 25 (GPU 推理帧率)
+- **finalfps**: >= 25 (最终推流帧率)
+- **延迟**: < 200ms (端到端)
+- **显存**: 单会话 < 4GB
+- **CPU**: 单会话 < 50%
+
+根据 GPU 型号调整目标：
+- RTX 3060: Wav2Lip ~60 FPS
+- RTX 3080Ti: Wav2Lip ~120 FPS, MuseTalk ~42 FPS
+- RTX 4090: MuseTalk ~72 FPS

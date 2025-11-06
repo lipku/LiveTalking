@@ -1,0 +1,161 @@
+---
+description: 部署和运维指南
+---
+
+# 部署和运维指南
+
+## 环境要求
+
+### 硬件要求
+
+- **GPU**：NVIDIA GPU，显存 >= 6GB
+  - Wav2Lip: RTX 3060 或更高
+  - MuseTalk: RTX 3080Ti 或更高
+- **CPU**：多核 CPU，性能影响并发数
+- **内存**：>= 16GB RAM
+- **存储**：>= 50GB 可用空间（用于模型文件）
+
+### 软件要求
+
+- **操作系统**：Ubuntu 24.04 (推荐) / Windows / macOS
+- **Python**：3.10+
+- **CUDA**：12.4 (推荐) 或其他兼容版本
+- **PyTorch**：2.5.0 (推荐)
+
+## 安装步骤
+
+1. **创建虚拟环境**
+```bash
+conda create -n nerfstream python=3.10
+conda activate nerfstream
+```
+
+2. **安装 PyTorch**
+```bash
+# CUDA 12.4
+conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 pytorch-cuda=12.4 -c pytorch -c nvidia
+```
+
+3. **安装依赖**
+```bash
+pip install -r requirements.txt
+```
+
+4. **下载模型**
+   - 从云盘下载模型文件
+   - 放置到 `models/` 目录
+   - 解压 avatar 数据到 `data/avatars/`
+
+## 运行服务
+
+### 基本运行
+
+```bash
+python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
+```
+
+### 常用参数
+
+- `--transport`: 传输方式 (webrtc/rtmp)
+- `--model`: 模型类型 (wav2lip/musetalk/ultralight)
+- `--avatar_id`: 数字人形象 ID
+- `--max_session`: 最大并发会话数
+
+## Docker 部署
+
+### 使用预构建镜像
+
+```bash
+docker run --gpus all -it --network=host --rm \
+  registry.cn-zhangjiakou.aliyuncs.com/codewithgpu3/lipku-livetalking:toza2irpHZ
+```
+
+### 构建自定义镜像
+
+参考 [Dockerfile](mdc:Dockerfile) 构建镜像。
+
+## 网络配置
+
+### 端口开放
+
+- **TCP 8010**: HTTP/WebSocket 服务
+- **UDP 1-65535**: WebRTC 媒体流
+
+### 防火墙配置
+
+```bash
+# Ubuntu UFW
+sudo ufw allow 8010/tcp
+sudo ufw allow 1:65535/udp
+```
+
+## 性能优化
+
+### GPU 优化
+
+1. **显存管理**
+   - 监控显存使用：`nvidia-smi`
+   - 控制并发数避免 OOM
+   - 使用 FP16 推理减少显存
+
+2. **推理优化**
+   - 模型预热避免首次卡顿
+   - 批处理提高吞吐量
+   - 使用 TensorRT 加速（可选）
+
+### CPU 优化
+
+1. **视频编码**
+   - 选择合适的编码器
+   - 调整分辨率和码率
+   - 多核并行处理
+
+2. **并发控制**
+   - 设置合理的 max_session
+   - 监控 CPU 使用率
+   - 负载均衡
+
+## 监控和日志
+
+### 日志配置
+
+日志配置在 [logger.py](mdc:logger.py) 中。
+
+### 关键指标
+
+- `inferfps`: GPU 推理帧率（应 >= 25）
+- `finalfps`: 最终推流帧率（应 >= 25）
+- 显存使用率
+- CPU 使用率
+- 网络带宽
+
+### 故障排查
+
+1. **视频连不上**
+   - 检查防火墙和端口
+   - 查看浏览器控制台错误
+   - 检查 WebRTC 日志
+
+2. **推理慢**
+   - 检查 GPU 利用率
+   - 查看 inferfps 指标
+   - 优化模型或降低分辨率
+
+3. **音视频不同步**
+   - 检查音频处理延迟
+   - 调整缓冲区大小
+   - 查看时间戳对齐
+
+## HuggingFace 镜像
+
+如果访问不了 HuggingFace：
+
+```bash
+export HF_ENDPOINT=https://hf-mirror.com
+```
+
+## 云平台部署
+
+- **AutoDL**: 提供预配置镜像
+- **UCloud**: 支持任意端口开放
+- 参考官方文档获取详细教程

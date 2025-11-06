@@ -1,0 +1,52 @@
+---
+alwaysApply: true
+---
+
+# LiveTalking 项目结构指南
+
+LiveTalking 是一个实时交互流式数字人项目，实现音视频同步对话。
+
+## 核心文件说明
+
+- [app.py](mdc:app.py) - 主应用入口，Flask 服务器，处理 WebRTC 连接
+- [webrtc.py](mdc:webrtc.py) - WebRTC 相关功能实现
+- [basereal.py](mdc:basereal.py) - 数字人基类，所有数字人模型的基础
+- [llm.py](mdc:llm.py) - 大语言模型集成
+- [logger.py](mdc:logger.py) - 日志配置
+
+## 数字人模型实现
+
+项目支持多种数字人模型：
+
+- [lipreal.py](mdc:lipreal.py) - Wav2Lip 模型实现
+- [musereal.py](mdc:musereal.py) - MuseTalk 模型实现
+- [lightreal.py](mdc:lightreal.py) - Ultralight-Digital-Human 模型实现
+- [ttsreal.py](mdc:ttsreal.py) - TTS (文本转语音) 相关功能
+
+## ASR (语音识别) 模块
+
+- [baseasr.py](mdc:baseasr.py) - ASR 基类
+- [hubertasr.py](mdc:hubertasr.py) - Hubert ASR 实现
+- [lipasr.py](mdc:lipasr.py) - Lip ASR 实现
+- [museasr.py](mdc:museasr.py) - Muse ASR 实现
+
+## 模型相关目录
+
+- `musetalk/` - MuseTalk 模型代码，包含 VAE、UNet、SyncNet 等
+- `wav2lip/` - Wav2Lip 模型代码
+- `ultralight/` - Ultralight 模型代码
+- `models/` - 存放模型权重文件
+- `data/avatars/` - 存放数字人形象数据
+
+## Web 前端
+
+- `web/` 目录包含所有前端页面和 JavaScript 文件
+  - `webrtcapi.html` - WebRTC API 测试页面
+  - `chat.html` - 聊天界面
+  - `dashboard.html` - 控制面板
+
+## 配置文件
+
+- [requirements.txt](mdc:requirements.txt) - Python 依赖
+- [data/custom_config.json](mdc:data/custom_config.json) - 自定义配置
+- [Dockerfile](mdc:Dockerfile) - Docker 构建配置

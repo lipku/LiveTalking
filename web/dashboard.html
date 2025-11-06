@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>livetalking数字人交互平台</title>
+    <title>数字人交互平台</title>
     <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="lib/bootstrap-icons/font/bootstrap-icons.css">
     <style>
@@ -149,75 +149,11 @@
             border-left: 4px solid #8bc34a;
         }
 
-        .recording-indicator {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background-color: rgba(220, 53, 69, 0.8);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            display: none;
-        }
-
-        .recording-indicator.active {
-            display: flex;
-            align-items: center;
-        }
-
-        .recording-indicator .blink {
-            width: 10px;
-            height: 10px;
-            background-color: #fff;
-            border-radius: 50%;
-            margin-right: 5px;
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
-        }
-
-        .mode-switch {
-            margin-bottom: 20px;
-        }
-
-        .nav-tabs .nav-link {
-            color: var(--text-color);
-            border: none;
-            padding: 10px 20px;
-            border-radius: var(--border-radius) var(--border-radius) 0 0;
-        }
-
-        .nav-tabs .nav-link.active {
-            color: var(--primary-color);
-            background-color: var(--card-bg);
-            border-bottom: 3px solid var(--primary-color);
-            font-weight: 600;
-        }
-
-        .tab-content {
-            padding: 20px;
-            background-color: var(--card-bg);
-            border-radius: 0 0 var(--border-radius) var(--border-radius);
-        }
-
         .settings-panel {
             padding: 15px;
             background-color: #f8f9fa;
             border-radius: var(--border-radius);
             margin-top: 15px;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding: 20px 0;
-            color: #6c757d;
-            font-size: 0.9rem;
         }
         
         .voice-record-btn {
@@ -280,12 +216,6 @@
 <body>
     <div class="dashboard-container">
         <div class="row">
-            <div class="col-12">
-                <h1 class="text-center mb-4">livetalking数字人交互平台</h1>
-            </div>
-        </div>
-
-        <div class="row">
             <!-- 视频区域 -->
             <div class="col-lg-8">
                 <div class="card">
@@ -298,31 +228,17 @@
                     <div class="card-body p-0">
                         <div class="video-container">
                             <video id="video" autoplay playsinline></video>
-                            <div class="recording-indicator" id="recording-indicator">
-                                <div class="blink"></div>
-                                <span>录制中</span>
-                            </div>
                         </div>
                         
                         <div class="controls-container">
                             <div class="row">
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-12 mb-3">
                                     <button class="btn btn-primary w-100" id="start">
                                         <i class="bi bi-play-fill"></i> 开始连接
                                     </button>
                                     <button class="btn btn-danger w-100" id="stop" style="display: none;">
                                         <i class="bi bi-stop-fill"></i> 停止连接
                                     </button>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="d-flex">
-                                        <button class="btn btn-outline-primary flex-grow-1 me-2" id="btn_start_record">
-                                            <i class="bi bi-record-fill"></i> 开始录制
-                                        </button>
-                                        <button class="btn btn-outline-danger flex-grow-1" id="btn_stop_record" disabled>
-                                            <i class="bi bi-stop-fill"></i> 停止录制
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
 
@@ -335,16 +251,8 @@
                                 </div>
                             </div>
                             
-                            <div class="settings-panel mt-3">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="form-check form-switch mb-3">
-                                            <input class="form-check-input" type="checkbox" id="use-stun">
-                                            <label class="form-check-label" for="use-stun">使用STUN服务器</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- STUN 服务器默认启用 -->
+                            <input type="hidden" id="use-stun" checked>
                         </div>
                     </div>
                 </div>
@@ -354,61 +262,32 @@
             <div class="col-lg-4">
                 <div class="card">
                     <div class="card-header">
-                        <ul class="nav nav-tabs card-header-tabs" id="interaction-tabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab" aria-controls="chat" aria-selected="true">对话模式</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="tts-tab" data-bs-toggle="tab" data-bs-target="#tts" type="button" role="tab" aria-controls="tts" aria-selected="false">朗读模式</button>
-                            </li>
-                        </ul>
+                        对话模式
                     </div>
                     <div class="card-body">
-                        <div class="tab-content" id="interaction-tabs-content">
-                            <!-- 对话模式 -->
-                            <div class="tab-pane fade show active" id="chat" role="tabpanel" aria-labelledby="chat-tab">
-                                <div class="asr-container mb-3" id="chat-messages">
-                                    <div class="asr-text system-message">
-                                        系统: 欢迎使用livetalking，请点击"开始连接"按钮开始对话。
-                                    </div>
-                                </div>
-                                
-                                <form id="chat-form">
-                                    <div class="input-group mb-3">
-                                        <textarea class="form-control" id="chat-message" rows="3" placeholder="输入您想对数字人说的话..."></textarea>
-                                        <button class="btn btn-primary" type="submit">
-                                            <i class="bi bi-send"></i> 发送
-                                        </button>
-                                    </div>
-                                </form>
-                                
-                                <!-- 按住说话按钮 -->
-                                <div class="voice-record-btn" id="voice-record-btn">
-                                    <i class="bi bi-mic-fill"></i>
-                                </div>
-                                <div class="voice-record-label">按住说话，松开发送</div>
-                            </div>
-                            
-                            <!-- 朗读模式 -->
-                            <div class="tab-pane fade" id="tts" role="tabpanel" aria-labelledby="tts-tab">
-                                <form id="echo-form">
-                                    <div class="mb-3">
-                                        <label for="message" class="form-label">输入要朗读的文本</label>
-                                        <textarea class="form-control" id="message" rows="6" placeholder="输入您想让数字人朗读的文字..."></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="bi bi-volume-up"></i> 朗读文本
-                                    </button>
-                                </form>
+                        <div class="asr-container mb-3" id="chat-messages">
+                            <div class="asr-text system-message">
+                                系统: 首长，请点击连接，我将回答您的问题。
                             </div>
                         </div>
+                        
+                        <form id="chat-form">
+                            <div class="input-group mb-3">
+                                <textarea class="form-control" id="chat-message" rows="3" placeholder="输入您想对数字人说的话..."></textarea>
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="bi bi-send"></i> 发送
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- 按住说话按钮 -->
+                        <div class="voice-record-btn" id="voice-record-btn">
+                            <i class="bi bi-mic-fill"></i>
+                        </div>
+                        <div class="voice-record-label">按住说话，松开发送</div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="footer">
-            <p>Made with ❤️ by Marstaos | Frontend & Performance Optimization</p>
         </div>
     </div>
 
@@ -496,81 +375,6 @@
                 $(this).hide();
                 $('#start').show();
                 updateConnectionStatus('disconnected');
-            });
-
-            // 录制功能
-            $('#btn_start_record').click(function() {
-                console.log('Starting recording...');
-                fetch('/record', {
-                    body: JSON.stringify({
-                        type: 'start_record',
-                        sessionid: parseInt(document.getElementById('sessionid').value),
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    method: 'POST'
-                }).then(function(response) {
-                    if (response.ok) {
-                        console.log('Recording started.');
-                        $('#btn_start_record').prop('disabled', true);
-                        $('#btn_stop_record').prop('disabled', false);
-                        $('#recording-indicator').addClass('active');
-                    } else {
-                        console.error('Failed to start recording.');
-                    }
-                }).catch(function(error) {
-                    console.error('Error:', error);
-                });
-            });
-
-            $('#btn_stop_record').click(function() {
-                console.log('Stopping recording...');
-                fetch('/record', {
-                    body: JSON.stringify({
-                        type: 'end_record',
-                        sessionid: parseInt(document.getElementById('sessionid').value),
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    method: 'POST'
-                }).then(function(response) {
-                    if (response.ok) {
-                        console.log('Recording stopped.');
-                        $('#btn_start_record').prop('disabled', false);
-                        $('#btn_stop_record').prop('disabled', true);
-                        $('#recording-indicator').removeClass('active');
-                    } else {
-                        console.error('Failed to stop recording.');
-                    }
-                }).catch(function(error) {
-                    console.error('Error:', error);
-                });
-            });
-
-            $('#echo-form').on('submit', function(e) {
-                e.preventDefault();
-                var message = $('#message').val();
-                if (!message.trim()) return;
-                
-                console.log('Sending echo message:', message);
-                
-                fetch('/human', {
-                    body: JSON.stringify({
-                        text: message,
-                        type: 'echo',
-                        interrupt: true,
-                        sessionid: parseInt(document.getElementById('sessionid').value),
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    method: 'POST'
-                });
-                
-                $('#message').val('');
-                addChatMessage(`已发送朗读请求: "${message}"`, 'system');
             });
 
             // 聊天模式表单提交

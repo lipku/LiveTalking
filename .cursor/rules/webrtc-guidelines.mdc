@@ -1,0 +1,57 @@
+---
+description: WebRTC 实现和调试指南
+---
+
+# WebRTC 实现指南
+
+## 核心文件
+
+- [webrtc.py](mdc:webrtc.py) - WebRTC 服务端实现
+- [app.py](mdc:app.py) - WebRTC 连接管理
+- `web/webrtcapi.html` - WebRTC 客户端示例
+
+## WebRTC 流程
+
+1. **连接建立**
+   - 客户端发送 Offer SDP
+   - 服务端创建 PeerConnection
+   - 服务端返回 Answer SDP
+   - ICE 候选交换
+
+2. **媒体流处理**
+   - 接收客户端音频流
+   - 处理音频数据 (ASR)
+   - 生成数字人视频帧
+   - 发送视频流到客户端
+
+3. **会话管理**
+   - 每个连接分配唯一 sessionid
+   - 使用 `nerfreals` 字典管理会话
+   - 连接关闭时清理资源
+
+## 网络配置
+
+- **必须开放的端口**
+  - TCP 8010 - HTTP/WebSocket 服务
+  - UDP 1-65536 - WebRTC 媒体流
+
+- **防火墙配置**
+  - 确保 UDP 端口可访问
+  - 配置 STUN/TURN 服务器（如需 NAT 穿透）
+
+## 调试技巧
+
+1. **检查连接状态**
+   - 查看浏览器控制台的 WebRTC 日志
+   - 检查 ICE 连接状态
+   - 使用 chrome://webrtc-internals/
+
+2. **性能监控**
+   - 后端日志中的 `inferfps` - GPU 推理帧率
+   - 后端日志中的 `finalfps` - 最终推流帧率
+   - 两者都应该 >= 25 才能实时
+
+3. **常见问题**
+   - 视频连不上：检查防火墙和端口配置
+   - 延迟高：检查 CPU/GPU 性能
+   - 音视频不同步：检查音频处理延迟

@@ -1,0 +1,417 @@
+---
+description: 常见问题和故障排除
+---
+
+# 常见问题和故障排除
+
+## 安装问题
+
+### Q1: CUDA 版本不匹配
+
+**问题**: 安装 PyTorch 时提示 CUDA 版本不匹配
+
+**解决方案**:
+```bash
+# 1. 检查 CUDA 版本
+nvidia-smi
+
+# 2. 根据 CUDA 版本安装对应的 PyTorch
+# CUDA 11.8
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+
+# CUDA 12.1
+conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
+
+# 参考: https://pytorch.org/get-started/previous-versions/
+```
+
+### Q2: 依赖包安装失败
+
+**问题**: pip install 时某些包安装失败
+
+**解决方案**:
+```bash
+# 1. 更新 pip
+pip install --upgrade pip
+
+# 2. 使用国内镜像
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 3. 单独安装失败的包
+pip install package_name --no-cache-dir
+
+# 4. 如果是编译问题，安装编译工具
+sudo apt-get install build-essential python3-dev
+```
+
+### Q3: HuggingFace 连接失败
+
+**问题**: 无法下载 HuggingFace 模型
+
+**解决方案**:
+```bash
+# 使用 HuggingFace 镜像
+export HF_ENDPOINT=https://hf-mirror.com
+
+# 或在代码中设置
+import os
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+```
+
+## 运行问题
+
+### Q4: 模型加载失败
+
+**问题**: 启动时提示找不到模型文件
+
+**解决方案**:
+1. 检查模型文件是否在 `models/` 目录
+2. 验证文件名是否正确
+3. 检查文件权限
+4. 重新下载模型文件
+
+```bash
+# 检查模型文件
+ls -lh models/
+
+# 应该看到类似:
+# wav2lip.pth
+# musetalk/
+# etc.
+```
+
+### Q5: 显存不足 (OOM)
+
+**问题**: RuntimeError: CUDA out of memory
+
+**解决方案**:
+```python
+# 1. 减少并发会话数
+python app.py --max_session 2
+
+# 2. 降低分辨率
+# 修改配置使用 256x256 而不是 512x512
+
+# 3. 使用 FP16
+model = model.half()
+
+# 4. 清理显存
+import torch
+torch.cuda.empty_cache()
+
+# 5. 检查显存使用
+nvidia-smi
+```
+
+### Q6: 首次推理卡顿
+
+**问题**: 第一次生成视频时明显延迟
+
+**解决方案**:
+- 这是正常现象，模型首次加载需要时间
+- 项目已添加模型预热功能
+- 确保在启动时完成预热
+
+```python
+# 在 app.py 启动时会自动预热
+# 查看日志确认预热完成
+# "模型预热完成"
+```
+
+## WebRTC 问题
+
+### Q7: 视频连接不上
+
+**问题**: 浏览器无法建立 WebRTC 连接
+
+**排查步骤**:
+
+1. **检查端口开放**
+```bash
+# 检查防火墙
+sudo ufw status
+
+# 开放必要端口
+sudo ufw allow 8010/tcp
+sudo ufw allow 1:65535/udp
+```
+
+2. **检查服务器地址**
+   - 确保使用正确的服务器 IP
+   - 不要使用 localhost（除非本地测试）
+   - 检查是否有 NAT 或防火墙
+
+3. **查看浏览器控制台**
+   - 打开 Chrome DevTools
+   - 查看 Console 中的错误信息
+   - 访问 `chrome://webrtc-internals/`
+
+4. **检查服务器日志**
+```bash
+# 查看服务器日志
+# 应该看到连接建立的日志
+```
+
+### Q8: 音视频不同步
+
+**问题**: 数字人口型和声音对不上
+
+**解决方案**:
+1. 检查音频采样率设置
+2. 调整音频缓冲区大小
+3. 检查网络延迟
+4. 查看 inferfps 和 finalfps 是否达标
+
+```python
+# 在代码中调整缓冲区
+audio_buffer_size = 2048  # 尝试不同的值
+```
+
+### Q9: 推流卡顿
+
+**问题**: 视频播放不流畅
+
+**排查步骤**:
+
+1. **检查 FPS**
+```bash
+# 查看后端日志
+# inferfps: GPU 推理帧率（应 >= 25）
+# finalfps: 最终推流帧率（应 >= 25）
+```
+
+2. **CPU 瓶颈**
+```bash
+# 监控 CPU 使用率
+top
+htop
+
+# 如果 CPU 100%，降低分辨率或减少并发
+```
+
+3. **GPU 瓶颈**
+```bash
+# 监控 GPU 使用率
+nvidia-smi -l 1
+
+# 如果 GPU 100%，优化批处理或使用更好的 GPU
+```
+
+4. **网络问题**
+   - 检查网络带宽
+   - 降低视频码率
+   - 使用有线连接
+
+## 性能问题
+
+### Q10: 推理速度慢
+
+**问题**: inferfps 低于预期
+
+**优化方案**:
+
+1. **检查 GPU 型号**
+   - Wav2Lip 需要 RTX 3060+
+   - MuseTalk 需要 RTX 3080Ti+
+
+2. **优化推理**
+```python
+# 使用 FP16
+model = model.half()
+
+# 优化批处理
+batch_size = 4  # 根据显存调整
+
+# 使用 TorchScript
+model = torch.jit.script(model)
+```
+
+3. **减少其他进程**
+   - 关闭其他占用 GPU 的程序
+   - 检查后台进程
+
+### Q11: 并发性能差
+
+**问题**: 多个用户连接时性能下降
+
+**解决方案**:
+
+1. **限制并发数**
+```python
+python app.py --max_session 5
+```
+
+2. **优化资源分配**
+   - 每个会话独立的模型实例
+   - 显存隔离
+   - CPU 核心绑定
+
+3. **负载均衡**
+   - 使用多个服务器
+   - 配置负载均衡器
+   - 会话分发策略
+
+## LLM 集成问题
+
+### Q12: LLM API 调用失败
+
+**问题**: 无法连接到 LLM 服务
+
+**解决方案**:
+```python
+# 1. 检查 API 密钥
+import os
+api_key = os.environ.get('OPENAI_API_KEY')
+if not api_key:
+    print("未设置 API 密钥")
+
+# 2. 检查网络连接
+# 3. 验证 API 端点
+# 4. 查看错误日志
+```
+
+### Q13: LLM 响应慢
+
+**问题**: 等待 LLM 回复时间过长
+
+**优化方案**:
+1. 使用更快的模型（如 GPT-3.5 而不是 GPT-4）
+2. 减少上下文长度
+3. 使用流式输出
+4. 设置合理的超时时间
+
+```python
+# 设置超时
+response = llm_response(text, timeout=10)
+
+# 使用流式输出
+for chunk in llm_stream(text):
+    process_chunk(chunk)
+```
+
+## TTS 问题
+
+### Q14: TTS 音质差
+
+**问题**: 合成的语音不自然
+
+**解决方案**:
+1. 尝试不同的 TTS 服务
+2. 调整语音参数（语速、音调）
+3. 使用更好的音色
+4. 提供参考音频进行声音克隆
+
+### Q15: TTS 延迟高
+
+**问题**: 文本转语音耗时过长
+
+**优化方案**:
+1. 使用本地 TTS 服务
+2. 预生成常用语音
+3. 使用缓存
+4. 异步处理
+
+## Avatar 问题
+
+### Q16: Avatar 生成失败
+
+**问题**: 制作数字人形象时出错
+
+**解决方案**:
+1. 检查输入视频格式和质量
+2. 确保人脸清晰可见
+3. 视频长度适中（3-5 分钟）
+4. 查看详细错误日志
+
+```bash
+# 生成 MuseTalk avatar
+python genavatar_musetalk.py --video input.mp4 --output data/avatars/my_avatar
+```
+
+### Q17: Avatar 效果不好
+
+**问题**: 生成的数字人效果不理想
+
+**改进方法**:
+1. 使用高质量的输入视频
+2. 确保光照均匀
+3. 人脸居中，占画面主要部分
+4. 表情自然多样
+5. 背景简洁
+
+## Docker 问题
+
+### Q18: Docker 无法使用 GPU
+
+**问题**: Docker 容器中无法访问 GPU
+
+**解决方案**:
+```bash
+# 1. 安装 nvidia-docker
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
+  sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+sudo apt-get update && sudo apt-get install -y nvidia-docker2
+sudo systemctl restart docker
+
+# 2. 运行容器时添加 --gpus all
+docker run --gpus all ...
+
+# 3. 验证
+docker run --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+```
+
+## 其他问题
+
+### Q19: 日志输出过多
+
+**问题**: 日志文件过大或输出过于详细
+
+**解决方案**:
+在 [logger.py](mdc:logger.py) 中调整日志级别:
+```python
+# 改为 INFO 或 WARNING
+logger.setLevel(logging.INFO)
+```
+
+### Q20: 内存泄漏
+
+**问题**: 长时间运行后内存占用越来越高
+
+**解决方案**:
+```python
+# 1. 确保资源正确释放
+try:
+    # 使用资源
+    pass
+finally:
+    # 清理
+    del resource
+    gc.collect()
+
+# 2. 定期重启服务
+# 3. 监控内存使用
+# 4. 使用内存分析工具
+```
+
+## 获取帮助
+
+如果以上方案都无法解决问题：
+
+1. **查看文档**: https://livetalking-doc.readthedocs.io/
+2. **搜索 Issues**: https://github.com/lipku/LiveTalking/issues
+3. **提交新 Issue**: 提供详细的错误信息和环境信息
+4. **加入社区**: 知识星球、微信公众号
+
+### 提问时请提供：
+
+- 操作系统和版本
+- Python 版本
+- CUDA 版本
+- GPU 型号
+- 完整的错误日志
+- 复现步骤
+- 已尝试的解决方案
+
+这样可以更快地获得帮助！

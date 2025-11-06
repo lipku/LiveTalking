@@ -1,0 +1,316 @@
+---
+description: 贡献指南和开发流程
+---
+
+# 贡献指南
+
+## 如何贡献
+
+欢迎对 LiveTalking 项目做出贡献！
+
+### 贡献方式
+
+1. **报告 Bug**
+   - 使用 GitHub Issues
+   - 提供详细的复现步骤
+   - 包含系统环境信息
+
+2. **提出新功能**
+   - 在 Issues 中讨论
+   - 说明功能需求和使用场景
+   - 等待维护者反馈
+
+3. **提交代码**
+   - Fork 项目
+   - 创建功能分支
+   - 提交 Pull Request
+
+4. **改进文档**
+   - 修正错误
+   - 补充说明
+   - 翻译文档
+
+## 开发流程
+
+### 1. 准备环境
+
+```bash
+# Fork 并克隆仓库
+git clone https://github.com/your-username/LiveTalking.git
+cd LiveTalking
+
+# 添加上游仓库
+git remote add upstream https://github.com/lipku/LiveTalking.git
+
+# 创建虚拟环境
+conda create -n livetalking-dev python=3.10
+conda activate livetalking-dev
+
+# 安装依赖
+pip install -r requirements.txt
+```
+
+### 2. 创建分支
+
+```bash
+# 更新主分支
+git checkout main
+git pull upstream main
+
+# 创建功能分支
+git checkout -b feature/your-feature-name
+# 或
+git checkout -b fix/bug-description
+```
+
+### 3. 开发和测试
+
+- 遵循项目代码风格（参考 [python-style.mdc](mdc:.cursor/rules/python-style.mdc)）
+- 编写必要的测试
+- 确保现有测试通过
+- 更新相关文档
+
+### 4. 提交代码
+
+```bash
+# 添加修改
+git add .
+
+# 提交（使用清晰的提交信息）
+git commit -m "feat: 添加新功能描述"
+# 或
+git commit -m "fix: 修复问题描述"
+
+# 推送到你的 Fork
+git push origin feature/your-feature-name
+```
+
+### 5. 创建 Pull Request
+
+1. 在 GitHub 上打开你的 Fork
+2. 点击 "New Pull Request"
+3. 填写 PR 描述：
+   - 说明改动内容
+   - 关联相关 Issue
+   - 列出测试情况
+4. 等待代码审查
+
+## 提交信息规范
+
+使用语义化的提交信息：
+
+- `feat:` 新功能
+- `fix:` 修复 Bug
+- `docs:` 文档更新
+- `style:` 代码格式（不影响功能）
+- `refactor:` 重构
+- `perf:` 性能优化
+- `test:` 测试相关
+- `chore:` 构建/工具相关
+
+示例：
+```
+feat: 添加 GPT-4 支持
+fix: 修复 WebRTC 连接断开问题
+docs: 更新部署文档
+perf: 优化 MuseTalk 推理速度
+```
+
+## 代码审查
+
+### 审查标准
+
+1. **功能性**
+   - 代码实现了预期功能
+   - 没有引入新的 Bug
+   - 边界情况处理正确
+
+2. **代码质量**
+   - 遵循项目代码风格
+   - 代码清晰易读
+   - 适当的注释和文档
+
+3. **性能**
+   - 没有明显的性能问题
+   - 资源使用合理
+   - 考虑了并发场景
+
+4. **安全性**
+   - 没有安全漏洞
+   - 输入验证完善
+   - 敏感信息处理正确
+
+### 响应审查意见
+
+- 及时回复审查意见
+- 根据反馈修改代码
+- 解释设计决策
+- 保持友好和专业
+
+## 开发规范
+
+### 代码风格
+
+参考 [python-style.mdc](mdc:.cursor/rules/python-style.mdc)：
+
+- 使用 4 个空格缩进
+- 遵循 PEP 8
+- 使用类型提示
+- 编写文档字符串
+
+### 测试要求
+
+1. **单元测试**
+   - 为新功能编写测试
+   - 确保测试覆盖率
+   - 测试边界情况
+
+2. **集成测试**
+   - 测试组件交互
+   - 验证端到端流程
+
+3. **性能测试**
+   - 测试推理性能
+   - 验证并发能力
+
+### 文档要求
+
+1. **代码文档**
+   - 为公共 API 编写文档字符串
+   - 注释复杂逻辑
+   - 更新相关文档
+
+2. **用户文档**
+   - 更新 README（如需要）
+   - 添加使用示例
+   - 说明配置选项
+
+## 添加新功能
+
+### 新数字人模型
+
+参考 [model-integration.mdc](mdc:.cursor/rules/model-integration.mdc)：
+
+1. 继承 `BaseReal` 类
+2. 实现必要方法
+3. 在 [app.py](mdc:app.py) 中注册
+4. 添加文档和示例
+5. 提供模型文件或下载链接
+
+### 新 ASR/TTS 服务
+
+参考 [asr-tts.mdc](mdc:.cursor/rules/asr-tts.mdc)：
+
+1. 继承相应基类
+2. 实现接口方法
+3. 添加配置选项
+4. 编写使用文档
+
+### 新前端功能
+
+参考 [frontend-guidelines.mdc](mdc:.cursor/rules/frontend-guidelines.mdc)：
+
+1. 遵循现有代码结构
+2. 确保浏览器兼容性
+3. 优化用户体验
+4. 添加错误处理
+
+## 问题报告
+
+### Bug 报告模板
+
+```markdown
+**描述问题**
+简要描述遇到的问题
+
+**复现步骤**
+1. 执行命令 '...'
+2. 访问页面 '...'
+3. 点击 '...'
+4. 看到错误
+
+**期望行为**
+描述期望的正确行为
+
+**实际行为**
+描述实际发生的情况
+
+**环境信息**
+- OS: [e.g. Ubuntu 24.04]
+- Python: [e.g. 3.10]
+- CUDA: [e.g. 12.4]
+- GPU: [e.g. RTX 3080]
+- 浏览器: [e.g. Chrome 120]
+
+**日志和截图**
+粘贴相关日志或添加截图
+
+**其他信息**
+其他可能有帮助的信息
+```
+
+### 功能请求模板
+
+```markdown
+**功能描述**
+清晰描述想要的功能
+
+**使用场景**
+说明为什么需要这个功能
+
+**建议实现**
+如果有想法，描述可能的实现方式
+
+**替代方案**
+是否考虑过其他解决方案
+
+**其他信息**
+其他补充信息
+```
+
+## 社区
+
+### 交流渠道
+
+- **GitHub Issues**: 技术问题和功能讨论
+- **知识星球**: 高质量问答和最佳实践
+- **微信公众号**: 数字人技术
+
+### 行为准则
+
+1. **尊重他人**
+   - 友好和专业的交流
+   - 尊重不同观点
+   - 建设性的反馈
+
+2. **协作精神**
+   - 乐于帮助他人
+   - 分享知识和经验
+   - 共同改进项目
+
+3. **质量优先**
+   - 提交高质量代码
+   - 充分测试
+   - 完善文档
+
+## 许可证
+
+贡献的代码将遵循项目的 Apache License 2.0 许可证。
+
+提交代码即表示你同意：
+- 你拥有代码的版权或有权贡献
+- 你的贡献将以项目许可证发布
+- 遵守项目的使用声明
+
+## 致谢
+
+感谢所有为 LiveTalking 项目做出贡献的开发者！
+
+你的贡献将被记录在：
+- GitHub Contributors 列表
+- 项目 README
+- 版本发布说明
+
+---
+
+如有任何问题，欢迎在 Issues 中提问或联系项目维护者。

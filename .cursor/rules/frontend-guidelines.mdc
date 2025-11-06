@@ -1,0 +1,90 @@
+---
+globs: web/*.html,web/*.js
+---
+
+# 前端开发指南
+
+## 文件结构
+
+- `web/` 目录包含所有前端资源
+- HTML 文件：各种功能页面
+- JavaScript 文件：客户端逻辑
+
+## 主要页面
+
+### WebRTC 相关页面
+
+- `webrtcapi.html` - WebRTC API 基础测试页面
+- `webrtcapi-asr.html` - 带 ASR 的 WebRTC 页面
+- `webrtcapi-custom.html` - 自定义配置的 WebRTC 页面
+- `webrtcchat.html` - WebRTC 聊天界面
+
+### 其他页面
+
+- `chat.html` - 文本聊天界面
+- `dashboard.html` - 控制面板
+- `rtcpush.html` - RTC 推流页面
+
+## WebRTC 客户端实现
+
+### 基本流程
+
+1. **初始化 PeerConnection**
+```javascript
+const pc = new RTCPeerConnection(configuration);
+```
+
+2. **添加媒体轨道**
+```javascript
+// 添加音频轨道
+const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+stream.getTracks().forEach(track => pc.addTrack(track, stream));
+```
+
+3. **创建和发送 Offer**
+```javascript
+const offer = await pc.createOffer();
+await pc.setLocalDescription(offer);
+// 发送 offer 到服务器
+```
+
+4. **处理 Answer**
+```javascript
+await pc.setRemoteDescription(answer);
+```
+
+5. **显示视频流**
+```javascript
+pc.ontrack = (event) => {
+  videoElement.srcObject = event.streams[0];
+};
+```
+
+## 最佳实践
+
+1. **错误处理**
+   - 捕获并显示 WebRTC 错误
+   - 处理网络断开重连
+   - 提供用户友好的错误提示
+
+2. **用户体验**
+   - 显示连接状态
+   - 提供加载指示器
+   - 优化移动端体验
+
+3. **性能优化**
+   - 控制视频分辨率和码率
+   - 使用 requestAnimationFrame 优化动画
+   - 及时释放媒体流资源
+
+4. **调试**
+   - 使用 console.log 记录关键事件
+   - 检查 chrome://webrtc-internals/
+   - 监控网络质量指标
+
+## 依赖库
+
+- `mpegts-1.7.3.min.js` - MPEG-TS 流播放
+- `srs.sdk.js` - SRS 服务器 SDK
+- `whep.js` - WHEP 协议支持
+- `client.js` - 客户端通用逻辑

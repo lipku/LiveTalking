@@ -1,0 +1,333 @@
+---
+description: 安全最佳实践和注意事项
+---
+
+# 安全最佳实践
+
+## API 密钥管理
+
+### 环境变量
+
+**不要**将 API 密钥硬编码在代码中，使用环境变量：
+
+```python
+import os
+
+# 正确做法
+api_key = os.environ.get('OPENAI_API_KEY')
+tts_key = os.environ.get('AZURE_TTS_KEY')
+
+# 错误做法 - 不要这样做！
+# api_key = "sk-xxxxxxxxxxxxx"
+```
+
+### 配置文件
+
+如果使用配置文件存储密钥：
+1. 将配置文件添加到 `.gitignore`
+2. 提供配置文件模板（不含真实密钥）
+3. 在文档中说明如何配置
+
+```bash
+# .gitignore
+config.json
+*.key
+.env
+```
+
+## 输入验证
+
+### 用户输入
+
+验证和清理所有用户输入：
+
+```python
+def validate_text_input(text: str) -> str:
+    # 限制长度
+    if len(text) > 1000:
+        text = text[:1000]
+    
+    # 过滤特殊字符
+    text = re.sub(r'[^\w\s\u4e00-\u9fff]', '', text)
+    
+    return text
+```
+
+### 文件上传
+
+如果支持文件上传：
+1. 验证文件类型和大小
+2. 扫描恶意内容
+3. 使用安全的文件名
+4. 隔离上传文件存储
+
+## WebRTC 安全
+
+### 连接安全
+
+1. **使用 HTTPS**
+   - 生产环境必须使用 HTTPS
+   - WebRTC 在 HTTPS 下更安全
+
+2. **ICE 服务器**
+   - 使用可信的 STUN/TURN 服务器
+   - 配置 TURN 服务器认证
+
+3. **会话管理**
+   - 生成随机且唯一的 sessionid
+   - 实现会话超时机制
+   - 及时清理过期会话
+
+```python
+import secrets
+
+def generate_session_id() -> str:
+    return secrets.token_urlsafe(16)
+```
+
+## 资源限制
+
+### 并发控制
+
+限制同时连接数，防止资源耗尽：
+
+```python
+MAX_SESSIONS = 10
+
+if len(nerfreals) >= MAX_SESSIONS:
+    return {"error": "达到最大连接数"}
+```
+
+### 请求频率限制
+
+实现速率限制防止滥用：
+
+```python
+from collections import defaultdict
+from time import time
+
+request_counts = defaultdict(list)
+
+def rate_limit(client_ip: str, max_requests: int = 10, window: int = 60) -> bool:
+    now = time()
+    # 清理过期记录
+    request_counts[client_ip] = [
+        t for t in request_counts[client_ip] 
+        if now - t < window
+    ]
+    
+    if len(request_counts[client_ip]) >= max_requests:
+        return False
+    
+    request_counts[client_ip].append(now)
+    return True
+```
+
+### 资源清理
+
+确保资源被正确释放：
+
+```python
+try:
+    # 使用资源
+    process_request()
+finally:
+    # 清理资源
+    if session_id in nerfreals:
+        nerfreals[session_id].cleanup()
+        del nerfreals[session_id]
+    torch.cuda.empty_cache()
+    gc.collect()
+```
+
+## 内容安全
+
+### 内容过滤
+
+1. **敏感词过滤**
+   - 维护敏感词库
+   - 过滤不当内容
+   - 记录违规尝试
+
+2. **LLM 输出审核**
+   - 检查 LLM 生成的内容
+   - 过滤有害信息
+   - 实现内容分级
+
+### 数据隐私
+
+1. **用户数据**
+   - 不记录敏感对话内容
+   - 实现数据加密
+   - 遵守隐私法规（GDPR 等）
+
+2. **日志安全**
+   - 不在日志中记录敏感信息
+   - 定期清理日志文件
+   - 控制日志访问权限
+
+```python
+# 不要记录敏感信息
+logger.info(f"用户登录: {username}")  # ✓
+logger.info(f"密码: {password}")      # ✗ 绝对不要这样做
+```
+
+## 网络安全
+
+### 防火墙配置
+
+只开放必要的端口：
+
+```bash
+# 只允许必要的端口
+ufw allow 8010/tcp    # HTTP/WebSocket
+ufw allow 1:65535/udp # WebRTC (可以进一步限制范围)
+ufw enable
+```
+
+### CORS 配置
+
+在 [app.py](mdc:app.py) 中正确配置 CORS：
+
+```python
+import aiohttp_cors
+
+cors = aiohttp_cors.setup(app, defaults={
+    "*": aiohttp_cors.ResourceOptions(
+        allow_credentials=True,
+        expose_headers="*",
+        allow_headers="*",
+        allow_methods="*"
+    )
+})
+
+# 生产环境应该限制具体的域名
+# "https://yourdomain.com": aiohttp_cors.ResourceOptions(...)
+```
+
+## 依赖安全
+
+### 定期更新
+
+1. **检查漏洞**
+```bash
+pip install safety
+safety check
+```
+
+2. **更新依赖**
+```bash
+pip list --outdated
+pip install --upgrade package_name
+```
+
+3. **固定版本**
+   - 在 [requirements.txt](mdc:requirements.txt) 中固定版本
+   - 测试后再更新版本
+
+## 模型安全
+
+### 模型文件验证
+
+1. **校验和验证**
+   - 验证下载的模型文件完整性
+   - 使用 MD5/SHA256 校验
+
+2. **来源可信**
+   - 只从官方或可信来源下载模型
+   - 验证模型签名
+
+### 推理安全
+
+1. **输入限制**
+   - 限制输入数据大小
+   - 验证输入格式
+
+2. **异常处理**
+   - 捕获推理异常
+   - 防止崩溃
+
+## 部署安全
+
+### 生产环境配置
+
+1. **关闭调试模式**
+```python
+app.debug = False
+```
+
+2. **使用生产服务器**
+   - 不要使用 Flask 开发服务器
+   - 使用 Gunicorn、uWSGI 等
+
+3. **配置反向代理**
+   - 使用 Nginx 作为反向代理
+   - 配置 SSL/TLS
+   - 实现请求过滤
+
+### 容器安全
+
+如果使用 Docker：
+
+1. **最小权限原则**
+   - 不要以 root 运行容器
+   - 限制容器权限
+
+2. **镜像安全**
+   - 使用官方基础镜像
+   - 定期更新镜像
+   - 扫描镜像漏洞
+
+## 监控和审计
+
+### 安全监控
+
+1. **异常检测**
+   - 监控异常请求模式
+   - 检测暴力攻击
+   - 记录安全事件
+
+2. **访问日志**
+   - 记录所有访问
+   - 定期审计日志
+   - 设置告警机制
+
+### 事件响应
+
+制定安全事件响应计划：
+1. 发现安全问题的流程
+2. 问题修复和部署流程
+3. 用户通知机制
+
+## 合规性
+
+### 开源许可
+
+项目使用 Apache License 2.0：
+- 保留版权声明
+- 说明修改内容
+- 遵守许可条款
+
+### 使用声明
+
+根据项目要求：
+- 基于本项目开发的视频需带上 LiveTalking 水印和标识
+- 遵守商业使用条款
+
+## 安全检查清单
+
+部署前检查：
+
+- [ ] API 密钥使用环境变量
+- [ ] 启用 HTTPS
+- [ ] 配置防火墙
+- [ ] 限制并发连接数
+- [ ] 实现速率限制
+- [ ] 输入验证和清理
+- [ ] 内容过滤
+- [ ] 日志不含敏感信息
+- [ ] 依赖包无已知漏洞
+- [ ] 关闭调试模式
+- [ ] 配置 CORS
+- [ ] 实现会话超时
+- [ ] 资源正确清理
