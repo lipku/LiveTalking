@@ -25,18 +25,33 @@ RUN apt-get update -yq --fix-missing \
 #ENV NVIDIA_VISIBLE_DEVICES all
 #ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,graphics
 
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-RUN sh Miniconda3-latest-Linux-x86_64.sh -b -u -p ~/miniconda3
-RUN ~/miniconda3/bin/conda init
-RUN source ~/.bashrc
-RUN conda create -n nerfstream python=3.10
-RUN conda activate nerfstream
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    sh Miniconda3-latest-Linux-x86_64.sh -b -u -p ~/miniconda3 && \
+    rm Miniconda3-latest-Linux-x86_64.sh
 
-RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
-# install depend
-RUN conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch
-Copy requirements.txt ./
-RUN pip install -r requirements.txt
+ENV PATH="/root/miniconda3/bin:${PATH}"
+
+# Accept conda terms of service
+RUN conda config --set channel_priority flexible && \
+    conda config --set always_yes yes && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
+    conda create -n nerfstream python=3.10 && \
+    conda clean -afy
+
+# Activate conda environment and install dependencies
+SHELL ["/bin/bash", "-c"]
+
+RUN source /root/miniconda3/etc/profile.d/conda.sh && \
+    conda activate nerfstream && \
+    pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    conda install pytorch==1.12.1 torchvision==0.13.1 cudatoolkit=11.3 -c pytorch -y && \
+    conda clean -afy
+
+COPY requirements.txt ./
+RUN source /root/miniconda3/etc/profile.d/conda.sh && \
+    conda activate nerfstream && \
+    pip install -r requirements.txt
 
 # additional libraries
 # RUN pip install "git+https://github.com/facebookresearch/pytorch3d.git"
@@ -50,6 +65,6 @@ RUN pip install -r requirements.txt
 # WORKDIR /python_rtmpstream/python
 # RUN pip install .
 
-Copy ../nerfstream /nerfstream
+# Copy ../nerfstream /nerfstream
 WORKDIR /nerfstream
 CMD ["python3", "app.py"]
