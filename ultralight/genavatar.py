@@ -47,8 +47,11 @@ step_stride = 0
 img_idx = 0
 coord_list = []
 
-net = Model(6, 'hubert').cuda()
-net.load_state_dict(torch.load(checkpoint))
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print('Using {} for inference.'.format(device))
+net = Model(6, 'hubert').to(device)
+checkpoint_data = torch.load(checkpoint, map_location=device)
+net.load_state_dict(checkpoint_data)
 net.eval()
 for i in range(len_img):
     if img_idx>len_img - 1:
@@ -91,8 +94,8 @@ for i in range(len_img):
     
     audio_feat = torch.zeros(1, 32, 32, 32)
     #print('audio_feat:',audio_feat.shape)
-    audio_feat = audio_feat.cuda()
-    img_concat_T = img_concat_T.cuda()
+    audio_feat = audio_feat.to(device)
+    img_concat_T = img_concat_T.to(device)
     #print('img_concat_T:',img_concat_T.shape)
     
     with torch.no_grad():

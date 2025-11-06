@@ -89,7 +89,7 @@ def initialize_models_and_optimizers(cfg, accelerator, weight_dtype):
     model_dict['net'] = Net(model_dict['unet'])
 
     model_dict['wav2vec'] = WhisperModel.from_pretrained(cfg.whisper_path).to(
-        device="cuda", dtype=weight_dtype).eval()
+        device=accelerator.device, dtype=weight_dtype).eval()
     model_dict['wav2vec'].requires_grad_(False)
 
     if cfg.solver.gradient_checkpointing:

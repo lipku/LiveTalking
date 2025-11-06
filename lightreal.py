@@ -198,7 +198,7 @@ def inference(quit_event, batch_size, face_list_cycle, audio_feat_queue, audio_o
 
 
             with torch.no_grad():
-                pred = model(img_batch.cuda(),mel_batch.cuda())
+                pred = model(img_batch.to(device),mel_batch.to(device))
             pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.
 
             counttime += (time.perf_counter() - t)
