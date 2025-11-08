@@ -129,7 +129,7 @@ def __mirror_index(size, index):
         return size - res - 1 
 
 @torch.no_grad()
-def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,audio_out_queue,res_frame_queue,
+def inference(quit_event,batch_size,input_latent_list_cycle,audio_feat_queue,audio_out_queue,res_frame_queue,
               vae, unet, pe,timesteps): #vae, unet, pe,timesteps
     
     # vae, unet, pe = load_diffusion_model()
@@ -144,7 +144,7 @@ def inference(render_event,batch_size,input_latent_list_cycle,audio_feat_queue,a
     count=0
     counttime=0
     logger.info('start inference')
-    while render_event.is_set():
+    while not quit_event.is_set():
         starttime=time.perf_counter()
         try:
             whisper_chunks = audio_feat_queue.get(block=True, timeout=1)
@@ -284,15 +284,21 @@ class MuseReal(BaseReal):
         #if self.opt.asr:
         #     self.asr.warm_up()
 
-        self.tts.render(quit_event)
         self.init_customindex()
-        process_thread = Thread(target=self.process_frames, args=(quit_event,loop,audio_track,video_track))
+        self.tts.render(quit_event)
+        
+        #self.render_event.set() #start infer process render
+        infer_quit_event = Event()
+        infer_thread = Thread(target=inference, args=(infer_quit_event,self.batch_size,self.input_latent_list_cycle,
+                                           self.asr.feat_queue,self.asr.output_queue,self.res_frame_queue,
+                                           self.vae, self.unet, self.pe,self.timesteps)) #mp.Process
+        infer_thread.start()
+        
+        process_quit_event = Event()
+        process_thread = Thread(target=self.process_frames, args=(process_quit_event,loop,audio_track,video_track))
         process_thread.start()
 
-        self.render_event.set() #start infer process render
-        Thread(target=inference, args=(self.render_event,self.batch_size,self.input_latent_list_cycle,
-                                           self.asr.feat_queue,self.asr.output_queue,self.res_frame_queue,
-                                           self.vae, self.unet, self.pe,self.timesteps)).start() #mp.Process
+        
         count=0
         totaltime=0
         _starttime=time.perf_counter()
@@ -319,6 +325,11 @@ class MuseReal(BaseReal):
             # delay = _starttime+_totalframe*0.04-time.perf_counter() #40ms
             # if delay > 0:
             #     time.sleep(delay)
-        self.render_event.clear() #end infer process render
         logger.info('musereal thread stop')
+
+        infer_quit_event.set()
+        infer_thread.join()
+
+        process_quit_event.set()
+        process_thread.join()
             

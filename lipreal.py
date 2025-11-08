@@ -221,14 +221,18 @@ class LipReal(BaseReal):
         #if self.opt.asr:
         #     self.asr.warm_up()
 
-        self.tts.render(quit_event)
         self.init_customindex()
-        process_thread = Thread(target=self.process_frames, args=(quit_event,loop,audio_track,video_track))
-        process_thread.start()
-
-        Thread(target=inference, args=(quit_event,self.batch_size,self.face_list_cycle,
+        self.tts.render(quit_event)
+        
+        infer_quit_event = Event()
+        infer_thread = Thread(target=inference, args=(infer_quit_event,self.batch_size,self.face_list_cycle,
                                            self.asr.feat_queue,self.asr.output_queue,self.res_frame_queue,
-                                           self.model,)).start()  #mp.Process
+                                           self.model,))  #mp.Process
+        infer_thread.start()
+        
+        process_quit_event = Event()
+        process_thread = Thread(target=self.process_frames, args=(process_quit_event,loop,audio_track,video_track))
+        process_thread.start()
 
         #self.render_event.set() #start infer process render
         count=0
@@ -253,4 +257,10 @@ class LipReal(BaseReal):
             #     time.sleep(delay)
         #self.render_event.clear() #end infer process render
         logger.info('lipreal thread stop')
+
+        infer_quit_event.set()
+        infer_thread.join()
+
+        process_quit_event.set()
+        process_thread.join()
             

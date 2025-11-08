@@ -1,6 +1,6 @@
  # [English](./README-EN.md) | 中文版  
  <p align="center">
- <img src="./assets/LiveTalking-logo.jpg" align="middle" width = "600"/>
+ <img src="./assets/livetalking-logo.jpg" align="middle" width = "600"/>
 <p align="center">
 <p align="center">
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
@@ -35,10 +35,9 @@
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
 2. 支持声音克隆
 3. 支持数字人说话被打断
-4. 支持全身视频拼接
-5. 支持webrtc、虚拟摄像头输出
-6. 支持动作编排：不说话时播放自定义视频
-7. 支持多并发
+4. 支持webrtc、虚拟摄像头输出
+5. 支持动作编排：不说话时播放自定义视频
+6. 支持多并发
 
 ## 1. Installation
 
@@ -72,9 +71,9 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 (2)用客户端方式, 下载地址<https://pan.quark.cn/s/d7192d8ac19b>   
 
 - 快速体验  
-<https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking> 用该镜像创建实例即可运行成功
+[在线镜像](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking) 用该镜像创建实例即可运行成功
 
-如果访问不了huggingface，在运行前
+安装运行过程中如果访问不了huggingface，在运行前
 ```
 export HF_ENDPOINT=https://hf-mirror.com
 ``` 
@@ -86,9 +85,9 @@ export HF_ENDPOINT=https://hf-mirror.com
 ## 4. Docker Run  
 不需要前面的安装，直接运行。
 ```
-docker run --gpus all -it --network=host --rm registry.cn-zhangjiakou.aliyuncs.com/codewithgpu3/lipku-livetalking:toza2irpHZ
+docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/lipku-metahuman-stream:2K9qaMBu8v
 ```
-代码在/root/livetalking，先git pull拉一下最新代码，然后执行命令同第2、3步 
+代码在/root/metahuman-stream，先git pull拉一下最新代码，然后执行命令同第2、3步 
 
 提供如下镜像
 - autodl镜像: <https://www.codewithgpu.com/i/lipku/livetalking/base>   
