@@ -1,6 +1,6 @@
  # [English](./README-EN.md) | 中文版  
  <p align="center">
- <img src="./assets/livetalking-logo.jpg" align="middle" width = "600"/>
+ <img src="./assets/LiveTalking-logo.jpg" align="middle" width = "600"/>
 <p align="center">
 <p align="center">
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
