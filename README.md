@@ -1,6 +1,6 @@
  # [English](./README-EN.md) | 中文版  
  <p align="center">
- <img src="./assets/LiveTalking-logo.jpg" align="middle" width = "600"/>
+ <img src="./assets/LiveTalking-logo.jpg" align="middle" width = "300"/>
 <p align="center">
 <p align="center">
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
@@ -89,12 +89,12 @@ docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/c
 ```
 代码在/root/metahuman-stream，先git pull拉一下最新代码，然后执行命令同第2、3步 
 
-提供如下镜像
-- autodl镜像: <https://www.codewithgpu.com/i/lipku/livetalking/base>   
-[autodl教程](https://livetalking-doc.readthedocs.io/zh-cn/latest/autodl/README.html)
+提供如下网络镜像
 - ucloud镜像: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking>  
-可以开放任意端口，不需要另外部署srs服务.  
 [ucloud教程](https://livetalking-doc.readthedocs.io/zh-cn/latest/ucloud/ucloud.html) 
+- autodl镜像: <https://www.codewithgpu.com/i/lipku/livetalking/base>   
+[autodl教程](https://livetalking-doc.readthedocs.io/zh-cn/latest/autodl/README.html)，autodl由于不能开放udp端口，需要部署转发服务，如果看不到视频，请自行部署srs或turn服务
+
 
 
 ## 5. 性能
@@ -130,7 +130,12 @@ wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。
 ## 7. 声明
 基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上LiveTalking水印和标识。
 
----
+## 赞助企业
+<table><tr><tb>
+<a href="https://www.ucloud.cn/site/active/gpu.html?cps_code=3dbaYol6yIuCwfUspnunTJ"><img src="./assets/ucloud.png" width="100"></a>
+</tb></tr></table>
+
+---  
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.
 * 知识星球: https://t.zsxq.com/7NMyO 沉淀高质量常见问题、最佳实践经验、问题解答  
 * 微信公众号：数字人技术    

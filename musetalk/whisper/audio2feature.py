@@ -4,14 +4,23 @@ import soundfile as sf
 import numpy as np
 import time
 import sys
+from transformers import AutoFeatureExtractor
+from transformers import WhisperModel
+import torch
 sys.path.append("..")
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+weight_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 class Audio2Feature():
     def __init__(self, 
                  whisper_model_type="tiny",
-                 model_path="./models/whisper/tiny.pt"):
-        self.whisper_model_type = whisper_model_type
-        self.model = load_model(model_path) #
+                 model_path="./models/whisper"):
+        # self.whisper_model_type = whisper_model_type
+        # self.model = load_model(model_path) #
+        self.feature_extractor = AutoFeatureExtractor.from_pretrained(model_path)
+        self.whisper = WhisperModel.from_pretrained(model_path)
+        self.whisper = self.whisper.to(device=device, dtype=weight_dtype).eval()
+        self.whisper.requires_grad_(False)
 
     def get_sliced_feature(self,
                            feature_array, 
@@ -30,8 +39,8 @@ class Audio2Feature():
         selected_idx = []
         
         center_idx = int(vid_idx*50/fps) 
-        left_idx = center_idx-audio_feat_length[0]*2
-        right_idx = center_idx + (audio_feat_length[1]+1)*2
+        left_idx = center_idx; #-audio_feat_length[0]*2
+        right_idx = center_idx + (audio_feat_length[0]+audio_feat_length[1]+1)*2
         
         for idx in range(left_idx,right_idx):
             idx = max(0, idx)
@@ -92,24 +101,35 @@ class Audio2Feature():
             #print(f"i:{i},selected_idx {selected_idx}")
             whisper_chunks.append(selected_feature)
             i += 1
-            
-
         return whisper_chunks
+    
+    def audio2feat(self, wav_data): #, weight_dtype=None
+        input_feature = self.feature_extractor(
+            wav_data,
+            return_tensors="pt",
+            sampling_rate=16000
+        ).input_features
+        input_feature = input_feature.to(device).to(weight_dtype)
+        whisper_feature = self.whisper.encoder(input_feature, output_hidden_states=True).hidden_states
+        #print(f"input_feature shape:{input_feature.shape}, whisper_feature shape:{whisper_feature[0].shape}, whisper_feature len:{len(whisper_feature)}")
+        whisper_feature = torch.stack(whisper_feature, dim=2)
+        #print(f"stacked whisper_feature shape:{whisper_feature.shape}")
+        return whisper_feature.squeeze(0).cpu().numpy()
 
-    def audio2feat(self,audio_path):
-        # get the sample rate of the audio
-        result = self.model.transcribe(audio_path)
-        embed_list = []
-        for emb in result['segments']:
-            encoder_embeddings = emb['encoder_embeddings']
-            encoder_embeddings = encoder_embeddings.transpose(0,2,1,3)
-            encoder_embeddings = encoder_embeddings.squeeze(0)
-            start_idx = int(emb['start'])
-            end_idx = int(emb['end'])
-            emb_end_idx = int((end_idx - start_idx)/2)
-            embed_list.append(encoder_embeddings[:emb_end_idx])
-        concatenated_array = np.concatenate(embed_list, axis=0)
-        return concatenated_array
+    # def audio2feat(self,audio_path):
+    #     # get the sample rate of the audio
+    #     result = self.model.transcribe(audio_path)
+    #     embed_list = []
+    #     for emb in result['segments']:
+    #         encoder_embeddings = emb['encoder_embeddings']
+    #         encoder_embeddings = encoder_embeddings.transpose(0,2,1,3)
+    #         encoder_embeddings = encoder_embeddings.squeeze(0)
+    #         start_idx = int(emb['start'])
+    #         end_idx = int(emb['end'])
+    #         emb_end_idx = int((end_idx - start_idx)/2)
+    #         embed_list.append(encoder_embeddings[:emb_end_idx])
+    #     concatenated_array = np.concatenate(embed_list, axis=0)
+    #     return concatenated_array
 
 if __name__ == "__main__":
     audio_processor = Audio2Feature(model_path="../../models/whisper/whisper_tiny.pt")

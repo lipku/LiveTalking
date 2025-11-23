@@ -59,7 +59,7 @@ def load_model():
     unet.model = unet.model.half().to(device)
     #unet.model.share_memory()
     # Initialize audio processor and Whisper model
-    audio_processor = Audio2Feature(model_path="./models/whisper/tiny.pt")
+    audio_processor = Audio2Feature(model_path="./models/whisper")
     return vae, unet, pe, timesteps, audio_processor
 
 def load_avatar(avatar_id):
