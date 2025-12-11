@@ -310,10 +310,12 @@ async def run(push_url,sessionid):
     await pc.setLocalDescription(await pc.createOffer())
     answer = await post(push_url,pc.localDescription.sdp)
     await pc.setRemoteDescription(RTCSessionDescription(sdp=answer,type='answer'))
+
+
 ##########################################
 # os.environ['MKL_SERVICE_FORCE_INTEL'] = '1'
 # os.environ['MULTIPROCESSING_METHOD'] = 'forkserver'                                                    
-if __name__ == '__main__':
+def main():
     mp.set_start_method('spawn')
     parser = argparse.ArgumentParser()
     
@@ -444,5 +446,7 @@ if __name__ == '__main__':
     # print('start websocket server')
     # server = pywsgi.WSGIServer(('0.0.0.0', 8000), app, handler_class=WebSocketHandler)
     # server.serve_forever()
-    
-    
+
+
+if __name__ == '__main__':
+    main()
