@@ -316,6 +316,7 @@ async def run(push_url,sessionid):
 # os.environ['MKL_SERVICE_FORCE_INTEL'] = '1'
 # os.environ['MULTIPROCESSING_METHOD'] = 'forkserver'                                                    
 def main():
+    global opt, model, avatar
     mp.set_start_method('spawn')
     parser = argparse.ArgumentParser()
     
