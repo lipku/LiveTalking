@@ -130,11 +130,6 @@ wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。
 ## 7. 声明
 基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上LiveTalking水印和标识。
 
-## 赞助企业
-<table><tr><tb>
-<a href="https://www.ucloud.cn/site/active/gpu.html?cps_code=3dbaYol6yIuCwfUspnunTJ"><img src="./assets/ucloud.png" width="100"></a>
-</tb></tr></table>
-
 ---  
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.
 * 知识星球: https://t.zsxq.com/7NMyO 沉淀高质量常见问题、最佳实践经验、问题解答  

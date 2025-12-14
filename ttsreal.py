@@ -892,7 +892,7 @@ class XTTS(BaseTTS):
 
             first = True
         
-            for chunk in res.iter_content(chunk_size=9600): #24K*20ms*2
+            for chunk in res.iter_content(chunk_size=None): #24K*20ms*2
                 if first:
                     end = time.perf_counter()
                     logger.info(f"xtts Time to first chunk: {end-start}s")
@@ -905,10 +905,12 @@ class XTTS(BaseTTS):
     def stream_tts(self,audio_stream,msg:tuple[str, dict]):
         text,textevent = msg
         first = True
+        last_stream = np.array([],dtype=np.float32)
         for chunk in audio_stream:
             if chunk is not None and len(chunk)>0:          
                 stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767
                 stream = resampy.resample(x=stream, sr_orig=24000, sr_new=self.sample_rate)
+                stream = np.concatenate((last_stream,stream))
                 #byte_stream=BytesIO(buffer)
                 #stream = self.__create_bytes_stream(byte_stream)
                 streamlen = stream.shape[0]
@@ -922,6 +924,7 @@ class XTTS(BaseTTS):
                     self.parent.put_audio_frame(stream[idx:idx+self.chunk],eventpoint)
                     streamlen -= self.chunk
                     idx += self.chunk
+                last_stream = stream[idx:] #get the remain stream
         eventpoint={'status':'end','text':text}
         eventpoint.update(**textevent) 
         self.parent.put_audio_frame(np.zeros(self.chunk,np.float32),eventpoint)  
