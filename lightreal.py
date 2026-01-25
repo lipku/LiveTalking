@@ -90,7 +90,7 @@ def warm_up(batch_size,avatar,modelres):
     logger.info('warmup model...')
     model,_,_,_ = avatar
     img_batch = torch.ones(batch_size, 6, modelres, modelres).to(device)
-    mel_batch = torch.ones(batch_size, 32, 32, 32).to(device)
+    mel_batch = torch.ones(batch_size, 16, 32, 32).to(device)
     model(img_batch, mel_batch)
 
 def read_imgs(img_list):
@@ -192,7 +192,7 @@ def inference(quit_event, batch_size, face_list_cycle, audio_feat_queue, audio_o
                 img_concat_T = torch.cat([img_real_ex_T, img_masked_T], axis=0)[None]
                 img_batch.append(img_concat_T)
 
-            reshaped_mel_batch = [arr.reshape(32, 32, 32) for arr in mel_batch]
+            reshaped_mel_batch = [arr.reshape(16, 32, 32) for arr in mel_batch]
             mel_batch = torch.stack([torch.from_numpy(arr) for arr in reshaped_mel_batch])
             img_batch = torch.stack(img_batch).squeeze(1)
 
@@ -239,7 +239,7 @@ class LightReal(BaseReal):
         audio_processor = model
         self.model,self.frame_list_cycle,self.face_list_cycle,self.coord_list_cycle = avatar
 
-        self.asr = HubertASR(opt,self,audio_processor)
+        self.asr = HubertASR(opt,self,audio_processor,audio_feat_length =[4,4])
         self.asr.warm_up()
         #self.__warm_up()
         
