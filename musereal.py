@@ -24,6 +24,9 @@ import subprocess
 import os
 import time
 import torch.nn.functional as F
+
+# Latent downscale factor: 2 means 32×32 → 16×16 (4x faster UNet+VAE)
+LATENT_DOWNSCALE = 2
 import cv2
 import glob
 import pickle
@@ -54,10 +57,24 @@ def load_model():
     device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu"))
     timesteps = torch.tensor([0], device=device)
     pe = pe.half().to(device)
-    vae.vae = vae.vae.half().to(device)
-    #vae.vae.share_memory().to(device)
+    # VAE on CPU float32 — MPS GroupNorm produces NaN
+    vae.vae = vae.vae.float().cpu()
     unet.model = unet.model.half().to(device)
-    #unet.model.share_memory()
+
+    # FIX: upcast attention QK^T to float32 — prevents float16 overflow → NaN on MPS
+    try:
+        from diffusers.models.attention import Attention
+        _attn_cls = Attention
+    except ImportError:
+        from diffusers.models.attention import CrossAttention
+        _attn_cls = CrossAttention
+    for module in unet.model.modules():
+        if isinstance(module, _attn_cls):
+            module.upcast_attention = True
+    logger.info('upcast_attention enabled for all attention layers')
+
+    logger.info(f'LATENT_DOWNSCALE={LATENT_DOWNSCALE} → UNet latent size: {32//LATENT_DOWNSCALE}×{32//LATENT_DOWNSCALE}')
+
     # Initialize audio processor and Whisper model
     audio_processor = Audio2Feature(model_path="./models/whisper")
     return vae, unet, pe, timesteps, audio_processor
@@ -100,7 +117,8 @@ def warm_up(batch_size,model):
     #batch_size = 16
     #timesteps = torch.tensor([0], device=unet.device)
     whisper_batch = np.ones((batch_size, 50, 384), dtype=np.uint8)
-    latent_batch = torch.ones(batch_size, 8, 32, 32).to(unet.device)
+    _ls = 32 // LATENT_DOWNSCALE  # 16 when LATENT_DOWNSCALE=2
+    latent_batch = torch.ones(batch_size, 8, _ls, _ls).to(unet.device)
 
     audio_feature_batch = torch.from_numpy(whisper_batch)
     audio_feature_batch = audio_feature_batch.to(device=unet.device, dtype=unet.model.dtype)
@@ -202,6 +220,11 @@ def inference(quit_event,batch_size,input_latent_list_cycle,audio_feat_queue,aud
             audio_feature_batch = audio_feature_batch.to(device=unet.device, dtype=unet.model.dtype)
             audio_feature_batch = pe(audio_feature_batch)
             latent_batch = latent_batch.to(dtype=unet.model.dtype)
+
+            # Downsample latents: 32×32 → 16×16 for ~4x faster UNet+VAE
+            if LATENT_DOWNSCALE > 1:
+                latent_batch = F.interpolate(latent_batch, scale_factor=1.0/LATENT_DOWNSCALE,
+                                             mode='bilinear', align_corners=False)
 
             t_unet = time.perf_counter()
             pred_latents = unet.model(latent_batch,
@@ -306,9 +329,12 @@ class MuseReal(BaseReal):
                                                         dtype=self.unet.model.dtype)
         audio_feature_batch = self.pe(audio_feature_batch)
         latent_batch = latent_batch.to(dtype=self.unet.model.dtype)
+        if LATENT_DOWNSCALE > 1:
+            latent_batch = F.interpolate(latent_batch, scale_factor=1.0/LATENT_DOWNSCALE,
+                                         mode='bilinear', align_corners=False)
 
-        pred_latents = self.unet.model(latent_batch, 
-                                    self.timesteps, 
+        pred_latents = self.unet.model(latent_batch,
+                                    self.timesteps,
                                     encoder_hidden_states=audio_feature_batch).sample
         recon = self.vae.decode_latents(pred_latents)
       

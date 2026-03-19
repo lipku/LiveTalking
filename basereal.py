@@ -40,8 +40,54 @@ from fractions import Fraction
 
 from ttsreal import EdgeTTS,SovitsTTS,XTTS,CosyVoiceTTS,FishTTS,TencentTTS,DoubaoTTS,IndexTTS2,AzureTTS
 from logger import logger
+import torch
+import torch.nn.functional as F
 
 from tqdm import tqdm
+
+# ── RIFE model loader ──
+_rife_model = None
+_rife_device = None
+
+def get_rife_model():
+    """Lazy-load RIFE v4.25 lite model (singleton)."""
+    global _rife_model, _rife_device
+    if _rife_model is not None:
+        return _rife_model, _rife_device
+    import sys
+    rife_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rife_model')
+    if rife_root not in sys.path:
+        sys.path.insert(0, rife_root)
+    from train_log.RIFE_HDv3 import Model as RIFEModel
+    _rife_device = torch.device(
+        "cuda" if torch.cuda.is_available()
+        else ("mps" if (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()) else "cpu")
+    )
+    mdl = RIFEModel()
+    mdl.load_model(os.path.join(rife_root, 'train_log'), -1)
+    mdl.eval()
+    mdl.device()
+    _rife_model = mdl
+    logger.info(f'RIFE v4.25 lite loaded on {_rife_device}')
+    return _rife_model, _rife_device
+
+def rife_interpolate(prev_frame, curr_frame, n_interp=4):
+    """Generate n_interp frames between prev and curr using RIFE."""
+    model, dev = get_rife_model()
+    h, w, _ = prev_frame.shape
+    # BGR→RGB, HWC→NCHW, normalize to [0,1]
+    img0 = torch.from_numpy(prev_frame[:,:,::-1].copy()).permute(2,0,1).unsqueeze(0).float().div_(255.0).to(dev)
+    img1 = torch.from_numpy(curr_frame[:,:,::-1].copy()).permute(2,0,1).unsqueeze(0).float().div_(255.0).to(dev)
+    frames = []
+    for i in range(1, n_interp + 1):
+        t = i / (n_interp + 1)
+        mid = model.inference(img0, img1, timestep=t, scale=1.0)
+        # NCHW [0,1] → HWC uint8 BGR
+        out = mid[0].clamp(0,1).permute(1,2,0).mul_(255).byte().cpu().numpy()
+        out = out[:,:,::-1].copy()  # RGB→BGR
+        frames.append(out)
+    return frames
+
 def read_imgs(img_list):
     frames = []
     logger.info('reading images...')
@@ -371,7 +417,7 @@ class BaseReal:
 
             cv2.putText(combine_frame, "LiveTalking", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128,128,128), 1)
 
-            # Frame interpolation: insert blend frames between keyframes for higher fps
+            # Frame interpolation: insert RIFE frames between keyframes for higher fps
             _prev = getattr(self, '_prev_combine_frame', None)
             _prev_spk = getattr(self, '_prev_speaking', False)
             if self.opt.transport=='virtualcam':
@@ -380,16 +426,16 @@ class BaseReal:
                     vircam = pyvirtualcam.Camera(width=width, height=height, fps=25, fmt=pyvirtualcam.PixelFormat.BGR,print_fps=True)
                 vircam.send(combine_frame)
             else: #webrtc
-                # Insert interpolated frames BEFORE keyframe (prev→current blend)
+                # Insert RIFE interpolated frames BEFORE keyframe
                 if (_prev is not None and _prev_spk and self.speaking):
                     try:
-                        for alpha in [0.2, 0.4, 0.6, 0.8]:
-                            interp = cv2.addWeighted(_prev, 1.0 - alpha, combine_frame, alpha, 0)
+                        interp_frames = rife_interpolate(_prev, combine_frame, n_interp=4)
+                        for interp in interp_frames:
                             vf = VideoFrame.from_ndarray(interp, format="bgr24")
                             asyncio.run_coroutine_threadsafe(
                                 video_track._queue.put((vf, None)), loop)
                     except Exception as e:
-                        logger.warning(f'Frame interpolation error: {e}')
+                        logger.warning(f'RIFE interpolation error: {e}')
                 image = combine_frame
                 new_frame = VideoFrame.from_ndarray(image, format="bgr24")
                 asyncio.run_coroutine_threadsafe(video_track._queue.put((new_frame,None)), loop)
