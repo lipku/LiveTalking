@@ -128,85 +128,130 @@ def __mirror_index(size, index):
     else:
         return size - res - 1 
 
+def _vae_decode_thread(vae, pred_latents_cpu, result_holder):
+    """Run VAE decode on CPU in a background thread so UNet can use MPS in parallel."""
+    result_holder['recon'] = vae.decode_latents(pred_latents_cpu)
+
 @torch.no_grad()
 def inference(quit_event,batch_size,input_latent_list_cycle,audio_feat_queue,audio_out_queue,res_frame_queue,
-              vae, unet, pe,timesteps): #vae, unet, pe,timesteps
-    
-    # vae, unet, pe = load_diffusion_model()
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # timesteps = torch.tensor([0], device=device)
-    # pe = pe.half()
-    # vae.vae = vae.vae.half()
-    # unet.model = unet.model.half()
-    
+              vae, unet, pe,timesteps):
+
     length = len(input_latent_list_cycle)
     index = 0
     count=0
     counttime=0
+    # Pipeline state: hold previous batch's VAE thread + metadata
+    pending_vae_thread = None
+    pending_vae_result = None
+    pending_meta = None  # (start_index, audio_frames, t_start)
+
     logger.info('start inference')
     while not quit_event.is_set():
-        starttime=time.perf_counter()
         try:
             whisper_chunks = audio_feat_queue.get(block=True, timeout=1)
         except queue.Empty:
+            # Flush any pending VAE result while idle
+            if pending_vae_thread is not None:
+                pending_vae_thread.join()
+                _flush_vae(pending_vae_result, pending_meta, length, res_frame_queue)
+                p_idx, p_aframes, p_t = pending_meta
+                counttime += (time.perf_counter() - p_t)
+                count += batch_size
+                if count >= 100:
+                    logger.info(f"------actual avg infer fps:{count/counttime:.4f}")
+                    count = 0; counttime = 0
+                index = p_idx + batch_size
+                pending_vae_thread = None; pending_vae_result = None; pending_meta = None
             continue
-        is_all_silence=True
+
+        is_all_silence = True
         audio_frames = []
         for _ in range(batch_size*2):
-            frame,type,eventpoint = audio_out_queue.get()
-            audio_frames.append((frame,type,eventpoint))
-            if type==0:
-                is_all_silence=False
+            frame, type, eventpoint = audio_out_queue.get()
+            audio_frames.append((frame, type, eventpoint))
+            if type == 0:
+                is_all_silence = False
+
         if is_all_silence:
+            # Flush pending VAE before emitting silence frames
+            if pending_vae_thread is not None:
+                pending_vae_thread.join()
+                _flush_vae(pending_vae_result, pending_meta, length, res_frame_queue)
+                p_idx, p_aframes, p_t = pending_meta
+                counttime += (time.perf_counter() - p_t)
+                count += batch_size
+                if count >= 100:
+                    logger.info(f"------actual avg infer fps:{count/counttime:.4f}")
+                    count = 0; counttime = 0
+                index = p_idx + batch_size
+                pending_vae_thread = None; pending_vae_result = None; pending_meta = None
             for i in range(batch_size):
-                res_frame_queue.put((None,__mirror_index(length,index),audio_frames[i*2:i*2+2]))
+                res_frame_queue.put((None, __mirror_index(length, index), audio_frames[i*2:i*2+2]))
                 index = index + 1
         else:
-            # print('infer=======')
-            t=time.perf_counter()
+            t = time.perf_counter()
             whisper_batch = np.stack(whisper_chunks)
             latent_batch = []
             for i in range(batch_size):
-                idx = __mirror_index(length,index+i)
+                idx = __mirror_index(length, index+i)
                 latent = input_latent_list_cycle[idx]
                 latent_batch.append(latent)
             latent_batch = torch.cat(latent_batch, dim=0)
-            
-            # for i, (whisper_batch,latent_batch) in enumerate(gen):
+
             audio_feature_batch = torch.from_numpy(whisper_batch)
-            audio_feature_batch = audio_feature_batch.to(device=unet.device,
-                                                            dtype=unet.model.dtype)
+            audio_feature_batch = audio_feature_batch.to(device=unet.device, dtype=unet.model.dtype)
             audio_feature_batch = pe(audio_feature_batch)
             latent_batch = latent_batch.to(dtype=unet.model.dtype)
-            # print('prepare time:',time.perf_counter()-t)
-            # t=time.perf_counter()
 
-            pred_latents = unet.model(latent_batch, 
-                                        timesteps, 
+            t_unet = time.perf_counter()
+            pred_latents = unet.model(latent_batch,
+                                        timesteps,
                                         encoder_hidden_states=audio_feature_batch).sample
-            # print('unet time:',time.perf_counter()-t)
-            # t=time.perf_counter()
-            recon = vae.decode_latents(pred_latents)
-            # infer_inqueue.put((whisper_batch,latent_batch,sessionid))
-            # recon,outsessionid = infer_outqueue.get()
-            # if outsessionid != sessionid:
-            #     print('outsessionid:',outsessionid,' mysessionid:',sessionid)
+            # Move to CPU immediately so MPS is free for next batch
+            pred_latents_cpu = pred_latents.detach().float().cpu()
+            if hasattr(torch, 'mps') and torch.backends.mps.is_available():
+                torch.mps.synchronize()
+            t_unet_done = time.perf_counter()
 
-            # print('vae time:',time.perf_counter()-t)
-            #print('diffusion len=',len(recon))
-            counttime += (time.perf_counter() - t)
-            count += batch_size
-            #_totalframe += 1
-            if count>=100:
-                logger.info(f"------actual avg infer fps:{count/counttime:.4f}")
-                count=0
-                counttime=0
-            for i,res_frame in enumerate(recon):
-                #self.__pushmedia(res_frame,loop,audio_track,video_track)
-                res_frame_queue.put((res_frame,__mirror_index(length,index),audio_frames[i*2:i*2+2]))
-                index = index + 1
-            #print('total batch time:',time.perf_counter()-starttime)            
+            # Before launching new VAE thread, collect previous batch's result
+            if pending_vae_thread is not None:
+                pending_vae_thread.join()
+                _flush_vae(pending_vae_result, pending_meta, length, res_frame_queue)
+                p_idx, p_aframes, p_t = pending_meta
+                counttime += (time.perf_counter() - p_t)
+                count += batch_size
+                if count >= 100:
+                    logger.info(f"------actual avg infer fps:{count/counttime:.4f}")
+                    count = 0; counttime = 0
+                index = p_idx + batch_size
+
+            # Launch VAE decode on CPU in background thread
+            vae_result = {}
+            vae_thread = Thread(target=_vae_decode_thread, args=(vae, pred_latents_cpu, vae_result))
+            vae_thread.start()
+
+            logger.info(f'[TIMING] UNet={t_unet_done-t_unet:.3f}s (VAE running in bg thread)')
+
+            # Store pending state
+            pending_vae_thread = vae_thread
+            pending_vae_result = vae_result
+            pending_meta = (index, audio_frames, t)
+
+    # Flush any remaining pending result on quit
+    if pending_vae_thread is not None:
+        pending_vae_thread.join()
+        _flush_vae(pending_vae_result, pending_meta, length, res_frame_queue)
     logger.info('musereal inference processor stop')
+
+
+def _flush_vae(vae_result, meta, length, res_frame_queue):
+    """Push completed VAE decode results into res_frame_queue."""
+    start_index, audio_frames, _ = meta
+    recon = vae_result.get('recon', [])
+    batch_size = len(audio_frames) // 2
+    for i, res_frame in enumerate(recon):
+        res_frame_queue.put((res_frame, __mirror_index(length, start_index + i),
+                             audio_frames[i*2:i*2+2]))
 
 class MuseReal(BaseReal):
     @torch.no_grad()

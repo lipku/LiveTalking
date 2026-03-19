@@ -370,15 +370,31 @@ class BaseReal:
                     combine_frame = current_frame
 
             cv2.putText(combine_frame, "LiveTalking", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128,128,128), 1)
+
+            # Frame interpolation: insert blend frames between keyframes for higher fps
+            _prev = getattr(self, '_prev_combine_frame', None)
+            _prev_spk = getattr(self, '_prev_speaking', False)
             if self.opt.transport=='virtualcam':
                 if vircam==None:
                     height, width,_= combine_frame.shape
                     vircam = pyvirtualcam.Camera(width=width, height=height, fps=25, fmt=pyvirtualcam.PixelFormat.BGR,print_fps=True)
                 vircam.send(combine_frame)
             else: #webrtc
+                # Insert interpolated frames BEFORE keyframe (prev→current blend)
+                if (_prev is not None and _prev_spk and self.speaking):
+                    try:
+                        for alpha in [0.2, 0.4, 0.6, 0.8]:
+                            interp = cv2.addWeighted(_prev, 1.0 - alpha, combine_frame, alpha, 0)
+                            vf = VideoFrame.from_ndarray(interp, format="bgr24")
+                            asyncio.run_coroutine_threadsafe(
+                                video_track._queue.put((vf, None)), loop)
+                    except Exception as e:
+                        logger.warning(f'Frame interpolation error: {e}')
                 image = combine_frame
                 new_frame = VideoFrame.from_ndarray(image, format="bgr24")
                 asyncio.run_coroutine_threadsafe(video_track._queue.put((new_frame,None)), loop)
+            self._prev_combine_frame = combine_frame.copy() if self.speaking else None
+            self._prev_speaking = self.speaking
             self.record_video_data(combine_frame)
 
             for audio_frame in audio_frames:
