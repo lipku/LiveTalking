@@ -1,7 +1,21 @@
 [
-   {
+    {
+        "audiotype":1, 
+        "imgpath":"data/customvideo/image"
+    },
+    {
         "audiotype":2, 
-        "imgpath":"data/customvideo/image", 
-        "audiopath":"data/customvideo/audio.wav"
+        "imgpath":"data/customvideo/reply",
+        "audiopath":"data/customvideo/reply.wav"
+    },
+    {
+        "audiotype":3, 
+        "imgpath":"data/customvideo/think",
+        "audiopath":"data/customvideo/think.wav"
+    },
+    {
+        "audiotype":4, 
+        "imgpath":"data/customvideo/leave",
+        "audiopath":"data/customvideo/leave.wav"
     }
 ]

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WebRTC webcam</title>
+    <title>LiveTalking</title>
     <style>
     button {
         padding: 8px 16px;
@@ -50,7 +50,7 @@
 <input type="text" id="audiotype" value="0">
 
 <script src="client.js"></script>
-<script type="text/javascript" src="http://cdn.sockjs.org/sockjs-0.3.4.js"></script>
+<!-- <script type="text/javascript" src="http://cdn.sockjs.org/sockjs-0.3.4.js"></script> -->
 <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
 </body>
 <script type="text/javascript" charset="utf-8">
@@ -58,7 +58,6 @@
       fetch('/set_audiotype', {
             body: JSON.stringify({
                 audiotype: parseInt(document.getElementById('audiotype').value),
-                reinit: false,
                 sessionid:parseInt(document.getElementById('sessionid').value),
             }),
             headers: {

@@ -41,6 +41,10 @@ accelerate
 
 librosa
 openai
+websocket-client
 websockets==12.0
-gradio_client
-azure-cognitiveservices-speech
+#gradio_client
+#azure-cognitiveservices-speech
+
+typeguard==2.13.3
+onnxruntime-gpu

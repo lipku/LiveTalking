@@ -1,3 +1,4 @@
+
 # English | [中文版](./README.md)  
  <p align="center">
  <img src="./assets/LiveTalking-logo.jpg" align="middle" width = "600"/>
@@ -13,7 +14,7 @@
 </p>
 
 A real-time interactive streaming digital human system enabling synchronized audio-video conversation, which basically meets commercial application standards.  
-[wav2lip Demo](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf Demo](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk Demo](https://www.bilibili.com/video/BV1gm421N7vQ/)  
+[wav2lip Demo](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf Demo](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk Demo](https://www.bilibili.com/video/BV1bUwezvEnG/)  
 Domestic Mirror Repository: <https://gitee.com/lipku/LiveTalking> 
 
 
@@ -22,7 +23,7 @@ Domestic Mirror Repository: <https://gitee.com/lipku/LiveTalking>
 2. Supports voice cloning.
 3. Supports interrupting the digital human while it is speaking.
 4. Supports full-body video stitching.
-5. Supports WebRTC and virtual camera output.
+5. Supports WebRTC, rtmp, and virtual camera output.
 6. Supports motion choreography: plays custom videos when the digital human is not speaking.
 7. Supports custom digital human avatars.
 
@@ -67,11 +68,81 @@ If you cannot access Hugging Face, run the following command before starting the
 export HF_ENDPOINT=https://hf-mirror.com
 ``` 
 
+## 3. Architecture
 
-## 3. More Usage
+### DataFlow Diagram
+<img src="./assets/dataflow.png" align="middle" /> 
+
+### System Architecture Diagram
+
+```mermaid
+graph TD
+    User["User / Frontend Web"] -->|"Text Input / Audio File"| API["API Routes: /human, /humanaudio"]
+    
+    subgraph "Server Layer"
+        API --> SessionMgr["Session Manager"]
+        SessionMgr --> AvatarSession["Avatar Session Instance"]
+    end
+
+    subgraph "Logic Layer"
+        AvatarSession -->|"Request Type: chat"| LLM["LLM Response Engine"]
+        LLM -->|"Generated Text"| TTS["TTS Engine: Edge/CosyVoice/Tencent..."]
+        AvatarSession -->|"Request Type: echo"| TTS
+        TTS -->|"PCM Audio (16k)"| ASR["Audio Feature Extraction"]
+        API -->|"Uploaded audio"| ASR
+    end
+
+    subgraph "Rendering Layer"
+        ASR -->|"Audio Features / Mel"| Infer["Inference Engine: Wav2Lip/MuseTalk/ERNeRF"]
+        Infer -->|"Generated Mouth Sync"| Paste["Paste Back"]
+    end
+
+    subgraph "Streaming Layer"
+        Paste -->|"Video Frames"| Output["Output Module: WebRTC/RTMP/Virtualcam"]
+        ASR -->|"Audio Frames"| Output
+        Output -->|"Real-time Media Stream"| User
+    end
+
+    subgraph "Modular Plugin System"
+        Reg["Registry"] -.-> TTS
+        Reg -.-> Infer
+        Reg -.-> Output
+    end
+
+    style User fill:#f9f,stroke:#333,stroke-width:2px
+    style Reg fill:#fff2cc,stroke:#d6b656,stroke-width:2px
+    style LLM fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px
+    style Infer fill:#d5e8d4,stroke:#82b366,stroke-width:2px
+```
+
+### 1. API Layer
+- **Endpoints**: 
+    - `/human`: Accepts text for "echo" (direct playback) or "chat" (LLM interaction).
+    - `/humanaudio`: Accepts raw audio files for playback.
+- **Session Management**: Each connection is assigned a `sessionid` to maintain state and handle multiple concurrent users.
+
+### 2. Logic Layer
+- **LLM Engine**: Interfaces with models like Qwen to generate conversational responses.
+- **TTS Engine**: A modular system supporting various providers (EdgeTTS, GPT-SoVITS, etc.) to convert text into speech.
+- **Feature Extraction**: Extracts acoustic features (like Mel spectrograms) synchronously needed for visual lip-sync.
+
+### 3. Rendering Layer
+- **Model Inference**: Uses deep learning models (e.g., Wav2Lip, MuseTalk) to generate lip-synced video frames based on audio features.
+- **Post-Processing**: Smoothly overlays the generated mouth area back onto the original high-quality avatar video.
+
+### 4. Streaming Layer
+- **Transports**: 
+    - **WebRTC**: Low-latency browser-based streaming.
+    - **RTMP**: Standard streaming protocol for platforms like YouTube/Bilibili.
+    - **Virtual Camera**: Allows the output to be used as a system camera.
+
+### 5. Plugin System
+- **Registry**: Uses a decentralized registration mechanism ([registry.py](./registry.py)) allowing developers to add new TTS, Avatar, or Output modules easily. We welcome the integration of higher-performance models and services, and are also open to commercial cooperation. 
+
+## 4. More Usage
 For detailed usage instructions: <https://livetalking-doc.readthedocs.io/>
   
-## 4. Docker Run  
+## 5. Docker Run  
 No prior installation is required; run directly with Docker:
 ```
 docker run --gpus all -it --network=host --rm registry.cn-zhangjiakou.aliyuncs.com/codewithgpu3/lipku-livetalking:toza2irpHZ
@@ -86,7 +157,7 @@ Supports opening any port; no additional SRS service deployment is required.
 [UCloud Tutorial](https://livetalking-doc.readthedocs.io/en/latest/ucloud/ucloud.html) 
 
 
-## 5. Performance
+## 6. Performance
 - Performance mainly depends on CPU and GPU: Each video stream compression consumes CPU resources, and CPU performance is positively correlated with video resolution; each lip-sync inference depends on GPU performance.  
 - The number of concurrent streams when the digital human is not speaking depends on CPU performance; the number of concurrent streams when multiple digital humans are speaking simultaneously depends on GPU performance.  
 - In the backend logs, `inferfps` refers to the GPU inference frame rate, and `finalfps` refers to the final streaming frame rate. Both need to be above 25 fps to achieve real-time performance. If `inferfps` is above 25 but `finalfps` is below 25, it indicates insufficient CPU performance.  
@@ -103,25 +174,28 @@ Supports opening any port; no additional SRS service deployment is required.
 
 A GPU of RTX 3060 or higher is sufficient for wav2lip256, while musetalk requires an RTX 3080Ti or higher.
 
-## 6. Commercial Version
+## 7. Commercial Version
 The following extended features are available for users who are familiar with the open-source project and need to expand product capabilities:
 1. High-definition wav2lip model.
 2. Full voice interaction: supports interrupting the digital human’s response via a wake word or button to ask a new question.
 3. Real-time synchronized subtitles: provides the frontend with events for the start and end of each sentence spoken by the digital human.
-4. Each connection can specify a corresponding avatar and voice; accelerated avatar image loading.
-5. Supports avatars (digital human images) with unlimited duration.
-6. Provides a real-time audio stream input interface.
-7. Transparent background for the digital human, supporting dynamic background overlay.
-8. Real-time avatar switching, supporting multiple digital humans in the same scene.
-9. Camera‑driven digital human movements and facial expressions.
+4. Provides a real-time audio stream input interface.
+5. Transparent background for the digital human, supporting dynamic background overlay.
+6. Real-time avatar switching.  
+7. supporting multiple digital humans in the same scene.  
+8. Camera‑driven digital human movements and facial expressions.
 
 For more details: <https://livetalking-doc.readthedocs.io/en/latest/service.html>
 
-## 7. Statement
+## 8. Statement
 Videos developed based on this project and published on platforms such as Bilibili, WeChat Channels, and Douyin must include the LiveTalking watermark and logo.
 
 ---
 If this project is helpful to you, please give it a "Star". Contributions from developers interested in improving this project are also welcome.
 * Knowledge Planet (for high-quality FAQs, best practices, and Q&A): https://t.zsxq.com/7NMyO  
+* WeChat: wxwubug  
+* Telegram: https://t.me/livetalking  
+* Discord: https://discord.gg/n5jSPCT3Uf  
+* Email: lipku@foxmail.com  
 * WeChat Official Account: 数字人技术 (Digital Human Technology)    
 <img src="./assets/qrcode-wechat.jpg" align="middle" />
