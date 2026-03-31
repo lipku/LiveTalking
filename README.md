@@ -1,3 +1,4 @@
+
  # [English](./README-EN.md) | 中文版  
  <p align="center">
  <img src="./assets/LiveTalking-logo.jpg" align="middle" width = "300"/>
@@ -13,7 +14,7 @@
 </p>
 
  实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果  
-[wav2lip效果](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf效果](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)  
+[wav2lip效果](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf效果](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk效果](https://www.bilibili.com/video/BV1bUwezvEnG/)  
 国内镜像地址:<https://gitee.com/lipku/LiveTalking> 
 
 ## 为避免与3d数字人混淆，原项目metahuman-stream改名为livetalking，原有链接地址继续可用
@@ -22,7 +23,7 @@
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
 2. 支持声音克隆
 3. 支持数字人说话被打断
-4. 支持webrtc、虚拟摄像头输出
+4. 支持webrtc、rtmp、虚拟摄像头输出
 5. 支持动作编排：不说话时播放自定义视频
 6. 支持多并发
 7. 支持自定义数字人形象
@@ -66,11 +67,80 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 export HF_ENDPOINT=https://hf-mirror.com
 ``` 
 
+## 3. Architecture
+### 数据流程图
+<img src="./assets/dataflow.png" align="middle" />  
 
-## 3. More Usage
+### 系统架构图
+
+```mermaid
+graph TD
+    User["User / Frontend Web"] -->|"Text Input / Audio File"| API["API Routes: /human, /humanaudio"]
+    
+    subgraph "Server Layer"
+        API --> SessionMgr["Session Manager"]
+        SessionMgr --> AvatarSession["Avatar Session Instance"]
+    end
+
+    subgraph "Logic Layer"
+        AvatarSession -->|"Request Type: chat"| LLM["LLM Response Engine"]
+        LLM -->|"Generated Text"| TTS["TTS Engine: Edge/CosyVoice/Tencent..."]
+        AvatarSession -->|"Request Type: echo"| TTS
+        TTS -->|"PCM Audio (16k)"| ASR["Audio Feature Extraction"]
+        API -->|"Uploaded audio"| ASR
+    end
+
+    subgraph "Rendering Layer"
+        ASR -->|"Audio Features / Mel"| Infer["Inference Engine: Wav2Lip/MuseTalk/ERNeRF"]
+        Infer -->|"Generated Mouth Sync"| Paste["Paste Back"]
+    end
+
+    subgraph "Streaming Layer"
+        Paste -->|"Video Frames"| Output["Output Module: WebRTC/RTMP/Virtualcam"]
+        ASR -->|"Audio Frames"| Output
+        Output -->|"Real-time Media Stream"| User
+    end
+
+    subgraph "Modular Plugin System"
+        Reg["Registry"] -.-> TTS
+        Reg -.-> Infer
+        Reg -.-> Output
+    end
+
+    style User fill:#f9f,stroke:#333,stroke-width:2px
+    style Reg fill:#fff2cc,stroke:#d6b656,stroke-width:2px
+    style LLM fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px
+    style Infer fill:#d5e8d4,stroke:#82b366,stroke-width:2px
+```
+
+### 1. API层
+- **接口端点**：
+    - `/human`：接收文本，用于“（echo）”（直接播放）或“聊天（chat）”（大语言模型交互）场景。
+    - `/humanaudio`：接收原始音频文件用于播放。
+- **会话管理**：每个连接都会分配一个`sessionid`，用于维护状态并处理多用户并发请求。
+
+### 2. 逻辑层
+- **大语言模型（LLM）引擎**：与通义千问（Qwen）等模型对接，生成对话式回复。
+- **语音合成（TTS）引擎**：模块化系统，支持多种服务商（EdgeTTS、GPT-SoVITS等），实现文本到语音的转换。
+- **语音特征提取**：提取视觉唇形同步所需的声学特征（如梅尔频谱图）。
+
+### 3. 渲染层
+- **模型推理**：基于深度学习模型（如Wav2Lip、MuseTalk），根据音频特征生成唇形同步的视频帧。
+- **后处理**：将生成的嘴部区域平滑叠加回原始高清虚拟形象视频上。
+
+### 4. 流媒体层
+- **传输协议**：
+    - **WebRTC**：低延迟的浏览器端流媒体传输协议。
+    - **RTMP**：适用于YouTube、哔哩哔哩等平台的标准流媒体协议。
+    - **虚拟摄像头**：允许将输出内容作为系统摄像头使用。
+
+### 5. 插件系统
+- **注册中心**：采用去中心化的注册机制（[registry.py](./registry.py)），开发者可轻松新增语音合成（TTS）、虚拟形象（Avatar）或输出（Output）模块。 欢迎效果更好的模型和服务接入，也可以进行商业合作。
+
+## 4. More Usage
 使用说明: <https://livetalking-doc.readthedocs.io/>
   
-## 4. Docker Run  
+## 5. Docker Run  
 不需要前面的安装，直接运行。
 ```
 docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/lipku-metahuman-stream:2K9qaMBu8v
@@ -84,9 +154,8 @@ docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/c
 [autodl教程](https://livetalking-doc.readthedocs.io/zh-cn/latest/autodl/README.html)，autodl由于不能开放udp端口，需要部署转发服务，如果看不到视频，请自行部署srs或turn服务
 
 
-
-## 5. 性能
-- 性能主要跟cpu和gpu相关，每路视频压缩需要消耗cpu，cpu性能与视频分辨率正相关；每路口型推理跟gpu性能相关。  
+## 6. 性能
+- 性能主要跟cpu和gpu相关: 每路视频压缩需要消耗cpu，cpu性能与视频分辨率正相关；每路口型推理跟gpu性能相关。  
 - 不说话时的并发数跟cpu相关，同时说话的并发数跟gpu相关。  
 - 后端日志inferfps表示显卡推理帧率，finalfps表示最终推流帧率。两者都要在25以上才能实时。如果inferfps在25以上，finalfps达不到25表示cpu性能不足。  
 - 实时推理性能  
@@ -101,26 +170,29 @@ musetalk   | 4090    | 72
 
 wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。 
 
-## 6. 商业版
+## 7. 商业版
 提供如下扩展功能，适用于对开源项目已经比较熟悉，需要扩展产品功能的用户
 1. 高清wav2lip模型
 2. 完全语音交互，数字人回答过程中支持通过唤醒词或者按钮打断提问
 3. 实时同步字幕，给前端提供数字人每句话播报开始、结束事件
-4. 每个连接可以指定对应avatar和音色，avatar图片加载加速
-5. 支持不限时长的数字人形象avatar
-6. 提供实时音频流输入接口
-7. 数字人透明背景，叠加动态背景 
-8. avatar实时切换, 同一个画面里支持多个数字人  
-9. 摄像头驱动数字人形象动作和表情  
+4. 提供实时音频流输入接口
+5. 数字人透明背景，叠加动态背景 
+6. avatar实时切换  
+7. 同一画面里多个数字人互动  
+8. 摄像头驱动数字人形象动作和表情  
 
 更多详情<https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html>
 
-## 7. 声明
+## 8. 声明
 基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上LiveTalking水印和标识。
 
 ---  
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.
 * 知识星球: https://t.zsxq.com/7NMyO 沉淀高质量常见问题、最佳实践经验、问题解答  
+* 微信：wxwubug (加群请备注)      
+* Telegram: https://t.me/livetalking  
+* Discord: https://discord.gg/n5jSPCT3Uf  
+* Email: lipku@foxmail.com  
 * 微信公众号：数字人技术    
 <img src="./assets/qrcode-wechat.jpg" align="middle" />
 
