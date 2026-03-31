@@ -173,7 +173,7 @@ def main():
 
     pagename='webrtcapi.html'
     if opt.transport=='rtmp':
-        pagename='echoapi.html'
+        pagename='rtmpapi.html'
     elif opt.transport=='rtcpush':
         pagename='rtcpushapi.html'
     logger.info('start http server; http://<serverip>:'+str(opt.listenport)+'/'+pagename)
