@@ -14,7 +14,7 @@
 </p>
 
 A real-time interactive streaming digital human system enabling synchronized audio-video conversation, which basically meets commercial application standards.  
-[wav2lip Demo](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf Demo](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk Demo](https://www.bilibili.com/video/BV1bUwezvEnG/)  
+[wav2lip Demo](https://youtu.be/-ss0H8qLr7E) | [ernerf Demo](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk Demo](https://youtu.be/vzUMruoZlxc/)  
 Domestic Mirror Repository: <https://gitee.com/lipku/LiveTalking> 
 
 
