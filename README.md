@@ -180,6 +180,7 @@ wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。
 6. avatar实时切换  
 7. 同一画面里多个数字人互动  
 8. 摄像头驱动数字人形象动作和表情  
+9. 与livekit对接
 
 更多详情<https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html>
 

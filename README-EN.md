@@ -183,7 +183,8 @@ The following extended features are available for users who are familiar with th
 5. Transparent background for the digital human, supporting dynamic background overlay.
 6. Real-time avatar switching.  
 7. supporting multiple digital humans in the same scene.  
-8. Camera‑driven digital human movements and facial expressions.
+8. Camera‑driven digital human movements and facial expressions.  
+9. Integrate with LiveKit.  
 
 For more details: <https://livetalking-doc.readthedocs.io/en/latest/service.html>
 
