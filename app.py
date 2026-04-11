@@ -71,7 +71,7 @@ def randN(N)->int:
     max = pow(10, N)
     return random.randint(min, max - 1)
 
-def build_avatar_session(sessionid:int, params:dict)->BaseAvatar:
+def build_avatar_session(sessionid:str, params:dict)->BaseAvatar:
     opt_this = copy.deepcopy(opt)
     opt_this.sessionid = sessionid
 
@@ -145,8 +145,8 @@ def main():
         thread_quit = Event()
         params = {}
         # session 0 for virtualcam
-        session_manager.add_session(0, build_avatar_session(0,params))
-        rendthrd = Thread(target=session_manager.get_session(0).render,args=(thread_quit,))
+        session_manager.add_session('0', build_avatar_session('0', params))
+        rendthrd = Thread(target=session_manager.get_session('0').render,args=(thread_quit,))
         rendthrd.start()
 
     #############################################################################
@@ -189,7 +189,7 @@ def main():
                 push_url = opt.push_url
                 if k!=0:
                     push_url = opt.push_url+str(k)
-                loop.run_until_complete(rtc_manager.handle_rtcpush(push_url, k))
+                loop.run_until_complete(rtc_manager.handle_rtcpush(push_url, str(k)))
         loop.run_forever()    
     #Thread(target=run_server, args=(web.AppRunner(appasync),)).start()
     run_server(web.AppRunner(appasync))

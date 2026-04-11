@@ -54,7 +54,7 @@ class RTCManager:
 
         # 通过 SessionManager 构建
         sessionid = await session_manager.create_session(params)
-        logger.info('offer sessionid=%d', sessionid)
+        logger.info('offer sessionid=%s', sessionid)
         avatar_session = session_manager.get_session(sessionid)
 
         # 创建 PeerConnection
@@ -100,7 +100,7 @@ class RTCManager:
             }),
         )
 
-    async def handle_rtcpush(self, push_url, sessionid):
+    async def handle_rtcpush(self, push_url, sessionid: str):
         """RTCPush 模式：主动推流"""
         import aiohttp
         await session_manager.create_session({}, sessionid)

@@ -85,7 +85,7 @@
                 text: message,
                 type: 'chat',
                 interrupt: true,
-                sessionid:parseInt(document.getElementById('sessionid').value),
+                sessionid: String(document.getElementById('sessionid').value),
             }),
             headers: {
                 'Content-Type': 'application/json'

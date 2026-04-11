@@ -348,7 +348,7 @@ const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
 async function is_speaking() {
 	const response = await fetch('/is_speaking', {
 		body: JSON.stringify({
-			sessionid: parseInt(parent.document.getElementById('sessionid').value),
+			sessionid: String(parent.document.getElementById('sessionid').value),
 		}),
 		headers: {
 			'Content-Type': 'application/json'
@@ -396,7 +396,7 @@ function getJsonMessage( jsonMsg ) {
             body: JSON.stringify({
                 text: rectxt.replace(/ +/g,""),
                 type: 'chat',
-				sessionid:parseInt(parent.document.getElementById('sessionid').value),
+				sessionid: String(parent.document.getElementById('sessionid').value),
             }),
             headers: {
                 'Content-Type': 'application/json'

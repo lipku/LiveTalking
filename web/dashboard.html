@@ -504,7 +504,7 @@
                 fetch('/record', {
                     body: JSON.stringify({
                         type: 'start_record',
-                        sessionid: parseInt(document.getElementById('sessionid').value),
+                        sessionid: String(document.getElementById('sessionid').value),
                     }),
                     headers: {
                         'Content-Type': 'application/json'
@@ -529,7 +529,7 @@
                 fetch('/record', {
                     body: JSON.stringify({
                         type: 'end_record',
-                        sessionid: parseInt(document.getElementById('sessionid').value),
+                        sessionid: String(document.getElementById('sessionid').value),
                     }),
                     headers: {
                         'Content-Type': 'application/json'
@@ -561,7 +561,7 @@
                         text: message,
                         type: 'echo',
                         interrupt: true,
-                        sessionid: parseInt(document.getElementById('sessionid').value),
+                        sessionid: String(document.getElementById('sessionid').value),
                     }),
                     headers: {
                         'Content-Type': 'application/json'
@@ -586,7 +586,7 @@
                         text: message,
                         type: 'chat',
                         interrupt: true,
-                        sessionid: parseInt(document.getElementById('sessionid').value),
+                        sessionid: String(document.getElementById('sessionid').value),
                     }),
                     headers: {
                         'Content-Type': 'application/json'
@@ -705,7 +705,7 @@
                                 text: recognizedText,
                                 type: 'chat',
                                 interrupt: true,
-                                sessionid: parseInt(document.getElementById('sessionid').value),
+                                sessionid: String(document.getElementById('sessionid').value),
                             }),
                             headers: {
                                 'Content-Type': 'application/json'

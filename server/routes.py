@@ -16,7 +16,7 @@ def json_ok(data=None):
     """返回成功 JSON 响应"""
     body = {"code": 0, "msg": "ok"}
     if data is not None:
-        body.update(data)
+        body["data"] = data
     return web.Response(
         content_type="application/json",
         text=json.dumps(body),
@@ -33,7 +33,7 @@ def json_error(msg: str, code: int = -1):
 
 from server.session_manager import session_manager
 
-def get_session(request, sessionid: int):
+def get_session(request, sessionid: str):
     """从 app 中获取 session 实例"""
     return session_manager.get_session(sessionid)
 
@@ -45,7 +45,7 @@ async def human(request):
     try:
         params: dict = await request.json()
 
-        sessionid: int = params.get('sessionid', 0)
+        sessionid: str = params.get('sessionid', '')
         avatar_session = get_session(request, sessionid)
         if avatar_session is None:
             return json_error("session not found")
@@ -76,7 +76,7 @@ async def interrupt_talk(request):
     """打断当前说话"""
     try:
         params = await request.json()
-        sessionid = params.get('sessionid', 0)
+        sessionid = params.get('sessionid', '')
         avatar_session = get_session(request, sessionid)
         if avatar_session is None:
             return json_error("session not found")
@@ -91,7 +91,7 @@ async def humanaudio(request):
     """上传音频文件"""
     try:
         form = await request.post()
-        sessionid = int(form.get('sessionid', 0))
+        sessionid = str(form.get('sessionid', ''))
         fileobj = form["file"]
         filebytes = fileobj.file.read()
 
@@ -111,7 +111,7 @@ async def set_audiotype(request):
     """设置自定义状态（动作编排）"""
     try:
         params = await request.json()
-        sessionid = params.get('sessionid', 0)
+        sessionid = params.get('sessionid', '')
         avatar_session = get_session(request, sessionid)
         if avatar_session is None:
             return json_error("session not found")
@@ -126,7 +126,7 @@ async def record(request):
     """录制控制"""
     try:
         params = await request.json()
-        sessionid = params.get('sessionid', 0)
+        sessionid = params.get('sessionid', '')
         avatar_session = get_session(request, sessionid)
         if avatar_session is None:
             return json_error("session not found")
@@ -143,7 +143,7 @@ async def record(request):
 async def is_speaking(request):
     """查询是否正在说话"""
     params = await request.json()
-    sessionid = params.get('sessionid', 0)
+    sessionid = params.get('sessionid', '')
     avatar_session = get_session(request, sessionid)
     if avatar_session is None:
         return json_error("session not found")

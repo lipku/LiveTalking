@@ -3,14 +3,14 @@
 ###############################################################################
 
 import asyncio
-import random
+import uuid
 from typing import Dict, Optional
 from utils.logger import logger
 from avatars.base_avatar import BaseAvatar
 
-def _rand_session_id(n: int = 6) -> int:
-    """生成 N 位随机 session ID"""
-    return random.randint(10 ** (n - 1), 10 ** n - 1)
+def _rand_session_id() -> str:
+    """生成 UUID session ID"""
+    return str(uuid.uuid4())
 
 class SessionManager:
     """
@@ -27,7 +27,7 @@ class SessionManager:
 
     def __init__(self):
         if not hasattr(self, "initialized"):
-            self.sessions: Dict[int, BaseAvatar] = {}
+            self.sessions: Dict[str, BaseAvatar] = {}
             self.build_session_fn = None
             self.initialized = True
 
@@ -35,15 +35,15 @@ class SessionManager:
         """配置用于构建 avatar_session 的工厂函数"""
         self.build_session_fn = build_session_fn
         
-    def get_session(self, sessionid: int) -> Optional[BaseAvatar]:
+    def get_session(self, sessionid: str) -> Optional[BaseAvatar]:
         """获取已存活的会话"""
         return self.sessions.get(sessionid)
 
-    def has_session(self, sessionid: int) -> bool:
+    def has_session(self, sessionid: str) -> bool:
         """检查会话是否存在"""
         return sessionid in self.sessions and self.sessions[sessionid] is not None
         
-    async def create_session(self, params: dict, sessionid: int = None) -> int:
+    async def create_session(self, params: dict, sessionid: str = None) -> str:
         """
         在异步环境中创建一个新会话
         如果 sessionid 为 None，则自动生成。
@@ -54,7 +54,7 @@ class SessionManager:
         if sessionid is None:
             sessionid = _rand_session_id()
             
-        logger.info('Creating sessionid=%d, current session num=%d', sessionid, len(self.sessions))
+        logger.info('Creating sessionid=%s, current session num=%d', sessionid, len(self.sessions))
         # 预先占位防止重复
         self.sessions[sessionid] = None
 
@@ -65,11 +65,11 @@ class SessionManager:
         self.sessions[sessionid] = avatar_session
         return sessionid
         
-    def add_session(self, sessionid: int, avatar_session: BaseAvatar):
+    def add_session(self, sessionid: str, avatar_session: BaseAvatar):
         """同步添加静态或外部管理的会话（供非服务端入口调用）"""
         self.sessions[sessionid] = avatar_session
         
-    def remove_session(self, sessionid: int):
+    def remove_session(self, sessionid: str):
         """销毁会话资源"""
         if sessionid in self.sessions:
             logger.info(f"Removing session {sessionid}")

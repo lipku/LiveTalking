@@ -58,7 +58,7 @@
       fetch('/set_audiotype', {
             body: JSON.stringify({
                 audiotype: parseInt(document.getElementById('audiotype').value),
-                sessionid:parseInt(document.getElementById('sessionid').value),
+                sessionid: String(document.getElementById('sessionid').value),
             }),
             headers: {
                 'Content-Type': 'application/json'
@@ -96,7 +96,7 @@
                 text: message,
                 type: 'echo',
                 interrupt: true,
-                sessionid:parseInt(document.getElementById('sessionid').value),
+                sessionid: String(document.getElementById('sessionid').value),
             }),
             headers: {
                 'Content-Type': 'application/json'
