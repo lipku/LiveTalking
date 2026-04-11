@@ -56,16 +56,17 @@ function start() {
     // connect audio / video
     pc.addEventListener('track', (evt) => {
         if (evt.track.kind == 'video') {
-            document.getElementById('video').srcObject = evt.streams[0];
+            const videoEl = document.getElementById('video');
+            if (videoEl) {
+                videoEl.srcObject = evt.streams[0];
+            }
         } else {
-            document.getElementById('audio').srcObject = evt.streams[0];
+            const audioEl = document.getElementById('audio');
+            if (audioEl) {
+                audioEl.srcObject = evt.streams[0];
+            }
         }
     });
-
-    document.getElementById('start').style.display = 'none';
-    negotiate();
-    document.getElementById('stop').style.display = 'inline-block';
-}
 
 function stop() {
     document.getElementById('stop').style.display = 'none';
