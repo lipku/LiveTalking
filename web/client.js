@@ -56,9 +56,15 @@ function start() {
     // connect audio / video
     pc.addEventListener('track', (evt) => {
         if (evt.track.kind == 'video') {
-            document.getElementById('video').srcObject = evt.streams[0];
+            const videoEl = document.getElementById('video');
+            if (videoEl) {
+                videoEl.srcObject = evt.streams[0];
+            }
         } else {
-            document.getElementById('audio').srcObject = evt.streams[0];
+            const audioEl = document.getElementById('audio');
+            if (audioEl) {
+                audioEl.srcObject = evt.streams[0];
+            }
         }
     });
 
@@ -84,14 +90,14 @@ window.onunload = function(event) {
 };
 
 window.onbeforeunload = function (e) {
-        setTimeout(() => {
-                pc.close();
-            }, 500);
-        e = e || window.event
-        // 兼容IE8和Firefox 4之前的版本
-        if (e) {
-          e.returnValue = '关闭提示'
-        }
-        // Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
-        return '关闭提示'
-      }
+    setTimeout(() => {
+        pc.close();
+    }, 500);
+    e = e || window.event
+    // 兼容IE8和Firefox 4之前的版本
+    if (e) {
+        e.returnValue = '关闭提示'
+    }
+    // Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
+    return '关闭提示'
+}
