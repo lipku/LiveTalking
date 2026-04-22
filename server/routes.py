@@ -10,6 +10,15 @@ from aiohttp import web
 from utils.logger import logger
 
 
+def filter_text(text: str) -> str:
+    """过滤文本中的特殊符号，避免 TTS 朗读时念出"""
+    if not text:
+        return text
+    # 过滤 Markdown 加粗符号 **
+    text = text.replace('**', '')
+    return text
+
+
 # ─── 路由工具函数 ──────────────────────────────────────────────────────────
 
 def json_ok(data=None):
@@ -58,7 +67,7 @@ async def human(request):
             datainfo['tts'] = params.get('tts')
 
         if params['type'] == 'echo':
-            avatar_session.put_msg_txt(params['text'], datainfo)
+            avatar_session.put_msg_txt(filter_text(params['text']), datainfo)
         elif params['type'] == 'chat':
             llm_response = request.app.get("llm_response")
             if llm_response:
