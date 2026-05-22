@@ -128,7 +128,14 @@ def main():
         global_avatars[opt.avatar_id] = load_avatar(opt.avatar_id) 
         warm_up(opt.batch_size,model)      
     elif opt.model == 'wav2lip':
-        model = load_model("./models/wav2lip.pth")
+        if opt.use_onnx:
+            # 使用 ONNX 模型
+            from avatars.wav2lip_avatar import load_onnx_model
+            model = load_onnx_model(opt.onnx_model_path)
+            logger.info(f"Using ONNX model: {opt.onnx_model_path}")
+        else:
+            # 使用 PyTorch 模型
+            model = load_model("./models/wav2lip.pth")
         global_avatars[opt.avatar_id] = load_avatar(opt.avatar_id)
         warm_up(opt.batch_size,model,256)
     elif opt.model == 'ultralight':
