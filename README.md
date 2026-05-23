@@ -1,3 +1,36 @@
+Secure your agents at: CodeAstra.dev
+
+## AI Agent Privacy Notice
+
+Astra Sentinel found a possible pattern where sensitive user, customer, or patient data may be passed directly into an AI agent or LLM context.
+
+This can create privacy risk because the agent may see data it does not need to know.
+
+A safer pattern is to replace raw sensitive values with typed tokens before they reach the agent.
+
+Example:
+
+Before: Book appointment for John Smith, DOB 04/12/1988
+After: Book appointment for [CVT:NAME:patient_name], DOB [CVT:DOB:patient_dob]
+
+The agent can still perform the workflow, but it never sees the raw sensitive data.
+
+Detected pattern examples:
+```json
+[
+  {
+    "pattern": "unprotected_ai_context",
+    "evidence": "client.chat.completions.create(model='qwen-plus', messages=[{'role': 'system', 'content': '\u4f60\u662f\u4e00\u4e2a\u77e5\u8bc6\u52a9\u624b\uff0c\u5c3d\u91cf\u4ee5\u7b80\u77ed\u3001\u53e3\u8bed\u5316\u7684\u65b9\u5f0f\u8f93\u51fa'}, {'role': 'user', 'content': message}], stream=true, stream_options={'include_usage': true})"
+  }
+]
+```
+
+This notice was generated from a privacy scan. Please review before merging.
+
+Secure your agents at: CodeAstra.dev
+
+---
+
 
  # [English](./README-EN.md) | 中文版  
  <p align="center">
