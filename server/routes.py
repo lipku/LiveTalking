@@ -3,7 +3,6 @@
 ###############################################################################
 
 import json
-import numpy as np
 import asyncio
 from aiohttp import web
 
@@ -32,6 +31,7 @@ def json_error(msg: str, code: int = -1):
 
 
 from server.session_manager import session_manager
+from server.avatar_routes import setup_avatar_routes
 
 def get_session(request, sessionid: str):
     """从 app 中获取 session 实例"""
@@ -150,6 +150,46 @@ async def is_speaking(request):
     return json_ok(data=avatar_session.is_speaking())
 
 
+async def admin_config(request):
+    """Admin: 获取全局配置参数"""
+    try:
+        opt = request.app.get("opt")
+        if opt:
+            return json_ok(data={"config": vars(opt)})
+        return json_error("Config not found")
+    except Exception as e:
+        logger.exception('admin_config exception:')
+        return json_error(str(e))
+
+
+async def admin_sessions(request):
+    """Admin: 获取活跃的会话及其配置"""
+    try:
+        sessions_info = []
+        for sid, avatar_session in session_manager.sessions.items():
+            if avatar_session:
+                s_opt = getattr(avatar_session, 'opt', None)
+                s_data = {
+                    "sessionid": sid,
+                    "speaking": avatar_session.is_speaking() if hasattr(avatar_session, 'is_speaking') else False,
+                    "recording": getattr(avatar_session, 'recording', False),
+                }
+                if s_opt:
+                    s_data.update({
+                        "model": getattr(s_opt, "model", ""),
+                        "avatar_id": getattr(s_opt, "avatar_id", ""),
+                        "REF_FILE": getattr(s_opt, "REF_FILE", ""),
+                        "transport": getattr(s_opt, "transport", ""),
+                        "batch_size": getattr(s_opt, "batch_size", 0),
+                        "customopt": getattr(s_opt, "customopt", []),
+                    })
+                sessions_info.append(s_data)
+        return json_ok(data={"sessions": sessions_info})
+    except Exception as e:
+        logger.exception('admin_sessions exception:')
+        return json_error(str(e))
+
+
 # ─── 路由注册 ──────────────────────────────────────────────────────────────
 
 def setup_routes(app):
@@ -160,4 +200,10 @@ def setup_routes(app):
     app.router.add_post("/record", record)
     app.router.add_post("/interrupt_talk", interrupt_talk)
     app.router.add_post("/is_speaking", is_speaking)
+    app.router.add_get("/api/admin/config", admin_config)
+    app.router.add_get("/api/admin/sessions", admin_sessions)
+
+    # 注册 avatar 生成相关的路由
+    setup_avatar_routes(app)
+
     app.router.add_static('/', path='web')
