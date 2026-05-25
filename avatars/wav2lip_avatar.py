@@ -79,8 +79,17 @@ class ONNXWav2LipWrapper:
         logger.info(f"Loading ONNX model from: {onnx_path}")
         
         # 配置 ONNX Runtime
-        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'] if device == 'cuda' else ['CPUExecutionProvider']
+        # device 是 torch.device 对象，需要检查其 type 属性
+        is_cuda = hasattr(device, 'type') and device.type == 'cuda'
+        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'] if is_cuda else ['CPUExecutionProvider']
+        logger.info(f"Device type: {device}, is_cuda: {is_cuda}")
+        logger.info(f"ONNX Runtime available providers: {ort.get_available_providers()}")
+        logger.info(f"Trying to use providers: {providers}")
         self.session = ort.InferenceSession(onnx_path, providers=providers)
+        
+        # 获取实际使用的 provider
+        actual_providers = self.session.get_providers()
+        logger.info(f"ONNX model actually using providers: {actual_providers}")
         
         # 获取输入输出信息
         self.input_names = [inp.name for inp in self.session.get_inputs()]
@@ -204,4 +213,3 @@ class LipReal(BaseAvatar):
         res_frame = cv2.resize(pred_frame.astype(np.uint8),(x2-x1,y2-y1))
         combine_frame[y1:y2, x1:x2] = res_frame
         return combine_frame
-
