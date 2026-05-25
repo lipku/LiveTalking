@@ -1,6 +1,6 @@
 ###############################################################################
-#  Copyright (C) 2024 LiveTalking@lipku https://github.com/lipku/LiveTalking
-#  email: lipku@foxmail.com
+#  Copyright (C) 2025 四川昱扬科技有限公司
+#
 # 
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -421,7 +421,7 @@ class BaseAvatar:
                 else:
                     combine_frame = current_frame
 
-            cv2.putText(combine_frame, "LiveTalking", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128,128,128), 1)
+            cv2.putText(combine_frame, "zl-talking", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128,128,128), 1)
             
             # 使用统一输出接口推送视频帧
             self.output.push_video_frame(combine_frame)

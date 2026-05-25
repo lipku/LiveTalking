@@ -17,7 +17,7 @@ def str_or_int(value):
 
 def parse_args():
     """解析命令行参数"""
-    parser = argparse.ArgumentParser(description="LiveTalking Digital Human Server")
+    parser = argparse.ArgumentParser(description="zl-talking Digital Human Server")
 
     # ─── 音频 ──────────────────────────────────────────────────────────
     parser.add_argument('--fps', type=int, default=25, help="video fps, must be 25")
