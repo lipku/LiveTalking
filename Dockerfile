@@ -9,6 +9,9 @@
 ARG BASE_IMAGE=nvcr.io/nvidia/cuda:11.6.1-cudnn8-devel-ubuntu20.04
 FROM $BASE_IMAGE
 
+LABEL maintainer="zl-talking"
+LABEL description="zl-talking Digital Human Server"
+
 RUN apt-get update -yq --fix-missing \
  && DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
     pkg-config \

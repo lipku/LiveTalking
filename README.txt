@@ -13,6 +13,18 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1 --use_onnx
 python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1 --use_onnx --onnx_model_path ./models/onnx/wav2lip.onnx
 
+
+
+
+
+
+
+
+
+
+
+
+
 # 语音采用 豆包
 $env:DOUBAO_APPID='1055299334'
 $env:DOUBAO_TOKEN='fOHuq4R4dirMYiOruCU3Ek9q75zV0KVW'

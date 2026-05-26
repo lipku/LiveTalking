@@ -1,21 +1,18 @@
 
 # English | [中文版](./README.md)  
  <p align="center">
- <img src="./assets/LiveTalking-logo.jpg" align="middle" width = "600"/>
+ <img src="./assets/zl-talking-logo.jpg" align="middle" width = "600"/>
 <p align="center">
 <p align="center">
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
-    <a href="https://github.com/lipku/LiveTalking/releases"><img src="https://img.shields.io/github/v/release/lipku/LiveTalking?color=ffa"></a>
     <a href=""><img src="https://img.shields.io/badge/python-3.10+-aff.svg"></a>
     <a href=""><img src="https://img.shields.io/badge/os-linux%2C%20win%2C%20mac-pink.svg"></a>
-    <a href="https://github.com/lipku/LiveTalking/graphs/contributors"><img src="https://img.shields.io/github/contributors/lipku/LiveTalking?color=c4f042&style=flat-square"></a>
-    <a href="https://github.com/lipku/LiveTalking/network/members"><img src="https://img.shields.io/github/forks/lipku/LiveTalking?color=8ae8ff"></a>
-    <a href="https://github.com/lipku/LiveTalking/stargazers"><img src="https://img.shields.io/github/stars/lipku/LiveTalking?color=ccf"></a>
 </p>
 
 A real-time interactive streaming digital human system enabling synchronized audio-video conversation, which basically meets commercial application standards.  
 [wav2lip Demo](https://youtu.be/-ss0H8qLr7E) | [ernerf Demo](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk Demo](https://youtu.be/vzUMruoZlxc/)  
-Domestic Mirror Repository: <https://gitee.com/lipku/LiveTalking> 
+
+**Statement**: This project is based on LiveTalking and modified by Sichuan Yuyang Technology Co., Ltd. All rights reserved. 
 
 
 ## Features
@@ -40,7 +37,7 @@ conda activate nerfstream
 conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 pytorch-cuda=12.4 -c pytorch -c nvidia
 pip install -r requirements.txt
 ``` 
-For common installation issues, refer to the [FAQ](https://livetalking-doc.readthedocs.io/en/latest/faq.html).  
+For common installation issues, refer to the [FAQ](https://zl-talking-doc.readthedocs.io/en/latest/faq.html).  
 For CUDA environment setup on Linux, refer to this article: <https://zhuanlan.zhihu.com/p/674972886>  
 Troubleshooting for video connection issues: <https://mp.weixin.qq.com/s/MVUkxxhV2cgMMHalphr2cg>
 
@@ -61,7 +58,7 @@ You can access the client in two ways:
 (2) Use the desktop client (download link: <https://pan.quark.cn/s/d7192d8ac19b>).  
 
 - Quick Experience  
-Visit <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking> and create an instance with this image to run the project successfully immediately.
+Visit <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_zl-talking> and create an instance with this image to run the project successfully immediately.
 
 If you cannot access Hugging Face, run the following command before starting the project:
 ```
@@ -140,21 +137,21 @@ graph TD
 - **Registry**: Uses a decentralized registration mechanism ([registry.py](./registry.py)) allowing developers to add new TTS, Avatar, or Output modules easily. We welcome the integration of higher-performance models and services, and are also open to commercial cooperation. 
 
 ## 4. More Usage
-For detailed usage instructions: <https://livetalking-doc.readthedocs.io/>
+For detailed usage instructions: <https://zl-talking-doc.readthedocs.io/>
   
 ## 5. Docker Run  
 No prior installation is required; run directly with Docker:
 ```
-docker run --gpus all -it --network=host --rm registry.cn-zhangjiakou.aliyuncs.com/codewithgpu3/lipku-livetalking:toza2irpHZ
+docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/zl-talking:latest
 ```
-The code is located in `/root/livetalking`. First run `git pull` to fetch the latest code, then execute commands as described in Sections 2 and 3.
+The code is located in `/root/zl-talking`. First run `git pull` to fetch the latest code, then execute commands as described in Sections 2 and 3.
 
 The following images are available:
-- AutoDL Image: <https://www.codewithgpu.com/i/lipku/livetalking/base>   
-[AutoDL Tutorial](https://livetalking-doc.readthedocs.io/en/latest/autodl/README.html)
-- UCloud Image: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking>  
+- AutoDL Image: <https://www.codewithgpu.com/i/zl-talking/zl-talking/base>   
+[AutoDL Tutorial](https://zl-talking-doc.readthedocs.io/en/latest/autodl/README.html)
+- UCloud Image: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_zl-talking>  
 Supports opening any port; no additional SRS service deployment is required.  
-[UCloud Tutorial](https://livetalking-doc.readthedocs.io/en/latest/ucloud/ucloud.html) 
+[UCloud Tutorial](https://zl-talking-doc.readthedocs.io/en/latest/ucloud/ucloud.html) 
 
 
 ## 6. Performance
@@ -186,17 +183,19 @@ The following extended features are available for users who are familiar with th
 8. Camera‑driven digital human movements and facial expressions.  
 9. Integrate with LiveKit.  
 
-For more details: <https://livetalking-doc.readthedocs.io/en/latest/service.html>
+For more details: <https://zl-talking-doc.readthedocs.io/en/latest/service.html>
 
 ## 8. Statement
-Videos developed based on this project and published on platforms such as Bilibili, WeChat Channels, and Douyin must include the LiveTalking watermark and logo.
+Videos developed based on this project and published on platforms such as Bilibili, WeChat Channels, and Douyin must include the zl-talking watermark and logo.
+
+**Copyright (C) 2025 Sichuan Yuyang Technology Co., Ltd.**
 
 ---
 If this project is helpful to you, please give it a "Star". Contributions from developers interested in improving this project are also welcome.
 * Knowledge Planet (for high-quality FAQs, best practices, and Q&A): https://t.zsxq.com/7NMyO  
 * WeChat: wxwubug  
-* Telegram: https://t.me/livetalking  
+* Telegram: https://t.me/zl-talking  
 * Discord: https://discord.gg/n5jSPCT3Uf  
-* Email: lipku@foxmail.com  
+* Email: contact@yuyangtech.com  
 * WeChat Official Account: 数字人技术 (Digital Human Technology)    
 <img src="./assets/qrcode-wechat.jpg" align="middle" />

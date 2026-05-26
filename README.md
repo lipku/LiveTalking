@@ -1,23 +1,18 @@
 
  # [English](./README-EN.md) | 中文版  
  <p align="center">
- <img src="./assets/LiveTalking-logo.jpg" align="middle" width = "300"/>
+ <img src="./assets/zl-talking-logo.jpg" align="middle" width = "300"/>
 <p align="center">
 <p align="center">
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
-    <a href="https://github.com/lipku/LiveTalking/releases"><img src="https://img.shields.io/github/v/release/lipku/LiveTalking?color=ffa"></a>
     <a href=""><img src="https://img.shields.io/badge/python-3.10+-aff.svg"></a>
     <a href=""><img src="https://img.shields.io/badge/os-linux%2C%20win%2C%20mac-pink.svg"></a>
-    <a href="https://github.com/lipku/LiveTalking/graphs/contributors"><img src="https://img.shields.io/github/contributors/lipku/LiveTalking?color=c4f042&style=flat-square"></a>
-    <a href="https://github.com/lipku/LiveTalking/network/members"><img src="https://img.shields.io/github/forks/lipku/LiveTalking?color=8ae8ff"></a>
-    <a href="https://github.com/lipku/LiveTalking/stargazers"><img src="https://img.shields.io/github/stars/lipku/LiveTalking?color=ccf"></a>
 </p>
 
  实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果  
 [wav2lip效果](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf效果](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk效果](https://www.bilibili.com/video/BV1bUwezvEnG/)  
-国内镜像地址:<https://gitee.com/lipku/LiveTalking> 
 
-## 为避免与3d数字人混淆，原项目metahuman-stream改名为livetalking，原有链接地址继续可用
+**声明**：本项目基于 LiveTalking 改造，版权归四川昱扬科技有限公司所有。
 
 ## Features
 1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
@@ -41,7 +36,7 @@ conda activate nerfstream
 conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 pytorch-cuda=12.4 -c pytorch -c nvidia
 pip install -r requirements.txt
 ``` 
-安装常见问题[FAQ](https://livetalking-doc.readthedocs.io/zh-cn/latest/faq.html)  
+安装常见问题[FAQ](https://zl-talking-doc.readthedocs.io/zh-cn/latest/faq.html)  
 linux cuda环境搭建可以参考这篇文章 <https://zhuanlan.zhihu.com/p/674972886>  
 视频连不上解决方法 <https://mp.weixin.qq.com/s/MVUkxxhV2cgMMHalphr2cg>
 
@@ -60,7 +55,7 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 (2)用客户端方式, 下载地址<https://pan.quark.cn/s/d7192d8ac19b>   
 
 - 快速体验  
-[在线镜像](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking) 用该镜像创建实例即可运行成功
+[在线镜像](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_zl-talking) 用该镜像创建实例即可运行成功
 
 安装运行过程中如果访问不了huggingface，在运行前
 ```
@@ -138,20 +133,20 @@ graph TD
 - **注册中心**：采用去中心化的注册机制（[registry.py](./registry.py)），开发者可轻松新增语音合成（TTS）、虚拟形象（Avatar）或输出（Output）模块。 欢迎效果更好的模型和服务接入，也可以进行商业合作。
 
 ## 4. More Usage
-使用说明: <https://livetalking-doc.readthedocs.io/>
+使用说明: <https://zl-talking-doc.readthedocs.io/>
   
 ## 5. Docker Run  
 不需要前面的安装，直接运行。
 ```
-docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/lipku-metahuman-stream:2K9qaMBu8v
+docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/zl-talking:latest
 ```
-代码在/root/metahuman-stream，先git pull拉一下最新代码，然后执行命令同第2、3步 
+代码在/root/zl-talking，先git pull拉一下最新代码，然后执行命令同第2、3步 
 
 提供如下网络镜像
-- ucloud镜像: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking>  
-[ucloud教程](https://livetalking-doc.readthedocs.io/zh-cn/latest/ucloud/ucloud.html) 
-- autodl镜像: <https://www.codewithgpu.com/i/lipku/livetalking/base>   
-[autodl教程](https://livetalking-doc.readthedocs.io/zh-cn/latest/autodl/README.html)，autodl由于不能开放udp端口，需要部署转发服务，如果看不到视频，请自行部署srs或turn服务
+- ucloud镜像: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_zl-talking>  
+[ucloud教程](https://zl-talking-doc.readthedocs.io/zh-cn/latest/ucloud/ucloud.html) 
+- autodl镜像: <https://www.codewithgpu.com/i/zl-talking/zl-talking/base>   
+[autodl教程](https://zl-talking-doc.readthedocs.io/zh-cn/latest/autodl/README.html)，autodl由于不能开放udp端口，需要部署转发服务，如果看不到视频，请自行部署srs或turn服务
 
 
 ## 6. 性能
@@ -182,18 +177,20 @@ wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。
 8. 摄像头驱动数字人形象动作和表情  
 9. 与livekit对接
 
-更多详情<https://livetalking-doc.readthedocs.io/zh-cn/latest/service.html>
+更多详情<https://zl-talking-doc.readthedocs.io/zh-cn/latest/service.html>
 
 ## 8. 声明
-基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上LiveTalking水印和标识。
+基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上 zl-talking 水印和标识。
+
+**Copyright (C) 2025 四川昱扬科技有限公司**
 
 ---  
 如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.
 * 知识星球: https://t.zsxq.com/7NMyO 沉淀高质量常见问题、最佳实践经验、问题解答  
 * 微信：wxwubug (加群请备注)      
-* Telegram: https://t.me/livetalking  
+* Telegram: https://t.me/zl-talking  
 * Discord: https://discord.gg/n5jSPCT3Uf  
-* Email: lipku@foxmail.com  
+* Email: contact@yuyangtech.com  
 * 微信公众号：数字人技术    
 <img src="./assets/qrcode-wechat.jpg" align="middle" />
 
