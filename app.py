@@ -17,7 +17,7 @@
 
 # server.py
 from flask import Flask, render_template,send_from_directory,request, jsonify
-from flask_sockets import Sockets
+#from flask_sockets import Sockets
 import base64
 import json
 #import gevent

@@ -11,6 +11,9 @@ English | [中文版](./README.md)
     <a href=""><img src="https://img.shields.io/badge/os-linux%2C%20win%2C%20mac-pink.svg"></a>
     <a href="https://github.com/lipku/LiveTalking/graphs/contributors"><img src="https://img.shields.io/github/contributors/lipku/LiveTalking?color=c4f042&style=flat-square"></a>
 </p>
+<p align="center">
+<a href="https://trendshift.io/repositories/12565" target="_blank"><img src="https://trendshift.io/api/badge/repositories/12565" alt="lipku%2FLiveTalking | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+</p>
 
 A real-time interactive streaming digital human engine enabling synchronized audio-video conversation, widely adopted in commercial applications.
 
@@ -52,19 +55,21 @@ LiveTalking leverages real-time streaming digital human technology to drive virt
 
 ## 1. Installation
 
-Tested on Ubuntu 24.04, Python 3.10, PyTorch 2.5.0, CUDA 12.4.
+Tested on Ubuntu 24.04, Python 3.12, PyTorch 2.9.1, CUDA 13.0.
 
 ### 1.1 Install Dependencies
 
 ```bash
-conda create -n livetalking python=3.10
+git clone https://github.com/lipku/LiveTalking.git 
+conda create -n livetalking python=3.12
 conda activate livetalking
-# If CUDA version is not 12.4 (check via nvidia-smi), install the corresponding PyTorch version
-conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 pytorch-cuda=12.4 -c pytorch -c nvidia
+# If CUDA version is not 13.0 (check via nvidia-smi), install the corresponding PyTorch version(https://pytorch.org/get-started/previous-versions)
+pip install torch==2.9.1 torchvision==0.24.1 torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu130
+cd LiveTalking
 pip install -r requirements.txt
 ```
 
-Installation FAQ: <https://livetalking-doc.readthedocs.io/en/latest/faq.html>
+Installation FAQ: <https://doc.livetalking.ai/en/docs/faq/>
 
 Linux CUDA environment setup: <https://zhuanlan.zhihu.com/p/674972886>
 
@@ -115,7 +120,7 @@ Create an instance with a cloud image to run instantly:
 - [UCloud Image](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking)
 
 ### 2.6 Documentation
-<https://doc.livetalking.ai>
+<https://doc.livetalking.ai/en>
 
 ---
 
@@ -164,8 +169,8 @@ Create an instance with a cloud image to run instantly:
 ## 5. Docker
 
 Available images:
-- **AutoDL**: <https://www.codewithgpu.com/i/lipku/livetalking/base> — [Tutorial](https://livetalking-doc.readthedocs.io/en/latest/autodl/README.html)
-- **UCloud**: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking> — Supports opening any port, no additional SRS deployment required — [Tutorial](https://livetalking-doc.readthedocs.io/en/latest/ucloud/ucloud.html)
+- **AutoDL**: <https://www.codewithgpu.com/i/lipku/livetalking/base> — [Tutorial](https://doc.livetalking.ai/en/docs/autodl/)
+- **UCloud**: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking> — Supports opening any port, no additional SRS deployment required — [Tutorial](https://doc.livetalking.ai/en/docs/ucloud/)
 
 > AutoDL cannot open UDP ports, so you need to deploy SRS or TURN relay service separately.
 

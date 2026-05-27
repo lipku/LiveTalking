@@ -1,50 +1,51 @@
-torch-ema
-ninja
-trimesh
-opencv-python
-tensorboardX
+#torch-ema
+##ninja
+#trimesh
+#opencv-python
+#tensorboardX
 numpy 
-pandas
+#pandas
 tqdm
-matplotlib
-PyMCubes
-rich
-dearpygui
-packaging
+#matplotlib
+#PyMCubes
+#rich
+#dearpygui
+#packaging
 scipy
-scikit-learn
+#scikit-learn
 
-face_alignment
-python_speech_features
-numba
+#face_alignment
+#python_speech_features
+##numba
 resampy
 #pyaudio
 soundfile==0.12.1
 einops
-configargparse
+#configargparse
 
-lpips==0.1.3
-imageio-ffmpeg
+#lpips==0.1.3
+#imageio-ffmpeg
 
-transformers==4.46.2
+transformers #==4.46.2
 edge_tts
 flask
-flask_sockets
+#flask_sockets
 opencv-python-headless
 aiortc
 aiohttp_cors
 
-ffmpeg-python
-omegaconf
+#ffmpeg-python
+#omegaconf
 diffusers
 accelerate
 
 librosa
 openai
-websocket-client
+#websocket-client
 websockets==12.0
+dashscope
 #gradio_client
 #azure-cognitiveservices-speech
 
-typeguard==2.13.3
-onnxruntime-gpu
+#typeguard==2.13.3
+#onnxruntime-gpu
