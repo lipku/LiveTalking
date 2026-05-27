@@ -47,6 +47,7 @@ import random
 import shutil
 import asyncio
 import torch
+import os
 from io import BytesIO
 from typing import Dict
 from utils.logger import logger
@@ -123,8 +124,28 @@ def main():
     warm_up = avatar_mod.warm_up
     logger.info(opt)
 
+    # 自动设置默认 ONNX 路径
+    if opt.use_onnx and not opt.onnx_model_path:
+        if opt.model == 'musetalk':
+            opt.onnx_model_path = './models/onnx/musetalk/unet.onnx'
+            opt.vae_onnx_path = './models/onnx/musetalk/vae_decoder.onnx'
+        elif opt.model == 'wav2lip':
+            opt.onnx_model_path = './models/onnx/wav2lip/wav2lip.onnx'
+        logger.info(f"Auto-selected ONNX model path: {opt.onnx_model_path}")
+
     if opt.model == 'musetalk':
-        model = load_model()
+        if opt.use_onnx:
+            # 使用 ONNX 模型
+            from avatars.musetalk_avatar import load_onnx_model
+            # 检查 VAE ONNX 是否存在，如果存在则一起加载
+            vae_onnx_path = getattr(opt, 'vae_onnx_path', None)
+            model = load_onnx_model(opt.onnx_model_path, vae_onnx_path)
+            logger.info(f"Using MuseTalk ONNX model: {opt.onnx_model_path}")
+            if vae_onnx_path and os.path.exists(vae_onnx_path):
+                logger.info(f"Using MuseTalk VAE ONNX model: {vae_onnx_path}")
+        else:
+            # 使用 PyTorch 模型
+            model = load_model()
         global_avatars[opt.avatar_id] = load_avatar(opt.avatar_id) 
         warm_up(opt.batch_size,model)      
     elif opt.model == 'wav2lip':
@@ -132,10 +153,10 @@ def main():
             # 使用 ONNX 模型
             from avatars.wav2lip_avatar import load_onnx_model
             model = load_onnx_model(opt.onnx_model_path)
-            logger.info(f"Using ONNX model: {opt.onnx_model_path}")
+            logger.info(f"Using Wav2Lip ONNX model: {opt.onnx_model_path}")
         else:
             # 使用 PyTorch 模型
-            model = load_model("./models/wav2lip.pth")
+            model = load_model("./models/wav2lip/wav2lip.pth")
         global_avatars[opt.avatar_id] = load_avatar(opt.avatar_id)
         warm_up(opt.batch_size,model,256)
     elif opt.model == 'ultralight':

@@ -39,8 +39,8 @@ def parse_args():
     parser.add_argument('--modelfile', type=str, default='')
     parser.add_argument('--use_onnx', action='store_true',
                         help="use ONNX model instead of PyTorch (default: False)")
-    parser.add_argument('--onnx_model_path', type=str, default='./models/onnx/wav2lip.onnx',
-                        help="path to ONNX model file")
+    parser.add_argument('--onnx_model_path', type=str, default='',
+                        help="path to ONNX model file (default: auto-select based on --model)")
 
     # ─── 自定义动作和多形象 ────────────────────────────────────────────
     parser.add_argument('--customvideo_config', type=str, default='',
