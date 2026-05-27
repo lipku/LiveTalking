@@ -20,4 +20,5 @@ models/
 *.log
 dist
 
+ffmpeg/
 README.txt
