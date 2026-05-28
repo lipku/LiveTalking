@@ -1,196 +1,213 @@
+# [English](./README-EN.md) | 中文版
 
- # [English](./README-EN.md) | 中文版  
- <p align="center">
- <img src="./assets/zl-talking-logo.jpg" align="middle" width = "300"/>
 <p align="center">
+  <img src="./assets/zl-talking-logo.jpg" align="middle" width="300"/>
+</p>
 <p align="center">
-    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
-    <a href=""><img src="https://img.shields.io/badge/python-3.10+-aff.svg"></a>
-    <a href=""><img src="https://img.shields.io/badge/os-linux%2C%20win%2C%20mac-pink.svg"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
+  <a href=""><img src="https://img.shields.io/badge/python-3.10+-aff.svg"></a>
+  <a href=""><img src="https://img.shields.io/badge/os-linux%2C%20win%2C%20mac-pink.svg"></a>
 </p>
 
- 实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果  
-[wav2lip效果](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf效果](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk效果](https://www.bilibili.com/video/BV1bUwezvEnG/)  
+实时交互流式数字人，实现音视频同步对话，基本可以达到商用效果。
+
+<div align="center">
+  <a href="https://www.bilibili.com/video/BV1scwBeyELA/">wav2lip 效果</a> |
+  <a href="https://www.bilibili.com/video/BV1G1421z73r/">ernerf 效果</a> |
+  <a href="https://www.bilibili.com/video/BV1bUwezvEnG/">musetalk 效果</a>
+</div>
 
 **声明**：本项目基于 LiveTalking 改造，版权归四川昱扬科技有限公司所有。
 
-## Features
-1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
-2. 支持声音克隆
-3. 支持数字人说话被打断
-4. 支持webrtc、rtmp、虚拟摄像头输出
-5. 支持动作编排：不说话时播放自定义视频
-6. 支持多并发
-7. 支持自定义数字人形象
+---
 
-## 1. Installation
+## 特性
 
-Tested on Ubuntu 24.04, Python3.10, Pytorch 2.5.0 and CUDA 12.4
+- **多模型支持**：wav2lip、musetalk、ultralight、ernerf
+- **低显存推理**：支持 ONNX 模型导出与推理，显存占用降低约 50%
+- **声音克隆**：支持多种 TTS 引擎（Edge、豆包、GPT-SoVITS、CosyVoice、Fish Speech 等）
+- **实时打断**：支持数字人说话时打断并提问
+- **多种输出**：WebRTC、RTMP、虚拟摄像头
+- **动作编排**：不说话时播放自定义视频
+- **会话管理**：多会话并发，独立的 session 生命周期
 
-### 1.1 Install dependency
+---
+
+## 安装
+
+### 环境要求
+
+| 依赖         | 版本要求     |
+|-------------|-------------|
+| Python      | 3.10+       |
+| CUDA        | 12.x (推荐) |
+| GPU 显存     | 6GB+ (wav2lip) / 8GB+ (musetalk) / 4GB (ONNX) |
+
+### 安装步骤
 
 ```bash
-conda create -n nerfstream python=3.10
-conda activate nerfstream
-#如果cuda版本不为12.4(运行nvidia-smi确认版本)，根据<https://pytorch.org/get-started/previous-versions/>安装对应版本的pytorch 
-conda install pytorch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 pytorch-cuda=12.4 -c pytorch -c nvidia
+git clone https://github.com/zl-talking/zl-talking
+cd zl-talking
+
+conda create -n zl-talking python=3.10
+conda activate zl-talking
+
+# 安装 PyTorch（根据 CUDA 版本选择）
+conda install pytorch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 pytorch-cuda=12.9 -c pytorch -c nvidia
+
 pip install -r requirements.txt
-``` 
-安装常见问题[FAQ](https://zl-talking-doc.readthedocs.io/zh-cn/latest/faq.html)  
-linux cuda环境搭建可以参考这篇文章 <https://zhuanlan.zhihu.com/p/674972886>  
-视频连不上解决方法 <https://mp.weixin.qq.com/s/MVUkxxhV2cgMMHalphr2cg>
-
-
-## 2. Quick Start
-- 下载模型  
-夸克云盘<https://pan.quark.cn/s/83a750323ef0>    
-GoogleDriver <https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P9NlSAJ?usp=sharing>  
-将wav2lip256.pth拷到本项目的models下, 重命名为wav2lip.pth;  
-将wav2lip256_avatar1.tar.gz解压后整个文件夹拷到本项目的data/avatars下
-- 运行  
-python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1  
-<font color=red>服务端需要开放端口 tcp:8010; udp:1-65536 </font>  
-客户端可以选用以下两种方式:  
-(1)用浏览器打开http://serverip:8010/webrtcapi.html , 先点‘start',播放数字人视频；然后在文本框输入任意文字，提交。数字人播报该段文字  
-(2)用客户端方式, 下载地址<https://pan.quark.cn/s/d7192d8ac19b>   
-
-- 快速体验  
-[在线镜像](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_zl-talking) 用该镜像创建实例即可运行成功
-
-安装运行过程中如果访问不了huggingface，在运行前
-```
-export HF_ENDPOINT=https://hf-mirror.com
-``` 
-
-## 3. Architecture
-### 数据流程图
-<img src="./assets/dataflow.png" align="middle" />  
-
-### 系统架构图
-
-```mermaid
-graph TD
-    User["User / Frontend Web"] -->|"Text Input / Audio File"| API["API Routes: /human, /humanaudio"]
-    
-    subgraph "Server Layer"
-        API --> SessionMgr["Session Manager"]
-        SessionMgr --> AvatarSession["Avatar Session Instance"]
-    end
-
-    subgraph "Logic Layer"
-        AvatarSession -->|"Request Type: chat"| LLM["LLM Response Engine"]
-        LLM -->|"Generated Text"| TTS["TTS Engine: Edge/CosyVoice/Tencent..."]
-        AvatarSession -->|"Request Type: echo"| TTS
-        TTS -->|"PCM Audio (16k)"| ASR["Audio Feature Extraction"]
-        API -->|"Uploaded audio"| ASR
-    end
-
-    subgraph "Rendering Layer"
-        ASR -->|"Audio Features / Mel"| Infer["Inference Engine: Wav2Lip/MuseTalk/ERNeRF"]
-        Infer -->|"Generated Mouth Sync"| Paste["Paste Back"]
-    end
-
-    subgraph "Streaming Layer"
-        Paste -->|"Video Frames"| Output["Output Module: WebRTC/RTMP/Virtualcam"]
-        ASR -->|"Audio Frames"| Output
-        Output -->|"Real-time Media Stream"| User
-    end
-
-    subgraph "Modular Plugin System"
-        Reg["Registry"] -.-> TTS
-        Reg -.-> Infer
-        Reg -.-> Output
-    end
-
-    style User fill:#f9f,stroke:#333,stroke-width:2px
-    style Reg fill:#fff2cc,stroke:#d6b656,stroke-width:2px
-    style LLM fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px
-    style Infer fill:#d5e8d4,stroke:#82b366,stroke-width:2px
 ```
 
-### 1. API层
-- **接口端点**：
-    - `/human`：接收文本，用于“（echo）”（直接播放）或“聊天（chat）”（大语言模型交互）场景。
-    - `/humanaudio`：接收原始音频文件用于播放。
-- **会话管理**：每个连接都会分配一个`sessionid`，用于维护状态并处理多用户并发请求。
+> 如果无法访问 Hugging Face，运行前设置：`export HF_ENDPOINT=https://hf-mirror.com`
 
-### 2. 逻辑层
-- **大语言模型（LLM）引擎**：与通义千问（Qwen）等模型对接，生成对话式回复。
-- **语音合成（TTS）引擎**：模块化系统，支持多种服务商（EdgeTTS、GPT-SoVITS等），实现文本到语音的转换。
-- **语音特征提取**：提取视觉唇形同步所需的声学特征（如梅尔频谱图）。
+---
 
-### 3. 渲染层
-- **模型推理**：基于深度学习模型（如Wav2Lip、MuseTalk），根据音频特征生成唇形同步的视频帧。
-- **后处理**：将生成的嘴部区域平滑叠加回原始高清虚拟形象视频上。
+## 快速开始
 
-### 4. 流媒体层
-- **传输协议**：
-    - **WebRTC**：低延迟的浏览器端流媒体传输协议。
-    - **RTMP**：适用于YouTube、哔哩哔哩等平台的标准流媒体协议。
-    - **虚拟摄像头**：允许将输出内容作为系统摄像头使用。
+### 1. 下载模型
 
-### 5. 插件系统
-- **注册中心**：采用去中心化的注册机制（[registry.py](./registry.py)），开发者可轻松新增语音合成（TTS）、虚拟形象（Avatar）或输出（Output）模块。 欢迎效果更好的模型和服务接入，也可以进行商业合作。
+| 模型 | 下载地址 | 放置位置 |
+|-----|---------|---------|
+| wav2lip | [夸克网盘](https://pan.quark.cn/s/83a750323ef0) / [Google Drive](https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P9NlSAJ?usp=sharing) | `models/wav2lip.pth` |
+| musetalk | 同上 | `models/musetalk/` |
+| 形象素材 | 同上 | `data/avatars/<avatar_id>/` |
 
-## 4. More Usage
-使用说明: <https://zl-talking-doc.readthedocs.io/>
-  
-## 5. Docker Run  
-不需要前面的安装，直接运行。
+### 2. 启动服务
+
+```bash
+# wav2lip + WebRTC
+python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
+
+# musetalk + ONNX 推理（低显存）
+python app.py --transport webrtc --model musetalk --avatar_id avatar1 --use_onnx
+
+# musetalk + PyTorch 推理（高精度）
+python app.py --transport webrtc --model musetalk --avatar_id avatar1
+
+# 指定 TTS（默认 edgetts）
+python app.py --transport webrtc --model wav2lip --tts doubao --TTS_SERVER ws://127.0.0.1:3000
 ```
-docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/codewithgpu2/zl-talking:latest
+
+> **端口要求**：TCP 8010；UDP 1-65536
+
+### 3. 访问客户端
+
+浏览器打开 `http://serverip:8010/webrtcapi.html`，点击 `start` 播放数字人视频，在文本框输入文字即可交互。
+
+---
+
+## 命令行参数
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--model` | `wav2lip` | 数字人模型：musetalk / wav2lip / ultralight |
+| `--avatar_id` | `wav2lip256_avatar1` | 形象 ID，对应 `data/avatars/` 目录 |
+| `--use_onnx` | `False` | 使用 ONNX 推理（降低显存） |
+| `--onnx_model_path` | 自动选择 | ONNX 模型路径 |
+| `--batch_size` | `16` | 推理批次大小 |
+| `--fps` | `25` | 视频帧率 |
+| `--tts` | `edgetts` | TTS 引擎：edgetts / doubao / cosyvoice / fishtts / tencent / indextts2 / azuretts / qwentts |
+| `--REF_FILE` | `zh-CN-YunxiaNeural` | 参考文件名或语音模型 ID |
+| `--TTS_SERVER` | `http://127.0.0.1:9880` | TTS 服务地址 |
+| `--transport` | `webrtc` | 输出方式：webrtc / rtmp / virtualcam |
+| `--listenport` | `8010` | Web 监听端口 |
+| `--max_session` | `1` | 最大并发会话数 |
+
+---
+
+## 架构
+
 ```
-代码在/root/zl-talking，先git pull拉一下最新代码，然后执行命令同第2、3步 
+User / Frontend Web ──▶ API Routes ──▶ Session Manager ──▶ Avatar Session
+                          │                                        │
+                          │  ┌── "chat" ──▶ LLM Engine (Qwen)  ──▶│
+                          │  │                                     │
+                          │  └── Text ──▶ TTS Engine ──▶ Audio ──▶│
+                          │                         Features      │
+                          │                                       │
+                     Audio Upload ──▶ Audio Feature Extraction    │
+                                                                  │
+                          ◀── Output ──▶ Inference ──▶ Paste ─────┘
+                              WebRTC /       Wav2Lip /    Back to
+                              RTMP /         MuseTalk /   Video
+                              Virtualcam     Ultralight
+```
 
-提供如下网络镜像
-- ucloud镜像: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_zl-talking>  
-[ucloud教程](https://zl-talking-doc.readthedocs.io/zh-cn/latest/ucloud/ucloud.html) 
-- autodl镜像: <https://www.codewithgpu.com/i/zl-talking/zl-talking/base>   
-[autodl教程](https://zl-talking-doc.readthedocs.io/zh-cn/latest/autodl/README.html)，autodl由于不能开放udp端口，需要部署转发服务，如果看不到视频，请自行部署srs或turn服务
+### 插件系统
 
+采用装饰器注册机制（`@register`），支持三种插件类型：
 
-## 6. 性能
-- 性能主要跟cpu和gpu相关: 每路视频压缩需要消耗cpu，cpu性能与视频分辨率正相关；每路口型推理跟gpu性能相关。  
-- 不说话时的并发数跟cpu相关，同时说话的并发数跟gpu相关。  
-- 后端日志inferfps表示显卡推理帧率，finalfps表示最终推流帧率。两者都要在25以上才能实时。如果inferfps在25以上，finalfps达不到25表示cpu性能不足。  
-- 实时推理性能  
+| 插件类型 | 注册名称 | 示例 |
+|---------|---------|------|
+| TTS | `@register("tts", "edgetts")` | edge / doubao / cosyvoice / fish 等 |
+| Avatar | `@register("avatar", "musetalk")` | musetalk / wav2lip / ultralight |
+| Output | `@register("output", "webrtc")` | webrtc / rtmp / virtualcam |
 
-模型    |显卡型号   |fps
-:----   |:---   |:---
-wav2lip256 | 3060    | 60
-wav2lip256 | 3080Ti  | 120
-musetalk   | 3080Ti  | 42
-musetalk   | 3090    | 45
-musetalk   | 4090    | 72 
+---
 
-wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。 
+## 性能
 
-## 7. 商业版
-提供如下扩展功能，适用于对开源项目已经比较熟悉，需要扩展产品功能的用户
-1. 高清wav2lip模型
-2. 完全语音交互，数字人回答过程中支持通过唤醒词或者按钮打断提问
-3. 实时同步字幕，给前端提供数字人每句话播报开始、结束事件
-4. 提供实时音频流输入接口
-5. 数字人透明背景，叠加动态背景 
-6. avatar实时切换  
-7. 同一画面里多个数字人互动  
-8. 摄像头驱动数字人形象动作和表情  
-9. 与livekit对接
+| 模型 | GPU | 推理帧率 (fps) |
+|------|-----|---------------|
+| wav2lip256 | RTX 3060 | 60 |
+| wav2lip256 | RTX 3080Ti | 120 |
+| musetalk | RTX 3080Ti | 42 |
+| musetalk | RTX 3090 | 45 |
+| musetalk | RTX 4090 | 72 |
+| musetalk (ONNX) | RTX 4090 | 60+ |
 
-更多详情<https://zl-talking-doc.readthedocs.io/zh-cn/latest/service.html>
+> `inferfps` 为 GPU 推理帧率，`finalfps` 为最终推流帧率。两者需 ≥ 25 才能实时。
 
-## 8. 声明
-基于本项目开发并发布在B站、视频号、抖音等网站上的视频需带上 zl-talking 水印和标识。
+---
+
+## Docker 部署
+
+```bash
+docker run --gpus all -it --network=host --rm \
+  registry.cn-beijing.aliyuncs.com/codewithgpu2/zl-talking:latest
+```
+
+代码位于 `/root/zl-talking`，先 `git pull` 拉取最新代码，然后按快速开始章节运行。
+
+**云镜像**：
+- [UCloud 镜像](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_zl-talking)
+- [AutoDL 镜像](https://www.codewithgpu.com/i/zl-talking/zl-talking/base)
+
+---
+
+## 商业版
+
+提供以下扩展功能：
+
+1. 高清 wav2lip 模型
+2. 完全语音交互 + 唤醒词打断
+3. 实时同步字幕 + 播报事件
+4. 实时音频流输入接口
+5. 数字人透明背景 + 动态背景
+6. Avatar 实时切换
+7. 多数字人同屏互动
+8. 摄像头驱动形象动作表情
+9. LiveKit 对接
+
+详情：<https://zl-talking-doc.readthedocs.io/zh-cn/latest/service.html>
+
+---
+
+## 声明
+
+基于本项目开发并发布在 B站、视频号、抖音等网站上的视频需带上 zl-talking 水印和标识。
 
 **Copyright (C) 2025 四川昱扬科技有限公司**
 
----  
-如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.
-* 知识星球: https://t.zsxq.com/7NMyO 沉淀高质量常见问题、最佳实践经验、问题解答  
-* 微信：wxwubug (加群请备注)      
-* Telegram: https://t.me/zl-talking  
-* Discord: https://discord.gg/n5jSPCT3Uf  
-* Email: contact@yuyangtech.com  
-* 微信公众号：数字人技术    
-<img src="./assets/qrcode-wechat.jpg" align="middle" />
+---
 
+如果本项目对你有帮助，帮忙点个 star ⭐
+
+- 知识星球：<https://t.zsxq.com/7NMyO>
+- 微信：wxwubug（加群请备注）
+- Telegram：<https://t.me/zl-talking>
+- Discord：<https://discord.gg/n5jSPCT3Uf>
+- 邮箱：contact@yuyangtech.com
+- 公众号：数字人技术
+
+<img src="./assets/qrcode-wechat.jpg" align="middle" width="200"/>
