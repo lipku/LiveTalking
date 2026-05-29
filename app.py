@@ -24,6 +24,7 @@ import json
 #from gevent import pywsgi
 #from geventwebsocket.handler import WebSocketHandler
 import re
+import os
 import numpy as np
 from threading import Thread,Event
 #import multiprocessing
@@ -76,6 +77,7 @@ def build_avatar_session(sessionid:str, params:dict)->BaseAvatar:
     opt_this.sessionid = sessionid
 
     avatar_id = params.get('avatar',opt.avatar_id) 
+    opt_this.avatar_id = avatar_id
     ref_audio = params.get('refaudio','') #音色
     ref_text = params.get('reftext','')
     if (avatar_id and avatar_id != opt.avatar_id):
@@ -102,6 +104,17 @@ async def offer(request):
 async def on_shutdown(app):
     await rtc_manager.shutdown()
 
+async def download_record(request):
+    sessionid = request.match_info.get('sessionid')
+    if not sessionid:
+        return web.Response(status=400, text="sessionid is required")
+    
+    record_file = os.path.join('data', 'record', f"{sessionid}.mp4")
+    
+    if os.path.exists(record_file):
+        return web.FileResponse(record_file)
+    else:
+        return web.Response(status=404, text="Record not found")
 
 
 def main():
@@ -159,9 +172,12 @@ def main():
     #############################################################################
     appasync = web.Application(client_max_size=1024**2*100)
     appasync["llm_response"] = llm_response
+    appasync["opt"] = opt
+    appasync["rtc_manager"] = rtc_manager
 
     appasync.on_shutdown.append(on_shutdown)
     appasync.router.add_post("/offer", offer)
+    appasync.router.add_get("/record/{sessionid}", download_record)
     
     # 注册 server/routes.py 中的通用 API 路由
     setup_routes(appasync) 
@@ -178,13 +194,13 @@ def main():
     for route in list(appasync.router.routes()):
         cors.add(route)
 
-    pagename='webrtcapi.html'
+    pagename='index.html'
     if opt.transport=='rtmp':
         pagename='rtmpapi.html'
     elif opt.transport=='rtcpush':
         pagename='rtcpushapi.html'
     logger.info('start http server; http://<serverip>:'+str(opt.listenport)+'/'+pagename)
-    logger.info('如果使用webrtc，推荐访问webrtc集成前端: http://<serverip>:'+str(opt.listenport)+'/dashboard.html')
+    # logger.info('如果使用webrtc，推荐访问webrtc集成前端: http://<serverip>:'+str(opt.listenport)+'/dashboard.html')
     def run_server(runner):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
