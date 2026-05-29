@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Console - LiveTalking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-bg: #f0f4fc;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --accent-primary: #4361ee;
+            --accent-secondary: #3f37c9;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --border-radius: 16px;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px -10px rgba(67, 97, 238, 0.15);
+        }
+
+        .header-title {
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title i {
+            color: var(--accent-primary);
+        }
+
+        .config-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .config-table td {
+            font-weight: 500;
+            color: var(--text-dark);
+            vertical-align: middle;
+        }
+
+        .session-card {
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--accent-primary);
+        }
+
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .session-id {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .badge-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-speaking {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .badge-silent {
+            background-color: rgba(100, 116, 139, 0.1);
+            color: var(--text-muted);
+        }
+
+        .badge-recording {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .session-detail-item {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .session-detail-item strong {
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-right: 8px;
+        }
+
+        .btn-stop {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-stop:hover {
+            background-color: #dc2626;
+            transform: scale(1.05);
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+            height: 20px;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="header-title">
+            <i class="bi bi-speedometer2"></i> LiveTalking Console
+            <button class="btn btn-sm btn-outline-primary ms-auto" onclick="refreshData()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </h1>
+
+        <div class="row g-4">
+            <!-- Global Config Section -->
+            <div class="col-lg-5">
+                <div class="glass-card p-4 h-100">
+                    <h4 class="mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-gear-fill text-primary"></i> Global Config
+                    </h4>
+                    <div class="table-responsive">
+                        <table class="table table-borderless config-table" id="configTable">
+                            <tbody>
+                                <tr>
+                                    <th>Loading...</th>
+                                    <td><div class="skeleton"></div></td>
+                                </tr>
+                                <tr>
+                                    <th>Loading...</th>
+                                    <td><div class="skeleton"></div></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Sessions Section -->
+            <div class="col-lg-7">
+                <div class="glass-card p-4 h-100">
+                    <h4 class="mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-people-fill text-success"></i> Active Sessions
+                        <span class="badge bg-primary ms-2 rounded-pill" id="sessionCount">0</span>
+                    </h4>
+
+                    <div id="sessionsContainer">
+                        <div class="session-card glass-card">
+                            <div class="skeleton mb-3" style="width: 40%; height: 28px;"></div>
+                            <div class="skeleton mb-2" style="width: 80%;"></div>
+                            <div class="skeleton" style="width: 60%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        const configLabels = {
+            'model': 'Avatar Model',
+            'avatar_id': 'Default Avatar ID',
+            'tts': 'TTS Engine',
+            'REF_FILE': 'Voice Reference',
+            'transport': 'Stream Protocol',
+            'listenport': 'Listen Port',
+            'batch_size': 'Inference Batch',
+            'fps': 'Video FPS',
+            'push_url': 'Push URL'
+        };
+
+        async function fetchConfig() {
+            try {
+                const response = await fetch('/api/admin/config');
+                const result = await response.json();
+                if (result.code === 0) {
+                    renderConfig(result.data.config);
+                } else {
+                    console.error('Failed to fetch config:', result.msg);
+                }
+            } catch (err) {
+                console.error('Network error fetching config', err);
+            }
+        }
+
+        async function fetchSessions() {
+            try {
+                const response = await fetch('/api/admin/sessions');
+                const result = await response.json();
+                if (result.code === 0) {
+                    renderSessions(result.data.sessions);
+                    $('#sessionCount').text(result.data.sessions.length);
+                } else {
+                    console.error('Failed to fetch sessions:', result.msg);
+                }
+            } catch (err) {
+                console.error('Network error fetching sessions', err);
+            }
+        }
+
+        function renderConfig(config) {
+            const tableBody = $('#configTable tbody');
+            tableBody.empty();
+
+            for (const [key, label] of Object.entries(configLabels)) {
+                if (config[key] !== undefined) {
+                    const val = config[key] === '' ? '<span class="text-muted">Not set</span>' : config[key];
+                    tableBody.append(`
+                        <tr>
+                            <th>${label}</th>
+                            <td>${val}</td>
+                        </tr>
+                    `);
+                }
+            }
+        }
+
+        function renderSessions(sessions) {
+            const container = $('#sessionsContainer');
+            container.empty();
+
+            if (sessions.length === 0) {
+                container.append(`
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h5>No active sessions</h5>
+                        <p>Sessions will appear here when users connect.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            sessions.forEach(session => {
+                const statusBadge = session.speaking
+                    ? `<span class="badge-status badge-speaking"><i class="bi bi-mic-fill"></i> Speaking</span>`
+                    : `<span class="badge-status badge-silent"><i class="bi bi-mic-mute-fill"></i> Silent</span>`;
+
+                const recBadge = session.recording
+                    ? `<span class="badge-status badge-recording ms-2"><i class="bi bi-record-circle"></i> Recording</span>`
+                    : '';
+
+                const customOptContent = session.customopt && session.customopt.length > 0
+                    ? `<pre class="mt-1 p-2 bg-light border rounded text-dark" style="font-size: 0.75rem; max-height: 120px; overflow-y: auto;">${JSON.stringify(session.customopt, null, 2)}</pre>`
+                    : '<span class="text-muted">None</span>';
+
+                container.append(`
+                    <div class="session-card glass-card">
+                        <div class="session-header">
+                            <div>
+                                <span class="session-id">SID: ${session.sessionid}</span>
+                                <div class="mt-2 text-muted" style="font-size: 0.85rem;">Transport: ${session.transport || 'Default'}</div>
+                            </div>
+                            <div>
+                                ${statusBadge}
+                                ${recBadge}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="session-detail-item">
+                                    <strong>Avatar ID:</strong> ${session.avatar_id}
+                                </div>
+                                <div class="session-detail-item">
+                                    <strong>Model:</strong> ${session.model}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="session-detail-item">
+                                    <strong>Voice Ref:</strong> ${session.REF_FILE}
+                                </div>
+                                <div class="session-detail-item mt-2">
+                                    <strong><i class="bi bi-sliders"></i> Custom Actions:</strong>
+                                    ${customOptContent}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        function refreshData() {
+            const icon = $('.bi-arrow-clockwise');
+            icon.addClass('spin');
+            Promise.all([fetchConfig(), fetchSessions()]).finally(() => {
+                setTimeout(() => icon.removeClass('spin'), 500);
+            });
+        }
+
+        $('<style> .spin { animation: rotation 1s linear infinite; } @keyframes rotation { from { transform: rotate(0deg); } to { transform: rotate(359deg); } } </style>').appendTo('head');
+
+        $(document).ready(() => {
+            fetchConfig();
+            fetchSessions();
+            setInterval(fetchSessions, 5000);
+        });
+    </script>
+</body>
+
+</html>

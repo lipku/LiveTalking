@@ -264,8 +264,23 @@ class BaseAvatar:
         self._record_video_pipe.wait()
         self._record_audio_pipe.stdin.close()
         self._record_audio_pipe.wait()
-        cmd_combine_audio = f"ffmpeg -y -i temp{self.opt.sessionid}.aac -i temp{self.opt.sessionid}.mp4 -c:v copy -c:a copy data/record.mp4"
+        
+        record_path = os.path.join('data', 'record')
+        os.makedirs(record_path, exist_ok=True)
+        output_file = os.path.join(record_path, f"{self.opt.sessionid}.mp4")
+        
+        temp_aac = f"temp{self.opt.sessionid}.aac"
+        temp_mp4 = f"temp{self.opt.sessionid}.mp4"
+        
+        cmd_combine_audio = f"ffmpeg -y -i {temp_aac} -i {temp_mp4} -c:v copy -c:a copy {output_file}"
         os.system(cmd_combine_audio)
+        
+        # 删除临时文件
+        try:
+            os.remove(temp_aac)
+            os.remove(temp_mp4)
+        except Exception as e:
+            logger.error(f"Error removing temp files: {e}")
 
     # def mirror_index(self, size, index):
     #     turn = index // size

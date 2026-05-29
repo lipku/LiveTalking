@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar 生成 - LiveTalking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        body {
+            background: #f0f2f5;
+            background-image: radial-gradient(#d1d1d1 1px, transparent 1px);
+            background-size: 20px 20px;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: #2d3436;
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+        .navbar {
+            background: var(--primary-gradient);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin-top: 30px;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 25px;
+        }
+
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding: 20px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-header i {
+            margin-right: 10px;
+            color: #667eea;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        .btn-submit {
+            background: var(--primary-gradient);
+            border: none;
+            color: white;
+            padding: 12px;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: transform 0.2s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+            color: white;
+        }
+
+        .task-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+            transition: background 0.2s;
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .badge-status {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        .status-pending { background: #ffeaa7; color: #d63031; }
+        .status-running { background: #81ecec; color: #00cec9; }
+        .status-completed { background: #55efc4; color: #00b894; }
+        .status-failed { background: #ff7675; color: #d63031; }
+
+        .param-group {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .refresh-spinner {
+            font-size: 0.8rem;
+            color: #b2bec3;
+            margin-left: auto;
+        }
+
+        .spin { animation: rotation 1s linear infinite; }
+        @keyframes rotation { from { transform: rotate(0deg); } to { transform: rotate(359deg); } }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark mb-4">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand" href="#">
+            <i class="bi bi-person-bounding-box me-2"></i>
+            LiveTalking Avatar 生成系统
+        </a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row">
+        <!-- 提交任务表单 -->
+        <div class="col-lg-5">
+            <div class="glass-card">
+                <div class="card-header">
+                    <i class="bi bi-plus-circle-fill"></i> 创建新生成任务
+                </div>
+                <div class="card-body">
+                    <form id="taskForm">
+                        <div class="mb-3">
+                            <label class="form-label">算法模型</label>
+                            <select class="form-select" name="model" id="modelSelect" required>
+                                <option value="wav2lip">Wav2Lip</option>
+                                <option value="musetalk">MuseTalk</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Avatar ID</label>
+                            <input type="text" class="form-control" name="avatar_id" placeholder="如: wav2lip256_test" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">视频文件</label>
+                            <input type="file" class="form-control" name="video_file" accept="video/*" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <a class="text-decoration-none" data-bs-toggle="collapse" href="#advancedParams" role="button">
+                                <i class="bi bi-gear me-1"></i> 高级参数 (可选)
+                            </a>
+                            <div class="collapse mt-2" id="advancedParams">
+                                <div class="param-group">
+                                    <div class="row">
+                                        <div class="col-6 mb-2">
+                                            <label class="form-label small">图像大小</label>
+                                            <input type="number" class="form-control form-control-sm" name="img_size" id="imgSizeInput" value="256">
+                                        </div>
+                                        <div class="col-6 mb-2">
+                                            <label class="form-label small">BBox Shift (musetalk)</label>
+                                            <input type="number" class="form-control form-control-sm" name="bbox_shift" value="0">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-6 mb-2">
+                                            <label class="form-label small">Pads (上下左右)</label>
+                                            <input type="text" class="form-control form-control-sm" name="pads" value="0 10 0 0" placeholder="0 10 0 0">
+                                        </div>
+                                        <div class="col-6 mb-2">
+                                            <label class="form-label small">人脸检测批大小</label>
+                                            <input type="number" class="form-control form-control-sm" name="face_det_batch_size" value="4">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-submit w-100 mt-2" id="submitBtn">
+                            <i class="bi bi-cloud-arrow-up-fill me-2"></i>提交生成任务
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 任务列表 -->
+        <div class="col-lg-7">
+            <div class="glass-card">
+                <div class="card-header">
+                    <i class="bi bi-list-task"></i> 任务列表
+                    <span class="refresh-spinner" id="refreshInfo">
+                        <i class="bi bi-arrow-repeat spin"></i> 自动更新中...
+                    </span>
+                </div>
+                <div class="card-body" id="taskList" style="max-height: 600px; overflow-y: auto;">
+                    <div class="text-center py-5 text-muted">
+                        <div class="spinner-border spinner-border-sm me-2"></div>
+                        正在加载任务列表...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const taskForm = document.getElementById('taskForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const taskList = document.getElementById('taskList');
+
+    // 提交任务
+    taskForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>正在上传并创建任务...';
+
+        const formData = new FormData(taskForm);
+
+        try {
+            const response = await fetch('/api/avatar/task', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (result.code === 0) {
+                alert('任务提交成功! Task ID: ' + result.data.task_id);
+                refreshTasks();
+            } else {
+                alert('提交失败: ' + result.msg);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('提交发生网络错误');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-2"></i>提交生成任务';
+        }
+    });
+
+    // 刷新任务列表
+    async function refreshTasks() {
+        try {
+            const response = await fetch('/api/avatar/tasks');
+            const result = await response.json();
+
+            if (result.code === 0) {
+                renderTasks(result.data.tasks);
+            }
+        } catch (error) {
+            console.error('Load tasks failed:', error);
+        }
+    }
+
+    function renderTasks(tasks) {
+        if (!tasks || tasks.length === 0) {
+            taskList.innerHTML = '<div class="text-center py-5 text-muted">暂无任务</div>';
+            return;
+        }
+
+        let html = '';
+        tasks.forEach(task => {
+            const date = new Date(task.start_time * 1000).toLocaleString();
+            const statusClass = `status-${task.status}`;
+            const isPending = task.status === 'pending';
+
+            html += `
+                <div class="task-item">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <div class="fw-bold text-primary small"># ${task.task_id}</div>
+                            <div class="small text-muted mt-1">
+                                <span class="badge bg-secondary me-1">${task.model_type}</span>
+                                <span class="me-2">Avatar: <b>${task.avatar_id}</b></span>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge-status ${statusClass}">${task.status.toUpperCase()}</span>
+                            <div class="small text-muted mt-1" style="font-size: 0.7rem;">${date}</div>
+                        </div>
+                    </div>
+
+                    ${task.status !== 'completed' ? `
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" style="width: ${task.progress}%"
+                             aria-valuenow="${task.progress}" aria-valuemin="0" aria-valuemax="100">
+                             ${task.progress}%
+                        </div>
+                    </div>` : ''}
+
+                    ${task.error_msg ? `<div class="alert alert-danger p-2 mt-2 small">${task.error_msg}</div>` : ''}
+
+                    <div class="d-flex justify-content-end mt-2">
+                        ${isPending ? `
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTask('${task.task_id}')">
+                            <i class="bi bi-trash"></i> 取消任务
+                        </button>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        taskList.innerHTML = html;
+    }
+
+    async function deleteTask(taskId) {
+        if (!confirm('确定要取消此 Pending 任务吗?')) return;
+
+        try {
+            const response = await fetch(`/api/avatar/task/${taskId}`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            if (result.code === 0) {
+                refreshTasks();
+            } else {
+                alert(result.msg);
+            }
+        } catch (error) {
+            alert('删除请求失败');
+        }
+    }
+
+    // 初始加载及自动定时刷新
+    refreshTasks();
+    setInterval(refreshTasks, 3000);
+
+</script>
+
+</body>
+</html>
