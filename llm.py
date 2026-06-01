@@ -39,6 +39,8 @@ def llm_response(message,avatar_session:'BaseAvatar',datainfo:dict={}):
                 if msg is None:
                     continue
                 lastpos=0
+                # 过滤 Markdown 加粗符号 **
+                msg = msg.replace('**', '')
                 #msglist = re.split('[,.!;:，。！?]',msg)
                 for i, char in enumerate(msg):
                     if char in ",.!;:，。！？：；" :
