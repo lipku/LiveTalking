@@ -1,16 +1,37 @@
 # ============================================================
-#  zl-talking 依赖清单（完整版）
-#  注: torch/torchvision/torchaudio 通过 conda 安装 CUDA 版本
-#  建议:
-#    conda install pytorch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 pytorch-cuda=12.9 -c pytorch -c nvidia
-#    或:
-#    pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu129
+#  zl-talking 依赖清单（沐曦 Metax C500 适配版）
+#
+#  ⚠️ 重要：本文件用于 Metax C500 环境，与 CUDA 环境不通用。
+#
+#  ⚠️ 严禁通过 pip 安装或升级 PyTorch 系列包！
+#     沐曦适配版已预装（带 +metax 后缀），pip 拉取的是社区公版，
+#     会直接覆盖 Metax 适配版，导致 GPU 无法调用。
+#
+#  预装 Metax 适配版（如下版本严禁 pip install）:
+#     torch         2.6.0+metax2.33.1.7
+#     torchvision   0.15.1+metax2.33.1.7
+#     torchaudio    2.4.1+metax2.33.1.7
+#
+#  检查命令:
+#     pip list | grep -e torch -e maca -e metax -e +
+#
+#  安装方式:
+#     pip install -r requirements.txt
+#
+#  ⚠️ 若已有大量预装包，pip install 会自动跳过已安装的包。
+#     但 torch/torchvision/torchaudio 已从本文件移除（防误操作）。
+#     请在本地手动确认它们已存在即可，不要 pip 安装它们。
 # ============================================================
 
-# ===== PyTorch 系列 (通过 conda 安装, 版本与 CUDA 版本绑定) =====
-torch
-torchvision
-torchaudio
+# ============================================================
+#  ⛔ PyTorch 系列 — 已由沐曦官方预装，严禁 pip 安装！⛔
+#  如果误执行 pip install torch，建议立即回滚容器环境快照。
+# ============================================================
+# 预装版本（不要取消注释）:
+#   torch         2.6.0+metax2.33.1.7
+#   torchvision   0.15.1+metax2.33.1.7
+#   torchaudio    2.4.1+metax2.33.1.7
+# ============================================================
 
 # ===== 模型训练 / 推理 =====
 torch-ema
@@ -20,13 +41,16 @@ accelerate
 diffusers
 transformers>=4.46.0
 face_alignment
-onnxruntime-gpu
+# onnxruntime-gpu → 不兼容 Metax C500（CUDA only），已注释
+# 若需 ONNX 推理，安装 CPU 版: pip install onnxruntime
+# onnxruntime-gpu
 omegaconf
 einops
 lpips==0.1.3
 
 # ===== 数值 / 科学计算 =====
-numpy 
+# 以下包服务器已预装（标准版，非 Metax 专属），pip 会自动跳过
+numpy
 scipy
 pandas
 scikit-learn
@@ -34,12 +58,15 @@ packaging
 numba
 
 # ===== 图像 / 视频处理 =====
-opencv-python
+# 注意: opencv-python 与 opencv-python-headless 冲突，选其一即可
+#       服务器已预装 opencv-python-headless，故注释 opencv-python
+# opencv-python
 opencv-python-headless
 pillow
 trimesh
 PyMCubes
-dearpygui
+# dearpygui → GUI 库，无头服务器不需要，有桌面环境时取消注释
+# dearpygui
 matplotlib
 tqdm
 rich
@@ -68,10 +95,13 @@ ffmpeg-python
 
 # ===== TTS 插件 =====
 edge_tts
-websockets==12.0
+# 注意: 服务器预装 websockets 15.0.1，放宽版本约束以兼容
+websockets>=12.0,<16
 requests
-#gradio_client
-#azure-cognitiveservices-speech
+
+# gradio_client 和 azure-cognitiveservices-speech 按需启用
+# gradio_client
+# azure-cognitiveservices-speech
 
 # ===== LLM =====
 openai

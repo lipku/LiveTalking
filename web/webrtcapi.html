@@ -3,184 +3,965 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>zl-talking</title>
+    <title>臻灵数字人 demo</title>
     <style>
-    button {
-        padding: 8px 16px;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    video {
-        width: 100%;
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #1a1a3e 50%, #24243e 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
 
-    .option {
-        margin-bottom: 8px;
-    }
+        .container {
+            max-width: 880px;
+            width: 100%;
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 30px 34px 34px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+        }
 
-    #media {
-        max-width: 1280px;
-    }
+        /* ---- 顶部标题 ---- */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 16px;
+            margin-bottom: 22px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #a78bfa, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 1px;
+        }
+
+        .header .tag {
+            font-size: 12px;
+            background: rgba(167,139,250,0.15);
+            border: 1px solid rgba(167,139,250,0.25);
+            color: #a78bfa;
+            padding: 4px 14px;
+            border-radius: 20px;
+        }
+
+        /* ---- 选项行 ---- */
+        .option {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .option label {
+            font-size: 14px;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .option input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.25);
+            border-radius: 5px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .option input[type="checkbox"]:checked {
+            background: #7c3aed;
+            border-color: #7c3aed;
+        }
+        .option input[type="checkbox"]:checked::after {
+            content: "✓";
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        /* ---- 按钮 ---- */
+        button {
+            padding: 9px 22px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            color: #fff;
+        }
+        button:active { transform: scale(0.96); }
+        button:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; }
+
+        #start {
+            background: linear-gradient(135deg, #059669, #10b981);
+            box-shadow: 0 4px 15px rgba(5,150,105,0.3);
+        }
+        #start:hover:not(:disabled) {
+            box-shadow: 0 6px 25px rgba(5,150,105,0.45);
+            transform: translateY(-1px);
+        }
+
+        #stop {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            box-shadow: 0 4px 15px rgba(220,38,38,0.3);
+        }
+        #stop:hover:not(:disabled) {
+            box-shadow: 0 6px 25px rgba(220,38,38,0.45);
+            transform: translateY(-1px);
+        }
+
+        #btn_start_record, #btn_stop_record {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        #btn_start_record:hover:not(:disabled), #btn_stop_record:hover:not(:disabled) {
+            background: rgba(255,255,255,0.14);
+        }
+
+        /* ---- 表单 & 输入框 ---- */
+        .form-inline {
+            margin-top: 14px;
+        }
+
+        .form-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .form-group p {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            width: 100%;
+            margin-bottom: 2px;
+        }
+
+        .form-group textarea {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.3);
+            color: #e0e0e0;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group textarea:focus {
+            border-color: rgba(124,58,237,0.5);
+        }
+        .form-group textarea::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+
+        .form-group button[type="submit"] {
+            background: linear-gradient(135deg, #7c3aed, #6366f1);
+            box-shadow: 0 4px 15px rgba(124,58,237,0.35);
+            white-space: nowrap;
+            align-self: flex-end;
+        }
+        .form-group button[type="submit"]:hover:not(:disabled) {
+            box-shadow: 0 6px 25px rgba(124,58,237,0.5);
+            transform: translateY(-1px);
+        }
+
+        /* ---- 媒体区 ---- */
+        #media {
+            max-width: 100%;
+            margin-top: 18px;
+        }
+
+        #media h2 {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        video {
+            width: 100%;
+            max-width: 600px;
+            border-radius: 14px;
+            display: block;
+            background: #000;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        }
+
+        /* ---- 聊天消息区（新增） ---- */
+        .chat-area {
+            margin-top: 18px;
+        }
+
+        .chat-messages {
+            background: rgba(0,0,0,0.25);
+            border-radius: 14px;
+            padding: 14px 16px;
+            max-height: 260px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            scroll-behavior: smooth;
+        }
+        .chat-messages::-webkit-scrollbar { width: 5px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
+
+        .msg {
+            max-width: 88%;
+            padding: 10px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+            word-break: break-word;
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #7c3aed, #6366f1);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+        .msg.assistant {
+            align-self: flex-start;
+            background: rgba(255,255,255,0.08);
+            color: #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+        .msg.system {
+            align-self: center;
+            background: rgba(245,158,11,0.12);
+            color: #fbbf24;
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            max-width: 92%;
+        }
+
+        .msg .sender {
+            font-size: 11px;
+            font-weight: 600;
+            opacity: 0.55;
+            margin-bottom: 2px;
+        }
+
+        .thinking-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #a78bfa;
+            margin-top: 4px;
+        }
+        .thinking-indicator.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(167,139,250,0.2);
+            border-top-color: #a78bfa;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ---- 大模型切换按钮 ---- */
+        .model-toggle {
+            display: inline-flex;
+            gap: 6px;
+            margin-left: 10px;
+        }
+        .model-toggle .btn-mode {
+            padding: 3px 14px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: transparent;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .model-toggle .btn-mode:hover {
+            background: rgba(255,255,255,0.06);
+        }
+        .model-toggle .btn-mode.active {
+            background: rgba(124,58,237,0.25);
+            border-color: #7c3aed;
+            color: #a78bfa;
+        }
+
+        /* ---- 配置信息展示与编辑 ---- */
+        .config-info {
+            margin-top: 14px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+            overflow: hidden;
+        }
+        .ci-section {
+            padding: 12px 16px;
+        }
+        .ci-section + .ci-section {
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .ci-section .ci-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .ci-section .ci-header .ci-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 12px;
+            border-radius: 10px;
+        }
+        .ci-section .ci-header .ci-badge.local {
+            background: rgba(16,185,129,0.15);
+            color: #34d399;
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+        .ci-section .ci-header .ci-badge.online {
+            background: rgba(96,165,250,0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(96,165,250,0.2);
+        }
+        .ci-section .ci-header .ci-badge.active-local {
+            background: rgba(16,185,129,0.25);
+            border-color: #34d399;
+            box-shadow: 0 0 10px rgba(16,185,129,0.25);
+        }
+        .ci-section .ci-header .ci-badge.active-online {
+            background: rgba(96,165,250,0.25);
+            border-color: #60a5fa;
+            box-shadow: 0 0 10px rgba(96,165,250,0.25);
+        }
+        .ci-section .ci-header .ci-badge.inactive {
+            opacity: 0.4;
+        }
+        .ci-section .ci-field {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+        .ci-section .ci-field .ci-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            min-width: 36px;
+            flex-shrink: 0;
+        }
+        .ci-section .ci-field input {
+            flex: 1;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.25);
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .ci-section .ci-field input:focus {
+            border-color: rgba(124,58,237,0.4);
+            background: rgba(0,0,0,0.4);
+            color: #e0e0e0;
+        }
+        .ci-section .ci-field input::placeholder {
+            color: rgba(255,255,255,0.2);
+        }
+        .ci-section .ci-field input.ci-key-field {
+            -webkit-text-security: disc;
+        }
+        .ci-section .ci-actions {
+            display: flex;
+            gap: 6px;
+            justify-content: flex-end;
+            margin-top: 6px;
+        }
+        .ci-section .ci-actions .btn-ci {
+            padding: 3px 14px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            color: #fff;
+            transition: all 0.15s;
+        }
+        .ci-section .ci-actions .btn-ci:active { transform: scale(0.95); }
+        .ci-section .ci-actions .btn-ci-save {
+            background: linear-gradient(135deg, #7c3aed, #6366f1);
+        }
+        .ci-section .ci-actions .btn-ci-save:hover { opacity: 0.85; }
+        .ci-section .ci-actions .btn-ci-edit {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .ci-section .ci-actions .btn-ci-edit:hover { background: rgba(255,255,255,0.14); }
+        .ci-status {
+            font-size: 11px;
+            color: rgba(255,255,255,0.25);
+            padding: 0 16px 10px;
+        }
+
+        /* ---- 响应式 ---- */
+        @media (max-width: 600px) {
+            .container { padding: 20px 16px; }
+            .header h1 { font-size: 20px; }
+            video { max-width: 100%; }
+            .form-group textarea { min-width: 140px; }
+            .msg { max-width: 95%; }
+        }
     </style>
 </head>
 <body>
 
-<div class="option">
-    <input id="use-stun" type="checkbox"/>
-    <label for="use-stun">Use STUN server</label>
-</div>
-<button id="start" onclick="start()">Start</button>
-<button id="stop" style="display: none" onclick="stop()">Stop</button>
-<button class="btn btn-primary" id="btn_start_record">Start Recording</button>
-<button class="btn btn-primary" id="btn_stop_record" disabled>Stop Recording</button>
-<!-- <button class="btn btn-primary" id="btn_download">Download Video</button> -->
-<input type="hidden" id="sessionid" value="0">
-<form class="form-inline" id="echo-form">
-    <div class="form-group">
-      <p>input text</p>
+<div class="container">
 
-      <textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message">test</textarea>
+    <!-- 顶部标题 -->
+    <div class="header">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <img src="logo.png" alt="logo" style="height:32px;width:auto;border-radius:8px;">
+            <h1>臻灵数字人 demo</h1>
+        </div>
+        <span class="tag">Maca · WebRTC</span>
     </div>
-    <button type="submit" class="btn btn-default">Send</button>
-  </form>
 
-<div id="media">
-    <h2>Media</h2>
+    <!-- STUN 选项 -->
+    <div class="option">
+        <label>
+            <input id="use-stun" type="checkbox"/>
+            Use STUN server
+        </label>
+    </div>
 
-    <audio id="audio" autoplay="true"></audio>
-    <video id="video" style="width:600px;" autoplay="true" playsinline="true"></video>
+    <!-- 控制按钮 -->
+    <button id="start" onclick="start()">Start</button>
+    <button id="stop" style="display: none" onclick="stop()">Stop</button>
+    <button class="btn btn-primary" id="btn_start_record">Start Recording</button>
+    <button class="btn btn-primary" id="btn_stop_record" disabled>Stop Recording</button>
+    <input type="hidden" id="sessionid" value="0">
+
+    <!-- 发送表单（原样保留，连接大模型） -->
+    <form class="form-inline" id="echo-form">
+        <div class="form-group">
+            <p>
+                输入文字 · 大模型
+                <span class="model-toggle">
+                    <button type="button" class="btn-mode" id="btnModeLocal">本地</button>
+                    <button type="button" class="btn-mode" id="btnModeOnline">线上</button>
+                </span>
+            </p>
+            <textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message" placeholder="输入您的问题，按 Enter 发送…">test</textarea>
+            <button type="submit" class="btn btn-default" id="sendBtn">Send</button>
+            <div class="thinking-indicator" id="thinkingIndicator">
+                <div class="spinner"></div>
+                <span>大模型思考中…</span>
+            </div>
+        </div>
+    </form>
+
+    <!-- 大模型配置信息（可编辑） -->
+    <div class="config-info" id="configInfo">
+        <!-- 本地配置 -->
+        <div class="ci-section" id="ciLocal">
+            <div class="ci-header">
+                <span class="ci-badge local active-local" id="badgeLocal">本地模型</span>
+                <span style="font-size:11px;color:rgba(255,255,255,0.2);">当前使用</span>
+            </div>
+            <div class="ci-field">
+                <span class="ci-label">地址</span>
+                <input type="text" id="ciLocalUrl" value="http://10.192.218.200:9999/v1/chat/completions" placeholder="API 地址"/>
+            </div>
+            <div class="ci-field">
+                <span class="ci-label">Key</span>
+                <input type="text" id="ciLocalKey" value="GKojYD_InnHO2D5RVG4Zsw86Fz-J4bf_72j8ZNEy-uDIT9UaVg" placeholder="API Key"/>
+            </div>
+            <div class="ci-field">
+                <span class="ci-label">模型</span>
+                <input type="text" id="ciLocalModel" value="DeepSeek-V4-Flash-w8a8-mtp" placeholder="模型名称"/>
+            </div>
+            <div class="ci-actions">
+                <button class="btn-ci btn-ci-save" onclick="saveLocalConfig()">保存</button>
+            </div>
+        </div>
+        <!-- 线上配置 -->
+        <div class="ci-section" id="ciOnline">
+            <div class="ci-header">
+                <span class="ci-badge online inactive" id="badgeOnline">线上模型</span>
+                <span style="font-size:11px;color:rgba(255,255,255,0.2);"></span>
+            </div>
+            <div class="ci-field">
+                <span class="ci-label">地址</span>
+                <input type="text" id="ciOnlineUrl" value="https://api.deepseek.com/v1/chat/completions" placeholder="https://api.deepseek.com/v1/chat/completions"/>
+            </div>
+            <div class="ci-field">
+                <span class="ci-label">Key</span>
+                <input type="text" id="ciOnlineKey" value="sk-e6bf0554f90446ceb163fab475cb4ea7" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"/>
+            </div>
+            <div class="ci-field">
+                <span class="ci-label">模型</span>
+                <input type="text" id="ciOnlineModel" value="deepseek-v4-flash" placeholder="deepseek-v4-flash"/>
+            </div>
+            <div class="ci-actions">
+                <button class="btn-ci btn-ci-save" onclick="saveOnlineConfig()">保存</button>
+            </div>
+        </div>
+    </div>
+    <div class="ci-status" id="ciStatus">当前模式：本地 · 可编辑上方配置后点击保存</div>
+
+    <!-- 媒体区 -->
+    <div id="media">
+        <h2>Media</h2>
+        <audio id="audio" autoplay="true"></audio>
+        <video id="video" style="width:600px;" autoplay="true" playsinline="true"></video>
+    </div>
+
+    <!-- 对话消息区 -->
+    <div class="chat-area" id="chatArea">
+        <div class="chat-messages" id="chatMessages">
+        </div>
+    </div>
+
 </div>
 
-<script src="client.js"></script>
-<!-- <script type="text/javascript" src="http://cdn.sockjs.org/sockjs-0.3.4.js"></script> -->
 <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
-</body>
-<script type="text/javascript" charset="utf-8">
 
-	$(document).ready(function() {
-	  // var host = window.location.hostname
-	  // var ws = new WebSocket("ws://"+host+":8000/humanecho");
-	  // //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
-	  // ws.onopen = function() {
-		// console.log('Connected');
-	  // };
-	  // ws.onmessage = function(e) {
-		// console.log('Received: ' + e.data);
-		// data = e
-		// var vid = JSON.parse(data.data); 
-		// console.log(typeof(vid),vid)
-		// //document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
-		
-	  // };
-	  // ws.onclose = function(e) {
-		// console.log('Closed');
-	  // };
+<script>
+// ===== DeepSeek 配置（初始值，页面加载后从 input 读取） =====
+var CURRENT_MODE = 'local'; // 'local' | 'online'
 
-	  $('#echo-form').on('submit', function(e) {
-      e.preventDefault();
-      var message = $('#message').val();
-      console.log('Sending: ' + message);
-      console.log('sessionid: ',document.getElementById('sessionid').value);
-      fetch('/human', {
+// ===== WebRTC（原始逻辑，未改动） =====
+var pc = null;
+
+function negotiate() {
+    pc.addTransceiver('video', { direction: 'recvonly' });
+    pc.addTransceiver('audio', { direction: 'recvonly' });
+    return pc.createOffer().then((offer) => {
+        return pc.setLocalDescription(offer);
+    }).then(() => {
+        return new Promise((resolve) => {
+            if (pc.iceGatheringState === 'complete') {
+                resolve();
+            } else {
+                const checkState = () => {
+                    if (pc.iceGatheringState === 'complete') {
+                        pc.removeEventListener('icegatheringstatechange', checkState);
+                        resolve();
+                    }
+                };
+                pc.addEventListener('icegatheringstatechange', checkState);
+            }
+        });
+    }).then(() => {
+        var offer = pc.localDescription;
+        return fetch('./offer', {
             body: JSON.stringify({
-                text: message,
-                type: 'echo',
-                interrupt: true,
+                sdp: offer.sdp,
+                type: offer.type,
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'POST'
+        });
+    }).then((response) => {
+        return response.json();
+    }).then((answer) => {
+        document.getElementById('sessionid').value = answer.sessionid
+        return pc.setRemoteDescription(answer);
+    }).catch((e) => {
+        alert(e);
+    });
+}
+
+function start() {
+    var config = {
+        sdpSemantics: 'unified-plan'
+    };
+
+    if (document.getElementById('use-stun').checked) {
+        config.iceServers = [{ urls: ['stun:stun.l.google.com:19302'] }];
+    }
+
+    pc = new RTCPeerConnection(config);
+
+    pc.addEventListener('track', (evt) => {
+        if (evt.track.kind == 'video') {
+            document.getElementById('video').srcObject = evt.streams[0];
+        } else {
+            document.getElementById('audio').srcObject = evt.streams[0];
+        }
+    });
+
+    document.getElementById('start').style.display = 'none';
+    negotiate();
+    document.getElementById('stop').style.display = 'inline-block';
+}
+
+function stop() {
+    document.getElementById('stop').style.display = 'none';
+    setTimeout(() => {
+        pc.close();
+    }, 500);
+}
+
+window.onunload = function(event) {
+    setTimeout(() => {
+        pc.close();
+    }, 500);
+};
+
+window.onbeforeunload = function (e) {
+    setTimeout(() => {
+        pc.close();
+    }, 500);
+    e = e || window.event
+    if (e) {
+        e.returnValue = '关闭提示'
+    }
+    return '关闭提示'
+}
+
+// ===== 聊天 & DeepSeek 集成 =====
+var conversationHistory = [];
+
+function getCurrentConfig() {
+    if (CURRENT_MODE === 'local') {
+        return {
+            url: document.getElementById('ciLocalUrl').value.trim(),
+            key: document.getElementById('ciLocalKey').value.trim(),
+            model: document.getElementById('ciLocalModel').value.trim()
+        };
+    } else {
+        return {
+            url: document.getElementById('ciOnlineUrl').value.trim(),
+            key: document.getElementById('ciOnlineKey').value.trim(),
+            model: document.getElementById('ciOnlineModel').value.trim()
+        };
+    }
+}
+
+function appendMessage(role, content) {
+    var container = document.getElementById('chatMessages');
+    var div = document.createElement('div');
+    div.className = 'msg ' + role;
+    var sender = role === 'user' ? '你' : (role === 'assistant' ? '臻灵·AI' : '');
+    if (sender) {
+        var s = document.createElement('div');
+        s.className = 'sender';
+        s.textContent = sender;
+        div.appendChild(s);
+    }
+    var text = document.createElement('div');
+    text.innerHTML = content.replace(/\n/g, '<br>');
+    div.appendChild(text);
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function setThinking(active) {
+    var indicator = document.getElementById('thinkingIndicator');
+    var sendBtn = document.getElementById('sendBtn');
+    if (active) {
+        indicator.classList.add('active');
+        sendBtn.disabled = true;
+    } else {
+        indicator.classList.remove('active');
+        sendBtn.disabled = false;
+    }
+}
+
+async function callDeepSeek(messages) {
+    var cfg = getCurrentConfig();
+    if (!cfg.url) throw new Error('当前模式未配置 API 地址，请在上方配置后保存');
+    if (!cfg.key) throw new Error('当前模式未配置 API Key');
+    if (!cfg.model) throw new Error('当前模式未配置模型名称');
+    var response = await fetch(cfg.url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + cfg.key
+        },
+        body: JSON.stringify({
+            model: cfg.model,
+            messages: messages,
+            stream: false,
+            max_tokens: 1024,
+            temperature: 0.7
+        })
+    });
+    if (!response.ok) {
+        var errText = await response.text();
+        throw new Error('API error ' + response.status + ': ' + errText);
+    }
+    var data = await response.json();
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        throw new Error('API 返回格式异常');
+    }
+    return data.choices[0].message.content;
+}
+
+// ===== 模式切换 & 配置保存 =====
+function switchMode(mode) {
+    CURRENT_MODE = mode;
+
+    // 切换按钮高亮
+    $('#btnModeLocal').toggleClass('active', mode === 'local');
+    $('#btnModeOnline').toggleClass('active', mode === 'online');
+
+    // 配置区块高亮
+    var $local = $('#ciLocal');
+    var $online = $('#ciOnline');
+    var $badgeLocal = $('#badgeLocal');
+    var $badgeOnline = $('#badgeOnline');
+
+    if (mode === 'local') {
+        $local.css('opacity', '1');
+        $online.css('opacity', '0.45');
+        $badgeLocal.removeClass('inactive active-online').addClass('active-local');
+        $badgeOnline.removeClass('active-online active-local').addClass('inactive');
+        $local.find('.ci-header span:last-child').text('当前使用');
+        $online.find('.ci-header span:last-child').text('');
+    } else {
+        $online.css('opacity', '1');
+        $local.css('opacity', '0.45');
+        $badgeOnline.removeClass('inactive active-local').addClass('active-online');
+        $badgeLocal.removeClass('active-local active-online').addClass('inactive');
+        $online.find('.ci-header span:last-child').text('当前使用');
+        $local.find('.ci-header span:last-child').text('');
+    }
+
+    updateStatusText();
+}
+
+function saveLocalConfig() {
+    var url = document.getElementById('ciLocalUrl').value.trim();
+    var key = document.getElementById('ciLocalKey').value.trim();
+    var model = document.getElementById('ciLocalModel').value.trim();
+    if (!url || !key || !model) {
+        alert('请完整填写本地模型的 API 地址、Key 和模型名称');
+        return;
+    }
+    // 如果当前是本地模式，测通一下
+    if (CURRENT_MODE === 'local') {
+        quickTest(url, key, model);
+    }
+    updateStatusText('✅ 本地配置已保存');
+}
+
+function saveOnlineConfig() {
+    var url = document.getElementById('ciOnlineUrl').value.trim();
+    var key = document.getElementById('ciOnlineKey').value.trim();
+    var model = document.getElementById('ciOnlineModel').value.trim();
+    if (!url || !key || !model) {
+        alert('请完整填写线上模型的 API 地址、Key 和模型名称');
+        return;
+    }
+    if (CURRENT_MODE === 'online') {
+        quickTest(url, key, model);
+    }
+    updateStatusText('✅ 线上配置已保存');
+}
+
+function quickTest(url, key, model) {
+    // 轻量测试：发送一条简单请求验证配置可用
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + key
+        },
+        body: JSON.stringify({
+            model: model,
+            messages: [{ role: 'user', content: 'hi' }],
+            max_tokens: 5,
+            stream: false
+        })
+    }).then(function(r) {
+        if (r.ok) {
+            updateStatusText('✅ 配置已保存，连接测试通过');
+        } else {
+            return r.text().then(function(t) {
+                updateStatusText('⚠️ 已保存，但测试请求返回 ' + r.status + ': ' + t.slice(0, 60));
+            });
+        }
+    }).catch(function(err) {
+        updateStatusText('⚠️ 已保存，但连接测试失败: ' + err.message);
+    });
+}
+
+function updateStatusText(msg) {
+    var el = document.getElementById('ciStatus');
+    if (msg) {
+        el.textContent = msg;
+    } else {
+        var modeLabel = CURRENT_MODE === 'local' ? '本地' : '线上';
+        el.textContent = '当前模式：' + modeLabel + ' · 可编辑上方配置后点击保存';
+    }
+}
+
+// ===== jQuery 逻辑（原始 + 新增大模型） =====
+$(document).ready(function() {
+    // 默认本地模式
+    switchMode('local');
+
+    // 模式切换（用 jQuery 绑定，避免 form 内 onclick 问题）
+    $('#btnModeLocal').on('click', function(e) {
+        e.preventDefault();
+        switchMode('local');
+    });
+    $('#btnModeOnline').on('click', function(e) {
+        e.preventDefault();
+        switchMode('online');
+    });
+
+    // Enter 发送
+    $('#message').on('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            $('#echo-form').trigger('submit');
+        }
+    });
+
+    $('#echo-form').on('submit', async function(e) {
+        e.preventDefault();
+        var message = $('#message').val().trim();
+        if (!message) return;
+        var sessionid = String(document.getElementById('sessionid').value);
+
+        // 显示用户消息
+        appendMessage('user', message);
+        $('#message').val('');
+
+        // 调用大模型
+        setThinking(true);
+        try {
+            // 先检查配置是否完整
+            var cfg = getCurrentConfig();
+            if (!cfg.url || !cfg.key || !cfg.model) {
+                throw new Error('请先在「' + (CURRENT_MODE === 'local' ? '本地' : '线上') + '模型」中填写完整配置并保存');
+            }
+
+            conversationHistory.push({ role: 'user', content: message });
+            var reply = await callDeepSeek(conversationHistory);
+            conversationHistory.push({ role: 'assistant', content: reply });
+
+            // 显示 AI 回复
+            appendMessage('assistant', reply);
+
+            // 发送到数字人驱动播报
+            if (sessionid && sessionid !== '0') {
+                fetch('./human', {
+                    body: JSON.stringify({
+                        text: reply,
+                        type: 'echo',
+                        interrupt: true,
+                        sessionid: sessionid,
+                    }),
+                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST'
+                });
+            } else {
+                appendMessage('system', 'ℹ️ 请先点击 Start 连接数字人');
+            }
+        } catch (err) {
+            appendMessage('system', '⚠️ 大模型连接异常');
+            console.error('DeepSeek error:', err);
+        } finally {
+            setThinking(false);
+        }
+    });
+
+    // 录制按钮（原始逻辑，未改动）
+    $('#btn_start_record').click(function() {
+        fetch('./record', {
+            body: JSON.stringify({
+                type: 'start_record',
                 sessionid: String(document.getElementById('sessionid').value),
             }),
             headers: {
                 'Content-Type': 'application/json'
             },
             method: 'POST'
-      });
-      //ws.send(message);
-      $('#message').val('');
-	  });
-
-    $('#btn_start_record').click(function() {
-        // 开始录制
-        console.log('Starting recording...');
-        fetch('/record', {
-            body: JSON.stringify({
-                    type: 'start_record',
-                    sessionid: String(document.getElementById('sessionid').value),
-                }),
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-            method: 'POST'
         }).then(function(response) {
             if (response.ok) {
-                console.log('Recording started.');
                 $('#btn_start_record').prop('disabled', true);
                 $('#btn_stop_record').prop('disabled', false);
-                // $('#btn_download').prop('disabled', true);
-            } else {
-                console.error('Failed to start recording.');
             }
-        }).catch(function(error) {
-            console.error('Error:', error);
         });
     });
 
     $('#btn_stop_record').click(function() {
-        // 结束录制
-        console.log('Stopping recording...');
-        fetch('/record', {
+        fetch('./record', {
             body: JSON.stringify({
-                    type: 'end_record',
-                    sessionid: String(document.getElementById('sessionid').value),
-                }),
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                type: 'end_record',
+                sessionid: String(document.getElementById('sessionid').value),
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
             method: 'POST'
         }).then(function(response) {
             if (response.ok) {
-                console.log('Recording stopped.');
                 $('#btn_start_record').prop('disabled', false);
                 $('#btn_stop_record').prop('disabled', true);
-                // $('#btn_download').prop('disabled', false);
-            } else {
-                console.error('Failed to stop recording.');
             }
-        }).catch(function(error) {
-            console.error('Error:', error);
         });
     });
-
-    // $('#btn_download').click(function() {
-    //     // 下载视频文件
-    //     console.log('Downloading video...');
-    //     fetch('/record_lasted.mp4', {
-    //         method: 'GET'
-    //     }).then(function(response) {
-    //         if (response.ok) {
-    //             return response.blob();
-    //         } else {
-    //             throw new Error('Failed to download the video.');
-    //         }
-    //     }).then(function(blob) {
-    //         // 创建一个 Blob 对象
-    //         const url = window.URL.createObjectURL(blob);
-    //         // 创建一个隐藏的可下载链接
-    //         const a = document.createElement('a');
-    //         a.style.display = 'none';
-    //         a.href = url;
-    //         a.download = 'record_lasted.mp4';
-    //         document.body.appendChild(a);
-    //         // 触发下载
-    //         a.click();
-    //         // 清理
-    //         window.URL.revokeObjectURL(url);
-    //         document.body.removeChild(a);
-    //         console.log('Video downloaded successfully.');
-    //     }).catch(function(error) {
-    //         console.error('Error:', error);
-    //     });
-    // });
-
-	});
-
-  
+});
 </script>
+
+</body>
 </html>

@@ -55,6 +55,8 @@ from utils.logger import logger
 import copy
 import gc
 
+from utils.hardware_monitor import log_device_info, log_resource_usage, start_monitoring
+
 
 app = Flask(__name__)
 #sockets = Sockets(app)
@@ -120,6 +122,10 @@ async def download_record(request):
 
 def main():
     global rtc_manager, opt, model,load_avatar
+
+    log_device_info()
+    start_monitoring(interval=120)
+
     # 解析命令行参数
     from config import parse_args
     opt = parse_args()

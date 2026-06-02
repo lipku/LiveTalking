@@ -32,8 +32,7 @@ class CosyVoiceTTS(BaseTTS):
             'prompt_text': reftext
         }
         try:
-            files = [('prompt_wav', ('prompt_wav', open(reffile, 'rb'), 'application/octet-stream'))]
-            res = requests.request("GET", f"{server_url}/inference_zero_shot", data=payload, files=files, stream=True)
+            res = requests.request("POST", f"{server_url}/inference_zero_shot", data=payload, stream=True)
             
             end = time.perf_counter()
             logger.info(f"cosy_voice Time to make POST: {end-start}s")

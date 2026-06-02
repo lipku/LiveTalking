@@ -2,7 +2,10 @@ import onnxruntime as ort
 
 print("Available providers:", ort.get_available_providers())
 
-if 'CUDAExecutionProvider' in ort.get_available_providers():
-    print("✅ CUDA is available for ONNX Runtime")
+available = ort.get_available_providers()
+if 'CUDAExecutionProvider' in available:
+    print("✅ CUDA — ONNX Runtime 使用 NVIDIA GPU")
+elif 'MACAExecutionProvider' in available:
+    print("✅ MACA — ONNX Runtime 使用沐曦 Metax GPU")
 else:
-    print("❌ CUDA is NOT available")
+    print("❌ ONNX Runtime 无 GPU Provider 可用，将使用 CPU")

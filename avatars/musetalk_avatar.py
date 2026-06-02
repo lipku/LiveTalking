@@ -78,10 +78,9 @@ class ONNXMuseTalkWrapper:
         self.model = self  # 添加 model 属性，指向自身，兼容 unet.model 调用方式
         logger.info(f"Loading MuseTalk ONNX model from: {onnx_path}")
         
-        # 配置 ONNX Runtime
-        is_cuda = hasattr(device, 'type') and device.type == 'cuda'
-        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'] if is_cuda else ['CPUExecutionProvider']
-        logger.info(f"Device type: {device}, is_cuda: {is_cuda}")
+        # 配置 ONNX Runtime — 自动适配 NVIDIA CUDA / 沐曦 MACA / CPU
+        from utils.device import get_onnx_providers
+        providers = get_onnx_providers()
         logger.info(f"ONNX Runtime available providers: {ort.get_available_providers()}")
         logger.info(f"Trying to use providers: {providers}")
         self.session = ort.InferenceSession(onnx_path, providers=providers)
@@ -168,9 +167,9 @@ class ONNXVAEDecoderWrapper:
         
         logger.info(f"Loading MuseTalk VAE ONNX model from: {onnx_path}")
         
-        # 配置 ONNX Runtime
-        is_cuda = hasattr(device, 'type') and device.type == 'cuda'
-        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'] if is_cuda else ['CPUExecutionProvider']
+        # 配置 ONNX Runtime — 自动适配 NVIDIA CUDA / 沐曦 MACA / CPU
+        from utils.device import get_onnx_providers
+        providers = get_onnx_providers()
         self.session = ort.InferenceSession(onnx_path, providers=providers)
         
         actual_providers = self.session.get_providers()
