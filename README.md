@@ -11,12 +11,6 @@
 
 实时交互流式数字人，实现音视频同步对话，基本可以达到商用效果。
 
-<div align="center">
-  <a href="https://www.bilibili.com/video/BV1scwBeyELA/">wav2lip 效果</a> |
-  <a href="https://www.bilibili.com/video/BV1G1421z73r/">ernerf 效果</a> |
-  <a href="https://www.bilibili.com/video/BV1bUwezvEnG/">musetalk 效果</a>
-</div>
-
 **声明**：本项目基于 LiveTalking 改造，版权归四川昱扬科技有限公司所有。
 
 ---
@@ -169,29 +163,6 @@ docker run --gpus all -it --network=host --rm \
 
 代码位于 `/root/zl-talking`，先 `git pull` 拉取最新代码，然后按快速开始章节运行。
 
-**云镜像**：
-- [UCloud 镜像](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_zl-talking)
-- [AutoDL 镜像](https://www.codewithgpu.com/i/zl-talking/zl-talking/base)
-
----
-
-## 商业版
-
-提供以下扩展功能：
-
-1. 高清 wav2lip 模型
-2. 完全语音交互 + 唤醒词打断
-3. 实时同步字幕 + 播报事件
-4. 实时音频流输入接口
-5. 数字人透明背景 + 动态背景
-6. Avatar 实时切换
-7. 多数字人同屏互动
-8. 摄像头驱动形象动作表情
-9. LiveKit 对接
-
-详情：<https://zl-talking-doc.readthedocs.io/zh-cn/latest/service.html>
-
----
 
 ## 声明
 
@@ -201,13 +172,3 @@ docker run --gpus all -it --network=host --rm \
 
 ---
 
-如果本项目对你有帮助，帮忙点个 star ⭐
-
-- 知识星球：<https://t.zsxq.com/7NMyO>
-- 微信：wxwubug（加群请备注）
-- Telegram：<https://t.me/zl-talking>
-- Discord：<https://discord.gg/n5jSPCT3Uf>
-- 邮箱：contact@yuyangtech.com
-- 公众号：数字人技术
-
-<img src="./assets/qrcode-wechat.jpg" align="middle" width="200"/>
