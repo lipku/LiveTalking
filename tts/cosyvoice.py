@@ -22,53 +22,11 @@ class CosyVoiceTTS(BaseTTS):
         self.session.mount('http://', adapter)
         self.session.mount('https://', adapter)
         
-        # 检测模型版本并自动配置流式
-        self.is_cosyvoice2, self.use_streaming = self._detect_and_configure(opt)
+        # 流式开关：默认关闭，仅当 COSYVOICE_STREAMING=True 时开启
+        self.use_streaming = getattr(opt, 'COSYVOICE_STREAMING', False)
         self.stream_chunk_size = getattr(opt, 'COSYVOICE_STREAM_CHUNK', 9600)
         
-        logger.info(f"CosyVoiceTTS initialized: is_cosyvoice2={self.is_cosyvoice2}, streaming={self.use_streaming}")
-
-    def _detect_and_configure(self, opt) -> tuple[bool, bool]:
-        """
-        检测模型版本并决定是否启用流式
-        
-        Returns:
-            (is_cosyvoice2, use_streaming)
-        """
-        server_url = opt.TTS_SERVER
-        
-        # 优先级 1: 用户强制指定
-        if hasattr(opt, 'COSYVOICE_STREAMING'):
-            user_choice = opt.COSYVOICE_STREAMING
-            logger.info(f"[TTS_CONFIG] User forced COSYVOICE_STREAMING={user_choice}")
-            # 尝试检测模型版本用于日志记录
-            try:
-                resp = self.session.get(f"{server_url}/model_info", timeout=5)
-                is_cv2 = 'CosyVoice2' in resp.json().get('model_name', '')
-            except:
-                is_cv2 = False
-            return is_cv2, user_choice
-        
-        # 优先级 2: 自动检测
-        try:
-            resp = self.session.get(f"{server_url}/model_info", timeout=5)
-            if resp.status_code == 200:
-                info = resp.json()
-                model_name = info.get('model_name', '')
-                is_cv2 = 'CosyVoice2' in model_name
-                
-                if is_cv2:
-                    logger.info(f"[TTS_CONFIG] Auto-detected CosyVoice2 model: {model_name}, enabling streaming")
-                    return True, True
-                else:
-                    logger.info(f"[TTS_CONFIG] Detected non-CosyVoice2 model: {model_name}, disabling streaming")
-                    return False, False
-        except Exception as e:
-            logger.warning(f"[TTS_CONFIG] Failed to detect model version: {e}, defaulting to non-streaming")
-        
-        # 优先级 3: 默认保守策略
-        logger.info("[TTS_CONFIG] Could not detect model, defaulting to non-streaming mode")
-        return False, False
+        logger.info(f"CosyVoiceTTS initialized: streaming={self.use_streaming}")
 
     def txt_to_audio(self, msg: tuple[str, dict]):
         """保持接口不变，内部自动选择流式或非流式"""

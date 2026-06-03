@@ -7,6 +7,15 @@ import json
 import os
 
 
+def str_to_bool(value):
+    """将字符串转换为 bool，支持 True/False/1/0"""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in ('true', '1', 'yes')
+    return bool(value)
+
+
 def str_or_int(value):
     """尝试转换为 int，失败则返回 str"""
     try:
@@ -53,6 +62,10 @@ def parse_args():
                         help="参考文件名或语音模型ID")
     parser.add_argument('--REF_TEXT', type=str, default=None)
     parser.add_argument('--TTS_SERVER', type=str, default='http://127.0.0.1:9880')
+    parser.add_argument('--COSYVOICE_STREAMING', type=str_to_bool, default=False,
+                        help="启用 CosyVoice 流式推理（默认 False，传 True 开启）")
+    parser.add_argument('--COSYVOICE_STREAM_CHUNK', type=int, default=9600,
+                        help="流式音频块大小（字节），默认 9600 (约 200ms @ 24kHz)")
 
     # ─── 传输 ─────────────────────────────────────────────────────────
     parser.add_argument('--transport', type=str, default='webrtc',
