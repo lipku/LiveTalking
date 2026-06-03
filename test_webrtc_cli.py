@@ -225,7 +225,9 @@ def print_tts_stats():
         
         if tts_stats["text_sent_time"]:
             total_duration = tts_stats["audio_end_time"] - tts_stats["text_sent_time"]
-            _print(f"  └ ⏱️  总响应时长: {total_duration:.3f}s")
+            _print(f"  ├ ⏱️  总响应时长: {total_duration:.3f}s")
+            _print(f"  ├  推理思考时间: {(tts_stats['audio_start_time'] - tts_stats['text_sent_time']):.3f}s")
+            _print(f"  └ 📹 录制时长: {total_duration:.3f}s（从文本发送到说话结束）")
     elif tts_stats["audio_start_time"]:
         _print(f"  └ ⚠️ 数字人仍在说话或未检测到结束")
     else:
@@ -363,47 +365,80 @@ async def run_client(
             ) as resp:
                 if resp.status == 200:
                     _print("✓ TTS 请求已发送，等待数字人响应...")
+                    # 从发送文本开始录制，包含推理思考时间
+                    sink.start_recording()
                 else:
                     body = await resp.text()
                     _print(f"✗ TTS 请求失败 ({resp.status}): {body}")
 
     # ── 持续接收 ────────────────────────────────────────────
     if text_sent:
-        # 有文本：等待音频开始，然后检测静默结束
+        # 有文本：轮询 /is_speaking 检测说话结束，静默检测为备用
         _print(f"等待数字人说话（最多 {max_wait}s）...")
         waited = 0
         check_interval = 0.1
+        speak_poll_interval = 0.5  # 每 500ms 轮询 /is_speaking
+        was_speaking = False  # 记录上一次说话状态
         
-        while waited < max_wait:
-            await asyncio.sleep(check_interval)
-            waited += check_interval
-            
-            if pc.connectionState in ("failed", "closed"):
-                _print("连接已断开，提前退出")
-                break
-            
-            # 检测音频是否开始
-            if tts_stats["audio_start_time"] is not None:
-                # 音频已开始，检测静默
-                silence = time.time() - tts_stats["last_audio_time"]
-                if silence >= tts_stats["audio_silence_threshold"]:
-                    tts_stats["audio_end_time"] = tts_stats["last_audio_time"]
-                    _print(f"✓ 检测到数字人说话结束（静默 {silence:.1f}s）")
-                    sink.stop_recording()
+        async with aiohttp.ClientSession() as http_session:
+            while waited < max_wait:
+                await asyncio.sleep(check_interval)
+                waited += check_interval
+                
+                if pc.connectionState in ("failed", "closed"):
+                    _print("连接已断开，提前退出")
                     break
-            
-            # 每 5 秒打印一次状态
-            if int(waited) % 5 == 0 and waited % 1 < check_interval:
-                if tts_stats["audio_start_time"] is None:
-                    _print(f"  等待中... 已等待 {waited:.1f}s，尚未开始说话")
-                else:
-                    speech_duration = time.time() - tts_stats["audio_start_time"]
-                    _print(f"  说话中... 已说话 {speech_duration:.1f}s")
-        else:
-            _print(f"⚠ 达到最大等待时间 {max_wait}s")
-            if tts_stats["last_audio_time"]:
-                tts_stats["audio_end_time"] = tts_stats["last_audio_time"]
-                sink.stop_recording()
+                
+                # 每 speak_poll_interval 秒轮询 /is_speaking
+                if int(waited * 100) % int(speak_poll_interval * 100) < 10:
+                    try:
+                        async with http_session.post(
+                            f"{server_url}/is_speaking",
+                            json={"sessionid": stats["sessionid"]},
+                            headers={"Content-Type": "application/json"},
+                            timeout=aiohttp.ClientTimeout(total=2),
+                        ) as resp:
+                            if resp.status == 200:
+                                data = await resp.json()
+                                is_speaking = data.get("data", False)
+                                
+                                if is_speaking:
+                                    was_speaking = True
+                                
+                                # speaking: true → false，说话结束，等待10秒后停止录制
+                                if was_speaking and not is_speaking:
+                                    _print(f"✓ 数字人说话结束（/is_speaking = false），等待10秒后停止录制...")
+                                    tts_stats["audio_end_time"] = time.time()
+                                    await asyncio.sleep(10)
+                                    sink.stop_recording()
+                                    break
+                    except:
+                        pass
+                
+                # 静默检测（备用方案）
+                if tts_stats["audio_start_time"] is not None:
+                    now = time.time()
+                    silence = now - tts_stats["last_audio_time"]
+                    if silence >= tts_stats["audio_silence_threshold"]:
+                        if sink._recording:
+                            tts_stats["audio_end_time"] = tts_stats["last_audio_time"]
+                            _print(f"✓ 检测到数字人说话结束（静默 {silence:.1f}s），等待10秒后停止录制...")
+                            await asyncio.sleep(10)
+                            sink.stop_recording()
+                        break
+                
+                # 每 5 秒打印一次状态
+                if int(waited) % 5 == 0 and waited % 1 < check_interval:
+                    if tts_stats["audio_start_time"] is None:
+                        _print(f"  等待中... 已等待 {waited:.1f}s，尚未开始说话")
+                    else:
+                        speech_duration = time.time() - tts_stats["audio_start_time"]
+                        _print(f"  说话中... 已说话 {speech_duration:.1f}s")
+            else:
+                _print(f"⚠ 达到最大等待时间 {max_wait}s")
+                if tts_stats["last_audio_time"]:
+                    tts_stats["audio_end_time"] = tts_stats["last_audio_time"]
+                    sink.stop_recording()
     else:
         # 无文本：按固定时长接收
         _print(f"接收中，将持续 {duration} 秒...")
