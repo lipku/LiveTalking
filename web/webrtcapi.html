@@ -711,6 +711,34 @@ function appendMessage(role, content) {
     container.scrollTop = container.scrollHeight;
 }
 
+/**
+ * 过滤不可朗读字符，使文本适合 TTS 数字人播报
+ * - 移除 Emoji/颜文字（Unicode 表情符号）
+ * - 移除 Markdown 标记：**粗体**、*斜体*、`行内码`、~~删除线~~、> 引用
+ * - 保留文字内容和标点
+ */
+function sanitizeForTTS(text) {
+    return text
+        // 移除 Emoji（Unicode 表情符号区块）
+        .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
+        .replace(/[\u{2600}-\u{27BF}]/gu, '')     // 杂项符号
+        .replace(/[\u{2700}-\u{27BF}]/gu, '')     // 装饰符号
+        .replace(/[\u{2300}-\u{23FF}]/gu, '')     // 杂项技术符号
+        .replace(/[\u{FE00}-\u{FE0F}]/gu, '')     // 变体选择符（Emoji 颜色）
+        .replace(/[\u{200D}]/gu, '')              // 零宽连字（Emoji 组合）
+        // 移除常见颜文字符号
+        .replace(/[\(\)\[\]{}（）【】]/g, '')       // 保留括号内容但移除括号本身（可选）
+        .replace(/[❤️🔥⭐✨🌟💫💥💢💤💦💪💯]/g, '')
+        // 移除 Markdown 标记
+        .replace(/\*{1,2}([^*]+)\*{1,2}/g, '$1') // **粗体** 和 *斜体*
+        .replace(/`{1,3}[^`]*`{1,3}/g, '')       // `行内码`
+        .replace(/~{2}([^~]+)~{2}/g, '$1')        // ~~删除线~~
+        .replace(/^>\s+/gm, '')                   // > 引用行
+        // 清理多余空格
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 function setThinking(active) {
     var indicator = document.getElementById('thinkingIndicator');
     var sendBtn = document.getElementById('sendBtn');
@@ -901,11 +929,11 @@ $(document).ready(function() {
             // 显示 AI 回复
             appendMessage('assistant', reply);
 
-            // 发送到数字人驱动播报
+            // 发送到数字人驱动播报（过滤不可朗读字符）
             if (sessionid && sessionid !== '0') {
                 fetch('./human', {
                     body: JSON.stringify({
-                        text: reply,
+                        text: sanitizeForTTS(reply),
                         type: 'echo',
                         interrupt: true,
                         sessionid: sessionid,
