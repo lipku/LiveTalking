@@ -138,6 +138,10 @@ class ONNXMuseTalkWrapper:
         # 将输出转换回 torch.Tensor（保持 float16）
         output_tensor = torch.from_numpy(outputs[0]).to(device=device, dtype=torch.float16)
         
+        # MetaX ONNX 兼容: 对 latent 值做裁剪，防止极端值导致 VAE 解码退化（画面模糊）
+        # 正常 SD VAE latent 范围约 [-3, 3]，超出 ±3.5 会触发 VAE clamp(0,1) 截断像素细节
+        output_tensor = torch.clamp(output_tensor, -3.5, 3.5)
+        
         t3 = time.time()
         
         # 每10次推理打印一次性能分析
@@ -331,6 +335,9 @@ class MuseReal(BaseAvatar):
                                     self.timesteps, 
                                     encoder_hidden_states=audio_feature_batch).sample
         t4 = time.time()
+        
+        # 安全裁剪: 防止 MetaX GPU 上 latent 异常值导致 VAE 解码画面模糊
+        pred_latents = torch.clamp(pred_latents, -3.5, 3.5)
         
         # DEBUG: 检查 pred_latents 的统计信息
         if index % 30 == 0:

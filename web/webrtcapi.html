@@ -493,25 +493,6 @@
     <button class="btn btn-primary" id="btn_stop_record" disabled>Stop Recording</button>
     <input type="hidden" id="sessionid" value="0">
 
-    <!-- 发送表单（原样保留，连接大模型） -->
-    <form class="form-inline" id="echo-form">
-        <div class="form-group">
-            <p>
-                输入文字 · 大模型
-                <span class="model-toggle">
-                    <button type="button" class="btn-mode" id="btnModeLocal">本地</button>
-                    <button type="button" class="btn-mode" id="btnModeOnline">线上</button>
-                </span>
-            </p>
-            <textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message" placeholder="输入您的问题，按 Enter 发送…">test</textarea>
-            <button type="submit" class="btn btn-default" id="sendBtn">Send</button>
-            <div class="thinking-indicator" id="thinkingIndicator">
-                <div class="spinner"></div>
-                <span>大模型思考中…</span>
-            </div>
-        </div>
-    </form>
-
     <!-- 大模型配置信息（可编辑） -->
     <div class="config-info" id="configInfo">
         <!-- 本地配置 -->
@@ -565,8 +546,27 @@
     <div id="media">
         <h2>Media</h2>
         <audio id="audio" autoplay="true"></audio>
-        <video id="video" style="width:600px;" autoplay="true" playsinline="true"></video>
+        <video id="video" style="width:100%; max-width:100%; height:auto;" autoplay="true" playsinline="true"></video>
     </div>
+
+    <!-- 发送表单（原样保留，连接大模型） -->
+    <form class="form-inline" id="echo-form">
+        <div class="form-group">
+            <p>
+                输入文字 · 大模型
+                <span class="model-toggle">
+                    <button type="button" class="btn-mode" id="btnModeLocal">本地</button>
+                    <button type="button" class="btn-mode" id="btnModeOnline">线上</button>
+                </span>
+            </p>
+            <textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message" placeholder="输入您的问题，按 Enter 发送…">test</textarea>
+            <button type="submit" class="btn btn-default" id="sendBtn">Send</button>
+            <div class="thinking-indicator" id="thinkingIndicator">
+                <div class="spinner"></div>
+                <span>大模型思考中…</span>
+            </div>
+        </div>
+    </form>
 
     <!-- 对话消息区 -->
     <div class="chat-area" id="chatArea">
