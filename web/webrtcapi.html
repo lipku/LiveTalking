@@ -202,6 +202,63 @@
             transform: translateY(-1px);
         }
 
+        /* ---- ASR 图标按钮 ---- */
+        .asr-buttons {
+            display: flex;
+            gap: 6px;
+            align-self: flex-end;
+            margin-right: 2px;
+        }
+        .btn-asr {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .btn-asr:hover {
+            background: rgba(124,58,237,0.2);
+            border-color: rgba(124,58,237,0.4);
+            color: #c4b5fd;
+        }
+        .btn-asr.recording {
+            background: rgba(239,68,68,0.2);
+            border-color: rgba(239,68,68,0.5);
+            color: #fca5a5;
+            animation: pulse-rec 1.2s infinite;
+        }
+        @keyframes pulse-rec {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
+            50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+        }
+        .btn-asr svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        .asr-status {
+            font-size: 11px;
+            color: rgba(255,255,255,0.35);
+            align-self: flex-end;
+            margin-right: 4px;
+            white-space: nowrap;
+        }
+        .asr-status.processing {
+            color: #c4b5fd;
+        }
+        .asr-status.error {
+            color: #fca5a5;
+        }
+
         /* ---- 媒体区 ---- */
         #media {
             max-width: 100%;
@@ -560,6 +617,16 @@
                 </span>
             </p>
             <textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message" placeholder="输入您的问题，按 Enter 发送…">test</textarea>
+            <div class="asr-buttons">
+                <button type="button" class="btn-asr" id="btnMic" title="麦克风录音识别">
+                    <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M17 11a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-3.07A7 7 0 0 0 19 11h-2Z"/></svg>
+                </button>
+                <button type="button" class="btn-asr" id="btnUpload" title="上传音频文件识别">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/></svg>
+                </button>
+                <input type="file" id="audioFileInput" accept="audio/*" style="display:none">
+            </div>
+            <span class="asr-status" id="asrStatus"></span>
             <button type="submit" class="btn btn-default" id="sendBtn">Send</button>
             <div class="thinking-indicator" id="thinkingIndicator">
                 <div class="spinner"></div>
@@ -880,6 +947,97 @@ function updateStatusText(msg) {
     }
 }
 
+// ===== ASR 语音识别（SenseVoice） =====
+var ASR_URL = 'http://localhost:60000/api/v1/asr';
+var mediaRecorder = null;
+var audioChunks = [];
+var isRecording = false;
+
+function setAsrStatus(msg, type) {
+    var el = document.getElementById('asrStatus');
+    el.textContent = msg;
+    el.className = 'asr-status' + (type ? ' ' + type : '');
+}
+
+function callASR(audioBlob, filename) {
+    setAsrStatus('识别中…', 'processing');
+    var formData = new FormData();
+    formData.append('files', audioBlob, filename || 'audio.wav');
+    formData.append('lang', 'zh');
+    formData.append('use_itn', 'true');
+    formData.append('keys', filename || 'audio');
+
+    return fetch(ASR_URL, {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(resp) {
+        if (!resp.ok) {
+            throw new Error('ASR 服务返回 ' + resp.status);
+        }
+        return resp.json();
+    })
+    .then(function(data) {
+        var items = data.result || [];
+        if (items.length === 0) {
+            throw new Error('ASR 未识别到内容');
+        }
+        var text = items[0].text || items[0].clean_text || '';
+        setAsrStatus('');
+        return text;
+    })
+    .catch(function(err) {
+        setAsrStatus('识别失败: ' + err.message, 'error');
+        throw err;
+    });
+}
+
+function fillAndSubmit(text) {
+    if (!text.trim()) return;
+    document.getElementById('message').value = text.trim();
+    document.getElementById('echo-form').dispatchEvent(new Event('submit'));
+}
+
+// --- 麦克风录音 ---
+function startRecording() {
+    audioChunks = [];
+    return navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(function(stream) {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '' });
+        mediaRecorder.ondataavailable = function(e) {
+            if (e.data.size > 0) audioChunks.push(e.data);
+        };
+        mediaRecorder.onstop = function() {
+            stream.getTracks().forEach(function(t) { t.stop(); });
+            var blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            callASR(blob, 'recording.webm').then(fillAndSubmit).catch(function() {});
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        document.getElementById('btnMic').classList.add('recording');
+        setAsrStatus('录音中…点击停止', 'processing');
+    })
+    .catch(function(err) {
+        setAsrStatus('麦克风不可用: ' + err.message, 'error');
+        throw err;
+    });
+}
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+    }
+    isRecording = false;
+    document.getElementById('btnMic').classList.remove('recording');
+}
+
+// --- 文件上传 ---
+function uploadAudioFile(file) {
+    if (!file) return;
+    setAsrStatus('上传中…', 'processing');
+    callASR(file, file.name).then(fillAndSubmit).catch(function() {});
+}
+
 // ===== jQuery 逻辑（原始 + 新增大模型） =====
 $(document).ready(function() {
     // 默认本地模式
@@ -893,6 +1051,27 @@ $(document).ready(function() {
     $('#btnModeOnline').on('click', function(e) {
         e.preventDefault();
         switchMode('online');
+    });
+
+    // 麦克风录音按钮
+    $('#btnMic').on('click', function(e) {
+        e.preventDefault();
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording().catch(function() {});
+        }
+    });
+
+    // 上传文件按钮
+    $('#btnUpload').on('click', function(e) {
+        e.preventDefault();
+        document.getElementById('audioFileInput').click();
+    });
+    $('#audioFileInput').on('change', function(e) {
+        var file = e.target.files[0];
+        if (file) uploadAudioFile(file);
+        this.value = ''; // 允许重复选择同一文件
     });
 
     // Enter 发送
