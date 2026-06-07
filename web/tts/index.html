@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS 语音管理 - LiveTalking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-bg: #f0f4fc;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --accent-primary: #4361ee;
+            --accent-secondary: #3f37c9;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --border-radius: 16px;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .glass-card .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            padding: 16px 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .glass-card .card-header i {
+            color: var(--accent-primary);
+        }
+
+        .glass-card .card-body {
+            padding: 20px;
+        }
+
+        /* Buttons */
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(67, 97, 238, 0.3);
+            color: #fff;
+        }
+
+        .btn-primary-custom:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary-custom:disabled {
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-outline-custom {
+            border: 2px solid var(--accent-primary);
+            color: var(--accent-primary);
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 8px 16px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-outline-custom:hover {
+            background: var(--accent-primary);
+            color: #fff;
+        }
+
+        .btn-outline-custom:active {
+            transform: scale(0.97);
+        }
+
+        .btn-danger-custom {
+            background: #ef4444;
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-danger-custom:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Form */
+        label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .param-hint {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        ::placeholder {
+            color: #9ca3af !important;
+            opacity: 1;
+        }
+
+        /* Voice List */
+        .voice-table {
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        .voice-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+            padding: 10px 12px;
+        }
+
+        .voice-table td {
+            padding: 10px 12px;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .voice-table tbody tr {
+            transition: background 0.2s;
+        }
+
+        .voice-table tbody tr:hover {
+            background: rgba(67, 97, 238, 0.04);
+        }
+
+        .badge-preset {
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        .badge-uploaded {
+            background: #d1fae5;
+            color: #065f46;
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        .voice-list-container {
+            max-height: 380px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        /* Audio Player */
+        .audio-preview {
+            width: 100%;
+            margin-top: 12px;
+            border-radius: 8px;
+        }
+
+        /* Loading Spinner */
+        .spinner-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner-overlay.show {
+            display: flex;
+        }
+
+        .spinner-box {
+            background: #fff;
+            border-radius: 16px;
+            padding: 30px 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+        }
+
+        .custom-toast {
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            color: #fff;
+            font-weight: 500;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease;
+            min-width: 280px;
+        }
+
+        .custom-toast.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .custom-toast.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .custom-toast.info {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Server status indicator */
+        .server-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.on {
+            background: #10b981;
+        }
+
+        .status-dot.off {
+            background: #ef4444;
+        }
+
+        /* Waveform animation */
+        .playing-indicator {
+            display: none;
+            align-items: center;
+            gap: 2px;
+            margin-left: 8px;
+        }
+
+        .playing-indicator.active {
+            display: inline-flex;
+        }
+
+        .wave-bar {
+            width: 3px;
+            background: var(--accent-primary);
+            border-radius: 2px;
+            animation: wave 0.8s ease-in-out infinite;
+        }
+
+        .wave-bar:nth-child(1) {
+            height: 10px;
+            animation-delay: 0s;
+        }
+
+        .wave-bar:nth-child(2) {
+            height: 18px;
+            animation-delay: 0.1s;
+        }
+
+        .wave-bar:nth-child(3) {
+            height: 14px;
+            animation-delay: 0.2s;
+        }
+
+        .wave-bar:nth-child(4) {
+            height: 20px;
+            animation-delay: 0.3s;
+        }
+
+        .wave-bar:nth-child(5) {
+            height: 12px;
+            animation-delay: 0.4s;
+        }
+
+        @keyframes wave {
+            0%,
+            100% {
+                transform: scaleY(0.5);
+            }
+            50% {
+                transform: scaleY(1.2);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Spinner Overlay -->
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner-box">
+            <div class="spinner-border text-primary mb-2" role="status"></div>
+            <div class="fw-bold" id="spinnerText">处理中...</div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark navbar-custom">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand"><i class="bi bi-soundwave me-2"></i>TTS 语音管理</span>
+            <div class="d-flex align-items-center gap-3">
+                <a href="/tts/index-en.html" class="text-white-50 small text-decoration-none">English</a>
+                <span class="server-status text-white-50">
+                    <span class="status-dot off" id="serverDot"></span>
+                    <span id="serverStatusText">未连接</span>
+                </span>
+                <a href="/index.html" class="text-white-50 small text-decoration-none"><i class="bi bi-house"></i> 主页</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+
+        <!-- Server Configuration -->
+        <div class="glass-card">
+            <div class="card-header"><i class="bi bi-gear-fill"></i> 服务器配置</div>
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-9">
+                        <label class="form-label">TTS 服务器地址</label>
+                        <input type="text" class="form-control" id="serverUrl"
+                        placeholder="http://localhost:8091"
+                        value="http://localhost:8091">
+                        <div class="param-hint mt-1">vLLM Omni 服务的 base URL（例如 http://your-server:8091）</div>
+                    </div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button class="btn-primary-custom flex-grow-1" onclick="checkServer()">
+                            <i class="bi bi-plug"></i> 连接测试
+                        </button>
+                        <button class="btn-outline-custom" onclick="saveConfig()" title="保存配置">
+                            <i class="bi bi-floppy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Left Column: Voice List & Clone -->
+            <div class="col-lg-7">
+                <!-- Voice List -->
+                <div class="glass-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-people-fill"></i> 语音列表</span>
+                        <div class="d-flex gap-2 align-items-center">
+                            <span class="badge bg-light text-muted" id="voiceCount">0 个语音</span>
+                            <button class="btn-outline-custom btn-sm" onclick="refreshVoices()">
+                                <i class="bi bi-arrow-clockwise"></i> 刷新
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="voice-list-container" id="voiceListContainer">
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                                请先连接服务器，然后点击"刷新"获取语音列表
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload / Clone Voice -->
+                <div class="glass-card">
+                    <div class="card-header"><i class="bi bi-cloud-upload-fill"></i> 上传克隆语音</div>
+                    <div class="card-body">
+                        <form id="cloneForm" onsubmit="return false;">
+                            <input type="hidden" id="cloneConsent">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">音频样本 <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="file" class="form-control form-control-sm" id="cloneAudioFile"
+                                        accept="audio/*" onchange="onAudioFileChange()">
+                                        <button class="btn btn-outline-custom btn-sm" type="button" id="btnTranscribe" disabled
+                                        onclick="transcribeAudio()" title="自动识别音频文本">
+                                            <i class="bi bi-mic"></i> 识别
+                                        </button>
+                                    </div>
+                                    <div class="param-hint mt-1">支持 wav, mp3, flac, ogg, aac, webm, mp4（最大 10MB）</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">语音名称 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="cloneName"
+                                    placeholder="例如：my_custom_voice">
+                                    <div class="param-hint mt-1">唯一名称，用于后续合成时选择</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">参考文本 <span class="text-danger">*</span></label>
+                                    <textarea class="form-control form-control-sm" id="cloneRefText" rows="2"
+                                    placeholder="音频样本的准确转录文本，点击音频旁的"识别"按钮自动生成"></textarea>
+                                    <div class="param-hint mt-1">提供准确的转录文本可启用更高质量的上下文克隆</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">说话人描述</label>
+                                    <input type="text" class="form-control form-control-sm" id="cloneDescription"
+                                    placeholder="例如：温暖的女声旁白、沉稳的男中音（可选）">
+                                    <div class="param-hint mt-1">自由格式的语音特征描述</div>
+                                </div>
+                                <div class="col-12">
+                                    <button type="button" class="btn-primary-custom" onclick="uploadVoice()" id="btnUpload">
+                                        <i class="bi bi-cloud-upload"></i> 上传克隆
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Speech Synthesis -->
+            <div class="col-lg-5">
+                <div class="glass-card">
+                    <div class="card-header"><i class="bi bi-chat-text-fill"></i> 语音合成测试</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">选择语音 <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" id="synthVoice">
+                                <option value="">-- 请先刷新语音列表 --</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">合成文本 <span class="text-danger">*</span></label>
+                            <textarea class="form-control form-control-sm" id="synthText" rows="3"
+                        placeholder="输入要合成语音的文本...">你好，欢迎使用LiveTalking数字人实时驱动系统。</textarea>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">语速</label>
+                            <div class="input-group input-group-sm">
+                                <input type="range" class="form-range" id="synthSpeed" min="0.25" max="4.0" step="0.05" value="1.0"
+                                oninput="document.getElementById('synthSpeedVal').textContent=this.value">
+                                <span class="input-group-text" id="synthSpeedVal" style="min-width:42px;">1.0</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">语言</label>
+                            <select class="form-select form-select-sm" id="synthLanguage">
+                                <option value="Auto">自动检测</option>
+                                <option value="Chinese">中文</option>
+                                <option value="English">English</option>
+                                <option value="Japanese">日本語</option>
+                                <option value="Korean">한국어</option>
+                                <option value="German">Deutsch</option>
+                                <option value="French">Français</option>
+                                <option value="Russian">Русский</option>
+                                <option value="Portuguese">Português</option>
+                                <option value="Spanish">Español</option>
+                                <option value="Italian">Italiano</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">输出格式</label>
+                            <select class="form-select form-select-sm" id="synthFormat">
+                                <option value="wav">WAV</option>
+                                <option value="mp3">MP3</option>
+                                <option value="flac">FLAC</option>
+                                <option value="aac">AAC</option>
+                                <option value="opus">Opus</option>
+                                <option value="pcm">PCM</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">任务类型</label>
+                            <select class="form-select form-select-sm" id="synthTaskType">
+                                <option value="CustomVoice">CustomVoice</option>
+                                <option value="VoiceDesign">VoiceDesign</option>
+                                <option value="Base">Base（需克隆语音）</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">语音指令 <span class="param-hint">(可选)</span></label>
+                        <input type="text" class="form-control form-control-sm" id="synthInstructions"
+                        placeholder="例如：用愉快的语气、放慢语速、带有疑问的语气">
+                        <div class="param-hint mt-1">描述语音风格、情感或说话方式</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn-primary-custom flex-grow-1" onclick="synthesize()" id="btnSynthesize">
+                            <i class="bi bi-play-fill"></i> 合成语音
+                        </button>
+                        <button class="btn-outline-custom" onclick="downloadAudio()" id="btnDownload" disabled>
+                            <i class="bi bi-download"></i> 下载
+                        </button>
+                    </div>
+
+                    <!-- Audio Preview -->
+                    <div id="audioPreviewSection" style="display:none; margin-top:16px;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="fw-bold small">合成结果</span>
+                            <div class="playing-indicator" id="playingIndicator">
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                            </div>
+                        </div>
+                        <audio id="audioPreview" class="audio-preview" controls></audio>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced: Ref Audio Settings -->
+        <div class="glass-card" id="refAudioCard" style="display:none;">
+            <div class="card-header"><i class="bi bi-sliders"></i> 高级：参考音频设置 (Base 模式)</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">参考音频 URL</label>
+                        <input type="text" class="form-control form-control-sm" id="refAudioUrl"
+                        placeholder="http://... 或 data:audio/wav;base64,...">
+                        <div class="param-hint mt-1">远程 URL 或 base64 data URL</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">参考文本</label>
+                        <input type="text" class="form-control form-control-sm" id="refText"
+                        placeholder="参考音频的转录文本">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="xVectorOnly">
+                            <label class="form-check-label small">仅使用 X-Vector 模式 <span class="param-hint">(更快，质量略低)</span></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- Hidden audio blob store -->
+        <script>
+            // ==================== State ====================
+            let audioBlob = null;
+            let audioUrl = null;
+            let currentVoices = { voices: [], uploaded_voices: [] };
+
+            // ==================== Utilities ====================
+            function getBaseUrl() {
+                return document.getElementById('serverUrl').value.replace(/\/+$/, '');
+            }
+
+            function showSpinner(text = '处理中...') {
+                document.getElementById('spinnerText').textContent = text;
+                document.getElementById('spinnerOverlay').classList.add('show');
+            }
+
+            function hideSpinner() {
+                document.getElementById('spinnerOverlay').classList.remove('show');
+            }
+
+            function showToast(message, type = 'info') {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = `custom-toast ${type}`;
+                toast.innerHTML = message;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.3s';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3500);
+            }
+
+            function setServerStatus(connected) {
+                const dot = document.getElementById('serverDot');
+                const text = document.getElementById('serverStatusText');
+                if (connected) {
+                    dot.className = 'status-dot on';
+                    text.textContent = '已连接';
+                } else {
+                    dot.className = 'status-dot off';
+                    text.textContent = '未连接';
+                }
+            }
+
+            // ==================== Server Config ====================
+            function saveConfig() {
+                const config = {
+                    serverUrl: document.getElementById('serverUrl').value,
+                };
+                localStorage.setItem('tts_config', JSON.stringify(config));
+                showToast('<i class="bi bi-check-circle me-1"></i>配置已保存到本地', 'success');
+            }
+
+            function loadConfig() {
+                try {
+                    const saved = localStorage.getItem('tts_config');
+                    if (saved) {
+                        const config = JSON.parse(saved);
+                        if (config.serverUrl) document.getElementById('serverUrl').value = config.serverUrl;
+                    }
+                } catch (e) { /* ignore */ }
+            }
+
+            // ==================== Server Check ====================
+            async function checkServer() {
+                const baseUrl = getBaseUrl();
+                if (!baseUrl) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>请输入服务器地址', 'error');
+                    return;
+                }
+
+                showSpinner('正在连接服务器...');
+                setServerStatus(false);
+
+                try {
+                    const resp = await fetch(`${baseUrl}/v1/audio/voices`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        currentVoices = data;
+                        renderVoiceList(data);
+                        populateVoiceSelect(data);
+                        setServerStatus(true);
+                        const presetCount = data.voices?.filter(v => !(data.uploaded_voices || []).map(u => u.name).includes(v)).length || 0;
+                        const uploadCount = data.uploaded_voices?.length || 0;
+                        showToast(`<i class="bi bi-check-circle me-1"></i>连接成功！发现 ${presetCount} 个预设语音，${uploadCount} 个已上传语音`, 'success');
+                    } else {
+                        const errText = await resp.text();
+                        showToast(`<i class="bi bi-x-circle me-1"></i>服务器返回错误: ${resp.status} ${resp.statusText}`, 'error');
+                        console.error('Server check failed:', resp.status, errText);
+                    }
+                } catch (e) {
+                    showToast(`<i class="bi bi-x-circle me-1"></i>无法连接到服务器: ${e.message}`, 'error');
+                    console.error('Connection error:', e);
+                } finally {
+                    hideSpinner();
+                }
+            }
+
+            // ==================== Voice List ====================
+            async function refreshVoices() {
+                const baseUrl = getBaseUrl();
+                if (!baseUrl) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>请先配置服务器地址', 'error');
+                    return;
+                }
+
+                showSpinner('正在获取语音列表...');
+
+                try {
+                    const resp = await fetch(`${baseUrl}/v1/audio/voices`);
+                    if (!resp.ok) {
+                        const errText = await resp.text();
+                        throw new Error(`${resp.status} ${resp.statusText}: ${errText}`);
+                    }
+
+                    const data = await resp.json();
+                    currentVoices = data;
+                    renderVoiceList(data);
+                    populateVoiceSelect(data);
+                    setServerStatus(true);
+
+                    const uploadedNames = (data.uploaded_voices || []).map(v => v.name);
+                    const presetCount = (data.voices || []).filter(v => !uploadedNames.includes(v)).length;
+                    const total = presetCount + (data.uploaded_voices?.length || 0);
+                    showToast(`<i class="bi bi-check-circle me-1"></i>已刷新，共 ${total} 个语音`, 'success');
+                } catch (e) {
+                    showToast(`<i class="bi bi-x-circle me-1"></i>获取失败: ${e.message}`, 'error');
+                    console.error('Refresh voices error:', e);
+                } finally {
+                    hideSpinner();
+                }
+            }
+
+            function renderVoiceList(data) {
+                const container = document.getElementById('voiceListContainer');
+                const countEl = document.getElementById('voiceCount');
+
+                const uploadedVoices = data.uploaded_voices || [];
+                const uploadedNames = new Set(uploadedVoices.map(v => v.name));
+                const presetVoices = (data.voices || []).filter(v => !uploadedNames.has(v));
+                const total = presetVoices.length + uploadedVoices.length;
+
+                countEl.textContent = `${total} 个语音`;
+
+                if (total === 0) {
+                    container.innerHTML = `
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                暂无语音，请上传克隆语音
+                            </div>`;
+                    return;
+                }
+
+                let html = `
+                        <table class="voice-table table table-borderless mb-0">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>类型</th>
+                                    <th>描述 / 参考文本</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                // Preset voices
+                for (const v of presetVoices) {
+                    html += `
+                                <tr>
+                                    <td><strong>${escapeHtml(v)}</strong></td>
+                                    <td><span class="badge-preset">预设</span></td>
+                                    <td><span class="text-muted small">—</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-custom py-0 px-2" onclick="selectVoice('${escapeHtml(v)}')" title="选用此语音">
+                                            <i class="bi bi-check2"></i>
+                                        </button>
+                                    </td>
+                                </tr>`;
+                }
+
+                // Uploaded voices
+                for (const v of uploadedVoices) {
+                    const desc = v.speaker_description || v.ref_text || '—';
+                    const created = v.created_at ? new Date(v.created_at * 1000).toLocaleDateString('zh-CN') : '';
+                    html += `
+                                <tr>
+                                    <td><strong>${escapeHtml(v.name)}</strong></td>
+                                    <td><span class="badge-uploaded">已上传</span></td>
+                                    <td>
+                                        <span class="small">${escapeHtml(desc)}</span>
+                                        ${created ? `<br><span class="param-hint">${created}</span>` : ''}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-custom py-0 px-2" onclick="selectVoice('${escapeHtml(v.name)}')" title="选用此语音">
+                                            <i class="bi bi-check2"></i>
+                                        </button>
+                                        <button class="btn btn-sm text-danger py-0 px-1" onclick="deleteVoice('${escapeHtml(v.name)}')" title="删除此语音">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </td>
+                                </tr>`;
+                }
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
+            function populateVoiceSelect(data) {
+                const select = document.getElementById('synthVoice');
+                select.innerHTML = '<option value="">-- 请选择语音 --</option>';
+
+                const uploadedVoices = data.uploaded_voices || [];
+                const uploadedNames = new Set(uploadedVoices.map(v => v.name));
+                const presetVoices = (data.voices || []).filter(v => !uploadedNames.has(v));
+
+                if (presetVoices.length > 0) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = '预设语音';
+                    for (const v of presetVoices) {
+                        const opt = document.createElement('option');
+                        opt.value = v;
+                        opt.textContent = v;
+                        optgroup.appendChild(opt);
+                    }
+                    select.appendChild(optgroup);
+                }
+
+                if (uploadedVoices.length > 0) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = '已上传语音';
+                    for (const v of uploadedVoices) {
+                        const opt = document.createElement('option');
+                        opt.value = v.name;
+                        opt.textContent = v.name;
+                        optgroup.appendChild(opt);
+                    }
+                    select.appendChild(optgroup);
+                }
+            }
+
+            function selectVoice(name) {
+                document.getElementById('synthVoice').value = name;
+                // Scroll to synth card
+                document.getElementById('synthText').focus();
+                showToast(`<i class="bi bi-check-circle me-1"></i>已选用语音: ${name}`, 'info');
+            }
+
+            async function deleteVoice(name) {
+                if (!confirm(`确定要删除语音 "${name}" 吗？此操作不可撤销。`)) return;
+
+                const baseUrl = getBaseUrl();
+                showSpinner('正在删除语音...');
+
+                try {
+                    // Try DELETE method on the voice endpoint
+                    const resp = await fetch(`${baseUrl}/v1/audio/voices/${encodeURIComponent(name)}`, {
+                        method: 'DELETE',
+                    });
+
+                    if (resp.ok) {
+                        showToast(`<i class="bi bi-check-circle me-1"></i>语音 "${name}" 已删除`, 'success');
+                        await refreshVoices();
+                    } else if (resp.status === 404 || resp.status === 405) {
+                        // Some implementations might not support DELETE, try alternative
+                        showToast(`<i class="bi bi-info-circle me-1"></i>服务器不支持删除操作，请手动管理`, 'info');
+                    } else {
+                        const errText = await resp.text();
+                        throw new Error(`${resp.status}: ${errText}`);
+                    }
+                } catch (e) {
+                    showToast(`<i class="bi bi-x-circle me-1"></i>删除失败: ${e.message}`, 'error');
+                } finally {
+                    hideSpinner();
+                }
+            }
+
+            // ==================== Upload Voice ====================
+            function generateConsentId() {
+                return 'consent_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 10);
+            }
+
+            function onAudioFileChange() {
+                const fileInput = document.getElementById('cloneAudioFile');
+                const btnTranscribe = document.getElementById('btnTranscribe');
+                btnTranscribe.disabled = !fileInput.files || fileInput.files.length === 0;
+            }
+
+            async function transcribeAudio() {
+                const fileInput = document.getElementById('cloneAudioFile');
+                const btnTranscribe = document.getElementById('btnTranscribe');
+
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>请先选择音频文件', 'error');
+                    return;
+                }
+
+                // Check for browser SpeechRecognition support
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    showToast('<i class="bi bi-x-circle me-1"></i>当前浏览器不支持语音识别，请使用 Chrome 或 Edge', 'error');
+                    return;
+                }
+
+                btnTranscribe.disabled = true;
+                showSpinner('正在通过浏览器语音识别...\n请确保麦克风已开启，将播放音频进行识别');
+
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'zh-CN';
+                recognition.interimResults = true;
+                recognition.continuous = true;
+                recognition.maxAlternatives = 1;
+
+                let finalTranscript = '';
+                let recognitionStarted = false;
+
+                // Create audio element to play the file
+                const audio = new Audio();
+                audio.src = URL.createObjectURL(fileInput.files[0]);
+                audio.volume = 0.8;
+
+                recognition.onresult = (event) => {
+                    let interim = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const result = event.results[i];
+                        if (result.isFinal) {
+                            finalTranscript += result[0].transcript;
+                        } else {
+                            interim += result[0].transcript;
+                        }
+                    }
+                    document.getElementById('cloneRefText').value = finalTranscript + interim;
+                };
+
+                recognition.onerror = (event) => {
+                    if (event.error === 'no-speech' || event.error === 'aborted') return;
+                    console.error('Speech recognition error:', event.error);
+                    // Don't show toast for transient errors during playback
+                };
+
+                recognition.onend = () => {
+                    if (!audio.ended && !audio.paused) {
+                        // Recognition ended but audio still playing, restart
+                        try {
+                            if (recognitionStarted) recognition.start();
+                        } catch (e) { /* ignore */ }
+                    }
+                };
+
+                audio.onended = () => {
+                    try { recognition.stop(); } catch (e) { /* ignore */ }
+                    URL.revokeObjectURL(audio.src);
+                    document.getElementById('cloneRefText').value = finalTranscript.trim();
+                    if (finalTranscript.trim()) {
+                        showToast('<i class="bi bi-check-circle me-1"></i>语音识别完成，请核对转录文本', 'success');
+                    } else {
+                        showToast('<i class="bi bi-info-circle me-1"></i>未识别到语音内容，请检查麦克风或手动输入文本', 'info');
+                    }
+                    btnTranscribe.disabled = false;
+                    hideSpinner();
+                };
+
+                audio.onerror = () => {
+                    try { recognition.stop(); } catch (e) { /* ignore */ }
+                    URL.revokeObjectURL(audio.src);
+                    showToast('<i class="bi bi-x-circle me-1"></i>音频播放失败', 'error');
+                    btnTranscribe.disabled = false;
+                    hideSpinner();
+                };
+
+                try {
+                    recognition.start();
+                    recognitionStarted = true;
+                    // Small delay to let recognition initialize before playback
+                    setTimeout(() => audio.play().catch(e => {
+                        try { recognition.stop(); } catch (e2) { /* ignore */ }
+                        showToast('<i class="bi bi-x-circle me-1"></i>音频播放失败: ' + e.message, 'error');
+                        btnTranscribe.disabled = false;
+                        hideSpinner();
+                    }), 300);
+                } catch (e) {
+                    showToast('<i class="bi bi-x-circle me-1"></i>启动语音识别失败: ' + e.message, 'error');
+                    btnTranscribe.disabled = false;
+                    hideSpinner();
+                }
+            }
+
+            async function uploadVoice() {
+                const baseUrl = getBaseUrl();
+                const fileInput = document.getElementById('cloneAudioFile');
+                const nameInput = document.getElementById('cloneName');
+                const consentInput = document.getElementById('cloneConsent');
+                const refTextInput = document.getElementById('cloneRefText');
+                const descInput = document.getElementById('cloneDescription');
+                const btnUpload = document.getElementById('btnUpload');
+
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>请选择音频文件', 'error');
+                    return;
+                }
+                if (!nameInput.value.trim()) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>请输入语音名称', 'error');
+                    return;
+                }
+                if (!refTextInput.value.trim()) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>请填写参考文本（可点击音频旁的"识别"按钮自动生成）', 'error');
+                    return;
+                }
+
+                const file = fileInput.files[0];
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                if (file.size > maxSize) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>音频文件不能超过 10MB', 'error');
+                    return;
+                }
+
+                // Auto-generate consent ID if not set
+                if (!consentInput.value.trim()) {
+                    consentInput.value = generateConsentId();
+                }
+
+                btnUpload.disabled = true;
+                showSpinner('正在上传克隆语音...');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('audio_sample', file);
+                    formData.append('name', nameInput.value.trim());
+                    formData.append('consent', consentInput.value.trim());
+                    formData.append('ref_text', refTextInput.value.trim());
+                    if (descInput.value.trim()) {
+                        formData.append('speaker_description', descInput.value.trim());
+                    }
+
+                    const resp = await fetch(`${baseUrl}/v1/audio/voices`, {
+                        method: 'POST',
+                        body: formData,
+                        // Don't set Content-Type header — the browser will set it with the boundary
+                    });
+
+                    if (resp.ok) {
+                        const result = await resp.json().catch(() => ({}));
+                        showToast(`<i class="bi bi-check-circle me-1"></i>语音 "${nameInput.value.trim()}" 上传成功！`, 'success');
+
+                        // Clear form
+                        fileInput.value = '';
+                        nameInput.value = '';
+                        consentInput.value = generateConsentId();
+                        refTextInput.value = '';
+                        descInput.value = '';
+                        document.getElementById('btnTranscribe').disabled = true;
+
+                        // Refresh voice list
+                        await refreshVoices();
+                    } else {
+                        const errText = await resp.text();
+                        let errMsg = `${resp.status} ${resp.statusText}`;
+                        try {
+                            const errJson = JSON.parse(errText);
+                            errMsg = errJson.detail || errJson.message || errMsg;
+                        } catch (e) { /* use raw text */ }
+                        throw new Error(errMsg);
+                    }
+                } catch (e) {
+                    showToast(`<i class="bi bi-x-circle me-1"></i>上传失败: ${e.message}`, 'error');
+                    console.error('Upload error:', e);
+                } finally {
+                    btnUpload.disabled = false;
+                    hideSpinner();
+                }
+            }
+
+            // ==================== Synthesize ====================
+            async function synthesize() {
+                const baseUrl = getBaseUrl();
+                const voice = document.getElementById('synthVoice').value;
+                const text = document.getElementById('synthText').value.trim();
+                const speed = parseFloat(document.getElementById('synthSpeed').value);
+                const language = document.getElementById('synthLanguage').value;
+                const format = document.getElementById('synthFormat').value;
+                const taskType = document.getElementById('synthTaskType').value;
+                const instructions = document.getElementById('synthInstructions').value.trim();
+                const btnSynthesize = document.getElementById('btnSynthesize');
+
+                if (!voice) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>请先选择语音', 'error');
+                    return;
+                }
+                if (!text) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>请输入合成文本', 'error');
+                    return;
+                }
+
+                btnSynthesize.disabled = true;
+                showSpinner('正在合成语音...');
+
+                // Clean up previous audio
+                if (audioUrl) {
+                    URL.revokeObjectURL(audioUrl);
+                    audioUrl = null;
+                }
+                audioBlob = null;
+
+                try {
+                    const body = {
+                        input: text,                        
+                        voice: voice,
+                        response_format: format,
+                        speed: speed,
+                        language: language,
+                        task_type: taskType,
+                    };
+
+                    if (instructions) {
+                        body.instructions = instructions;
+                    }
+
+                    // Add ref_audio params for Base task type
+                    if (taskType === 'Base') {
+                        const refAudioUrl = document.getElementById('refAudioUrl').value.trim();
+                        const refText = document.getElementById('refText').value.trim();
+                        const xVectorOnly = document.getElementById('xVectorOnly').checked;
+
+                        if (refAudioUrl) body.ref_audio = refAudioUrl;
+                        if (refText) body.ref_text = refText;
+                        if (xVectorOnly) body.x_vector_only_mode = true;
+                    }
+
+                    const resp = await fetch(`${baseUrl}/v1/audio/speech`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(body),
+                    });
+
+                    if (!resp.ok) {
+                        const errText = await resp.text();
+                        let errMsg = `${resp.status} ${resp.statusText}`;
+                        try {
+                            const errJson = JSON.parse(errText);
+                            errMsg = errJson.detail || errJson.message || errMsg;
+                        } catch (e) { /* use raw text */ }
+                        throw new Error(errMsg);
+                    }
+
+                    // Get audio blob from response
+                    audioBlob = await resp.blob();
+
+                    // Create preview URL
+                    const mimeType = getMimeType(format);
+                    audioUrl = URL.createObjectURL(new Blob([audioBlob], { type: mimeType }));
+
+                    // Show audio player
+                    const previewSection = document.getElementById('audioPreviewSection');
+                    const audioEl = document.getElementById('audioPreview');
+                    previewSection.style.display = 'block';
+                    audioEl.src = audioUrl;
+                    audioEl.load();
+
+                    // Enable download button
+                    document.getElementById('btnDownload').disabled = false;
+
+                    // Show playing indicator when audio plays
+                    audioEl.onplay = () => document.getElementById('playingIndicator').classList.add('active');
+                    audioEl.onpause = () => document.getElementById('playingIndicator').classList.remove('active');
+                    audioEl.onended = () => document.getElementById('playingIndicator').classList.remove('active');
+
+                    showToast(`<i class="bi bi-check-circle me-1"></i>语音合成成功！`, 'success');
+                } catch (e) {
+                    showToast(`<i class="bi bi-x-circle me-1"></i>合成失败: ${e.message}`, 'error');
+                    console.error('Synthesis error:', e);
+                } finally {
+                    btnSynthesize.disabled = false;
+                    hideSpinner();
+                }
+            }
+
+            function downloadAudio() {
+                if (!audioBlob) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>请先合成语音', 'error');
+                    return;
+                }
+
+                const format = document.getElementById('synthFormat').value;
+                const voice = document.getElementById('synthVoice').value || 'tts';
+                const ext = format === 'pcm' ? 'pcm' : format;
+                const mimeType = getMimeType(format);
+
+                const url = URL.createObjectURL(new Blob([audioBlob], { type: mimeType }));
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${voice}_${Date.now()}.${ext}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            function getMimeType(format) {
+                const map = {
+                    'wav': 'audio/wav',
+                    'mp3': 'audio/mpeg',
+                    'flac': 'audio/flac',
+                    'aac': 'audio/aac',
+                    'opus': 'audio/opus',
+                    'pcm': 'audio/pcm',
+                };
+                return map[format] || 'audio/wav';
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // ==================== Event Listeners ====================
+            // Show/hide ref audio card based on task type
+            document.getElementById('synthTaskType').addEventListener('change', function() {
+                const refCard = document.getElementById('refAudioCard');
+                if (this.value === 'Base') {
+                    refCard.style.display = 'block';
+                } else {
+                    refCard.style.display = 'none';
+                }
+            });
+
+            // Enter key triggers synthesis
+            document.getElementById('synthText').addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    synthesize();
+                }
+            });
+
+            // Enter key in server URL triggers check
+            document.getElementById('serverUrl').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    checkServer();
+                }
+            });
+
+            // ==================== Init ====================
+            window.addEventListener('DOMContentLoaded', () => {
+                loadConfig();
+            });
+        </script>
+    </body>
+
+    </html>

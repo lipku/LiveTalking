@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Voice Manager - LiveTalking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-bg: #f0f4fc;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --accent-primary: #4361ee;
+            --accent-secondary: #3f37c9;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --border-radius: 16px;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        .navbar-custom {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .glass-card .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            padding: 16px 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .glass-card .card-header i {
+            color: var(--accent-primary);
+        }
+
+        .glass-card .card-body {
+            padding: 20px;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(67, 97, 238, 0.3);
+            color: #fff;
+        }
+
+        .btn-primary-custom:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary-custom:disabled {
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-outline-custom {
+            border: 2px solid var(--accent-primary);
+            color: var(--accent-primary);
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 8px 16px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-outline-custom:hover {
+            background: var(--accent-primary);
+            color: #fff;
+        }
+
+        .btn-outline-custom:active {
+            transform: scale(0.97);
+        }
+
+        .btn-danger-custom {
+            background: #ef4444;
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-danger-custom:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .param-hint {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        ::placeholder {
+            color: #9ca3af !important;
+            opacity: 1;
+        }
+
+        .voice-table {
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        .voice-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+            padding: 10px 12px;
+        }
+
+        .voice-table td {
+            padding: 10px 12px;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .voice-table tbody tr {
+            transition: background 0.2s;
+        }
+
+        .voice-table tbody tr:hover {
+            background: rgba(67, 97, 238, 0.04);
+        }
+
+        .badge-preset {
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        .badge-uploaded {
+            background: #d1fae5;
+            color: #065f46;
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        .voice-list-container {
+            max-height: 380px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .audio-preview {
+            width: 100%;
+            margin-top: 12px;
+            border-radius: 8px;
+        }
+
+        .spinner-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner-overlay.show {
+            display: flex;
+        }
+
+        .spinner-box {
+            background: #fff;
+            border-radius: 16px;
+            padding: 30px 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+        }
+
+        .custom-toast {
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            color: #fff;
+            font-weight: 500;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease;
+            min-width: 280px;
+        }
+
+        .custom-toast.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .custom-toast.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .custom-toast.info {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .server-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.on {
+            background: #10b981;
+        }
+
+        .status-dot.off {
+            background: #ef4444;
+        }
+
+        .playing-indicator {
+            display: none;
+            align-items: center;
+            gap: 2px;
+            margin-left: 8px;
+        }
+
+        .playing-indicator.active {
+            display: inline-flex;
+        }
+
+        .wave-bar {
+            width: 3px;
+            background: var(--accent-primary);
+            border-radius: 2px;
+            animation: wave 0.8s ease-in-out infinite;
+        }
+
+        .wave-bar:nth-child(1) {
+            height: 10px;
+            animation-delay: 0s;
+        }
+
+        .wave-bar:nth-child(2) {
+            height: 18px;
+            animation-delay: 0.1s;
+        }
+
+        .wave-bar:nth-child(3) {
+            height: 14px;
+            animation-delay: 0.2s;
+        }
+
+        .wave-bar:nth-child(4) {
+            height: 20px;
+            animation-delay: 0.3s;
+        }
+
+        .wave-bar:nth-child(5) {
+            height: 12px;
+            animation-delay: 0.4s;
+        }
+
+        @keyframes wave {
+            0%,
+            100% {
+                transform: scaleY(0.5);
+            }
+            50% {
+                transform: scaleY(1.2);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Spinner Overlay -->
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner-box">
+            <div class="spinner-border text-primary mb-2" role="status"></div>
+            <div class="fw-bold" id="spinnerText">Processing...</div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark navbar-custom">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand"><i class="bi bi-soundwave me-2"></i>TTS Voice Manager</span>
+            <div class="d-flex align-items-center gap-3">
+                <a href="/tts/index.html" class="text-white-50 small text-decoration-none">中文</a>
+                <span class="server-status text-white-50">
+                    <span class="status-dot off" id="serverDot"></span>
+                    <span id="serverStatusText">Disconnected</span>
+                </span>
+                <a href="/index-en.html" class="text-white-50 small text-decoration-none"><i class="bi bi-house"></i> Home</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+
+        <!-- Server Configuration -->
+        <div class="glass-card">
+            <div class="card-header"><i class="bi bi-gear-fill"></i> Server Configuration</div>
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-9">
+                        <label class="form-label">TTS Server URL</label>
+                        <input type="text" class="form-control" id="serverUrl"
+                        placeholder="http://localhost:8091"
+                        value="http://localhost:8091">
+                        <div class="param-hint mt-1">Base URL of the vLLM Omni service (e.g. http://your-server:8091)</div>
+                    </div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button class="btn-primary-custom flex-grow-1" onclick="checkServer()">
+                            <i class="bi bi-plug"></i> Test Connection
+                        </button>
+                        <button class="btn-outline-custom" onclick="saveConfig()" title="Save config">
+                            <i class="bi bi-floppy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Left Column: Voice List & Clone -->
+            <div class="col-lg-7">
+                <!-- Voice List -->
+                <div class="glass-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-people-fill"></i> Voice List</span>
+                        <div class="d-flex gap-2 align-items-center">
+                            <span class="badge bg-light text-muted" id="voiceCount">0 voices</span>
+                            <button class="btn-outline-custom btn-sm" onclick="refreshVoices()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="voice-list-container" id="voiceListContainer">
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                                Connect to server first, then click "Refresh" to load voices
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload / Clone Voice -->
+                <div class="glass-card">
+                    <div class="card-header"><i class="bi bi-cloud-upload-fill"></i> Upload Clone Voice</div>
+                    <div class="card-body">
+                        <form id="cloneForm" onsubmit="return false;">
+                            <input type="hidden" id="cloneConsent">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Audio Sample <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="file" class="form-control form-control-sm" id="cloneAudioFile"
+                                        accept="audio/*" onchange="onAudioFileChange()">
+                                        <button class="btn btn-outline-custom btn-sm" type="button" id="btnTranscribe" disabled
+                                        onclick="transcribeAudio()" title="Auto-transcribe audio">
+                                            <i class="bi bi-mic"></i> Transcribe
+                                        </button>
+                                    </div>
+                                    <div class="param-hint mt-1">Supports wav, mp3, flac, ogg, aac, webm, mp4 (max 10MB)</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Voice Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="cloneName"
+                                    placeholder="e.g. my_custom_voice">
+                                    <div class="param-hint mt-1">Unique name used to select this voice later</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Reference Text <span class="text-danger">*</span></label>
+                                    <textarea class="form-control form-control-sm" id="cloneRefText" rows="2"
+                                    placeholder="Exact transcript of the audio sample, click the Transcribe button to auto-generate"></textarea>
+                                    <div class="param-hint mt-1">Accurate transcript enables higher-quality in-context cloning</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Speaker Description</label>
+                                    <input type="text" class="form-control form-control-sm" id="cloneDescription"
+                                    placeholder="e.g. warm female narrator, deep male baritone (optional)">
+                                    <div class="param-hint mt-1">Free-form description of voice characteristics</div>
+                                </div>
+                                <div class="col-12">
+                                    <button type="button" class="btn-primary-custom" onclick="uploadVoice()" id="btnUpload">
+                                        <i class="bi bi-cloud-upload"></i> Upload Clone
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Speech Synthesis -->
+            <div class="col-lg-5">
+                <div class="glass-card">
+                    <div class="card-header"><i class="bi bi-chat-text-fill"></i> Speech Synthesis Test</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Select Voice <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" id="synthVoice">
+                                <option value="">-- Refresh voice list first --</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Text to Synthesize <span class="text-danger">*</span></label>
+                            <textarea class="form-control form-control-sm" id="synthText" rows="3"
+                        placeholder="Enter text to synthesize...">Hello, welcome to LiveTalking real-time digital human system.</textarea>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Speed</label>
+                            <div class="input-group input-group-sm">
+                                <input type="range" class="form-range" id="synthSpeed" min="0.25" max="4.0" step="0.05" value="1.0"
+                                oninput="document.getElementById('synthSpeedVal').textContent=this.value">
+                                <span class="input-group-text" id="synthSpeedVal" style="min-width:42px;">1.0</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Language</label>
+                            <select class="form-select form-select-sm" id="synthLanguage">
+                                <option value="Auto">Auto Detect</option>
+                                <option value="Chinese">Chinese</option>
+                                <option value="English">English</option>
+                                <option value="Japanese">Japanese</option>
+                                <option value="Korean">Korean</option>
+                                <option value="German">German</option>
+                                <option value="French">French</option>
+                                <option value="Russian">Russian</option>
+                                <option value="Portuguese">Portuguese</option>
+                                <option value="Spanish">Spanish</option>
+                                <option value="Italian">Italian</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Output Format</label>
+                            <select class="form-select form-select-sm" id="synthFormat">
+                                <option value="wav">WAV</option>
+                                <option value="mp3">MP3</option>
+                                <option value="flac">FLAC</option>
+                                <option value="aac">AAC</option>
+                                <option value="opus">Opus</option>
+                                <option value="pcm">PCM</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Task Type</label>
+                            <select class="form-select form-select-sm" id="synthTaskType">
+                                <option value="CustomVoice">CustomVoice</option>
+                                <option value="VoiceDesign">VoiceDesign</option>
+                                <option value="Base">Base (requires cloned voice)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Voice Instructions <span class="param-hint">(optional)</span></label>
+                        <input type="text" class="form-control form-control-sm" id="synthInstructions"
+                        placeholder="e.g. Speak in a cheerful tone, slow down, sound questioning">
+                        <div class="param-hint mt-1">Describe the voice style, emotion, or delivery</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn-primary-custom flex-grow-1" onclick="synthesize()" id="btnSynthesize">
+                            <i class="bi bi-play-fill"></i> Synthesize
+                        </button>
+                        <button class="btn-outline-custom" onclick="downloadAudio()" id="btnDownload" disabled>
+                            <i class="bi bi-download"></i> Download
+                        </button>
+                    </div>
+
+                    <!-- Audio Preview -->
+                    <div id="audioPreviewSection" style="display:none; margin-top:16px;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="fw-bold small">Synthesis Result</span>
+                            <div class="playing-indicator" id="playingIndicator">
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                                <div class="wave-bar"></div>
+                            </div>
+                        </div>
+                        <audio id="audioPreview" class="audio-preview" controls></audio>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced: Ref Audio Settings -->
+            <div class="glass-card" id="refAudioCard" style="display:none;">
+                <div class="card-header"><i class="bi bi-sliders"></i> Advanced: Reference Audio (Base Mode)</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Reference Audio URL</label>
+                            <input type="text" class="form-control form-control-sm" id="refAudioUrl"
+                            placeholder="http://... or data:audio/wav;base64,...">
+                            <div class="param-hint mt-1">Remote URL or base64 data URL</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Reference Text</label>
+                            <input type="text" class="form-control form-control-sm" id="refText"
+                            placeholder="Transcript of reference audio">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="xVectorOnly">
+                                <label class="form-check-label small">X-Vector Only Mode <span class="param-hint">(faster, lower quality)</span></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        </div>
+
+        <script>
+            // ==================== State ====================
+            let audioBlob = null;
+            let audioUrl = null;
+            let currentVoices = { voices: [], uploaded_voices: [] };
+
+            // ==================== Utilities ====================
+            function getBaseUrl() {
+                return document.getElementById('serverUrl').value.replace(/\/+$/, '');
+            }
+
+            function showSpinner(text = 'Processing...') {
+                document.getElementById('spinnerText').textContent = text;
+                document.getElementById('spinnerOverlay').classList.add('show');
+            }
+
+            function hideSpinner() {
+                document.getElementById('spinnerOverlay').classList.remove('show');
+            }
+
+            function showToast(message, type = 'info') {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = `custom-toast ${type}`;
+                toast.innerHTML = message;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.3s';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3500);
+            }
+
+            function setServerStatus(connected) {
+                const dot = document.getElementById('serverDot');
+                const text = document.getElementById('serverStatusText');
+                if (connected) {
+                    dot.className = 'status-dot on';
+                    text.textContent = 'Connected';
+                } else {
+                    dot.className = 'status-dot off';
+                    text.textContent = 'Disconnected';
+                }
+            }
+
+            // ==================== Server Config ====================
+            function saveConfig() {
+                const config = {
+                    serverUrl: document.getElementById('serverUrl').value,
+                };
+                localStorage.setItem('tts_config', JSON.stringify(config));
+                showToast('<i class="bi bi-check-circle me-1"></i>Configuration saved locally', 'success');
+            }
+
+            function loadConfig() {
+                try {
+                    const saved = localStorage.getItem('tts_config');
+                    if (saved) {
+                        const config = JSON.parse(saved);
+                        if (config.serverUrl) document.getElementById('serverUrl').value = config.serverUrl;
+                    }
+                } catch (e) { /* ignore */ }
+            }
+
+            // ==================== Server Check ====================
+            async function checkServer() {
+                const baseUrl = getBaseUrl();
+                if (!baseUrl) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>Please enter server URL', 'error');
+                    return;
+                }
+
+                showSpinner('Connecting to server...');
+                setServerStatus(false);
+
+                try {
+                    const resp = await fetch(`${baseUrl}/v1/audio/voices`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        currentVoices = data;
+                        renderVoiceList(data);
+                        populateVoiceSelect(data);
+                        setServerStatus(true);
+                        const presetCount = data.voices?.filter(v => !(data.uploaded_voices || []).map(u => u.name).includes(v)).length || 0;
+                        const uploadCount = data.uploaded_voices?.length || 0;
+                        showToast(`<i class="bi bi-check-circle me-1"></i>Connected! Found ${presetCount} preset and ${uploadCount} uploaded voices`, 'success');
+                    } else {
+                        const errText = await resp.text();
+                        showToast(`<i class="bi bi-x-circle me-1"></i>Server error: ${resp.status} ${resp.statusText}`, 'error');
+                        console.error('Server check failed:', resp.status, errText);
+                    }
+                } catch (e) {
+                    showToast(`<i class="bi bi-x-circle me-1"></i>Cannot connect: ${e.message}`, 'error');
+                    console.error('Connection error:', e);
+                } finally {
+                    hideSpinner();
+                }
+            }
+
+            // ==================== Voice List ====================
+            async function refreshVoices() {
+                const baseUrl = getBaseUrl();
+                if (!baseUrl) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>Please configure server URL first', 'error');
+                    return;
+                }
+
+                showSpinner('Fetching voice list...');
+
+                try {
+                    const resp = await fetch(`${baseUrl}/v1/audio/voices`);
+                    if (!resp.ok) {
+                        const errText = await resp.text();
+                        throw new Error(`${resp.status} ${resp.statusText}: ${errText}`);
+                    }
+
+                    const data = await resp.json();
+                    currentVoices = data;
+                    renderVoiceList(data);
+                    populateVoiceSelect(data);
+                    setServerStatus(true);
+
+                    const uploadedNames = (data.uploaded_voices || []).map(v => v.name);
+                    const presetCount = (data.voices || []).filter(v => !uploadedNames.includes(v)).length;
+                    const total = presetCount + (data.uploaded_voices?.length || 0);
+                    showToast(`<i class="bi bi-check-circle me-1"></i>Refreshed, ${total} voices total`, 'success');
+                } catch (e) {
+                    showToast(`<i class="bi bi-x-circle me-1"></i>Failed: ${e.message}`, 'error');
+                    console.error('Refresh voices error:', e);
+                } finally {
+                    hideSpinner();
+                }
+            }
+
+            function renderVoiceList(data) {
+                const container = document.getElementById('voiceListContainer');
+                const countEl = document.getElementById('voiceCount');
+
+                const uploadedVoices = data.uploaded_voices || [];
+                const uploadedNames = new Set(uploadedVoices.map(v => v.name));
+                const presetVoices = (data.voices || []).filter(v => !uploadedNames.has(v));
+                const total = presetVoices.length + uploadedVoices.length;
+
+                countEl.textContent = `${total} voice${total !== 1 ? 's' : ''}`;
+
+                if (total === 0) {
+                    container.innerHTML = `
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                No voices yet, upload a clone voice to get started
+                            </div>`;
+                    return;
+                }
+
+                let html = `
+                        <table class="voice-table table table-borderless mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Description / Ref Text</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                for (const v of presetVoices) {
+                    html += `
+                                <tr>
+                                    <td><strong>${escapeHtml(v)}</strong></td>
+                                    <td><span class="badge-preset">Preset</span></td>
+                                    <td><span class="text-muted small">—</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-custom py-0 px-2" onclick="selectVoice('${escapeHtml(v)}')" title="Use this voice">
+                                            <i class="bi bi-check2"></i>
+                                        </button>
+                                    </td>
+                                </tr>`;
+                }
+
+                for (const v of uploadedVoices) {
+                    const desc = v.speaker_description || v.ref_text || '—';
+                    const created = v.created_at ? new Date(v.created_at * 1000).toLocaleDateString('en-US') : '';
+                    html += `
+                                <tr>
+                                    <td><strong>${escapeHtml(v.name)}</strong></td>
+                                    <td><span class="badge-uploaded">Uploaded</span></td>
+                                    <td>
+                                        <span class="small">${escapeHtml(desc)}</span>
+                                        ${created ? `<br><span class="param-hint">${created}</span>` : ''}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-custom py-0 px-2" onclick="selectVoice('${escapeHtml(v.name)}')" title="Use this voice">
+                                            <i class="bi bi-check2"></i>
+                                        </button>
+                                        <button class="btn btn-sm text-danger py-0 px-1" onclick="deleteVoice('${escapeHtml(v.name)}')" title="Delete this voice">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </td>
+                                </tr>`;
+                }
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
+            function populateVoiceSelect(data) {
+                const select = document.getElementById('synthVoice');
+                select.innerHTML = '<option value="">-- Select a voice --</option>';
+
+                const uploadedVoices = data.uploaded_voices || [];
+                const uploadedNames = new Set(uploadedVoices.map(v => v.name));
+                const presetVoices = (data.voices || []).filter(v => !uploadedNames.has(v));
+
+                if (presetVoices.length > 0) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = 'Preset Voices';
+                    for (const v of presetVoices) {
+                        const opt = document.createElement('option');
+                        opt.value = v;
+                        opt.textContent = v;
+                        optgroup.appendChild(opt);
+                    }
+                    select.appendChild(optgroup);
+                }
+
+                if (uploadedVoices.length > 0) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = 'Uploaded Voices';
+                    for (const v of uploadedVoices) {
+                        const opt = document.createElement('option');
+                        opt.value = v.name;
+                        opt.textContent = v.name;
+                        optgroup.appendChild(opt);
+                    }
+                    select.appendChild(optgroup);
+                }
+            }
+
+            function selectVoice(name) {
+                document.getElementById('synthVoice').value = name;
+                document.getElementById('synthText').focus();
+                showToast(`<i class="bi bi-check-circle me-1"></i>Selected voice: ${name}`, 'info');
+            }
+
+            async function deleteVoice(name) {
+                if (!confirm(`Are you sure you want to delete voice "${name}"? This cannot be undone.`)) return;
+
+                const baseUrl = getBaseUrl();
+                showSpinner('Deleting voice...');
+
+                try {
+                    const resp = await fetch(`${baseUrl}/v1/audio/voices/${encodeURIComponent(name)}`, {
+                        method: 'DELETE',
+                    });
+
+                    if (resp.ok) {
+                        showToast(`<i class="bi bi-check-circle me-1"></i>Voice "${name}" deleted`, 'success');
+                        await refreshVoices();
+                    } else if (resp.status === 404 || resp.status === 405) {
+                        showToast(`<i class="bi bi-info-circle me-1"></i>Server does not support delete, please manage manually`, 'info');
+                    } else {
+                        const errText = await resp.text();
+                        throw new Error(`${resp.status}: ${errText}`);
+                    }
+                } catch (e) {
+                    showToast(`<i class="bi bi-x-circle me-1"></i>Delete failed: ${e.message}`, 'error');
+                } finally {
+                    hideSpinner();
+                }
+            }
+
+            // ==================== Upload Voice ====================
+            function generateConsentId() {
+                return 'consent_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 10);
+            }
+
+            function onAudioFileChange() {
+                const fileInput = document.getElementById('cloneAudioFile');
+                const btnTranscribe = document.getElementById('btnTranscribe');
+                btnTranscribe.disabled = !fileInput.files || fileInput.files.length === 0;
+            }
+
+            async function transcribeAudio() {
+                const fileInput = document.getElementById('cloneAudioFile');
+                const btnTranscribe = document.getElementById('btnTranscribe');
+
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>Please select an audio file first', 'error');
+                    return;
+                }
+
+                // Check for browser SpeechRecognition support
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    showToast('<i class="bi bi-x-circle me-1"></i>Speech recognition not supported in this browser, please use Chrome or Edge', 'error');
+                    return;
+                }
+
+                btnTranscribe.disabled = true;
+                showSpinner('Transcribing via browser speech recognition...\nPlease ensure microphone is enabled, audio will play for recognition');
+
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.interimResults = true;
+                recognition.continuous = true;
+                recognition.maxAlternatives = 1;
+
+                let finalTranscript = '';
+                let recognitionStarted = false;
+
+                // Create audio element to play the file
+                const audio = new Audio();
+                audio.src = URL.createObjectURL(fileInput.files[0]);
+                audio.volume = 0.8;
+
+                recognition.onresult = (event) => {
+                    let interim = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const result = event.results[i];
+                        if (result.isFinal) {
+                            finalTranscript += result[0].transcript;
+                        } else {
+                            interim += result[0].transcript;
+                        }
+                    }
+                    document.getElementById('cloneRefText').value = finalTranscript + interim;
+                };
+
+                recognition.onerror = (event) => {
+                    if (event.error === 'no-speech' || event.error === 'aborted') return;
+                    console.error('Speech recognition error:', event.error);
+                };
+
+                recognition.onend = () => {
+                    if (!audio.ended && !audio.paused) {
+                        try {
+                            if (recognitionStarted) recognition.start();
+                        } catch (e) { /* ignore */ }
+                    }
+                };
+
+                audio.onended = () => {
+                    try { recognition.stop(); } catch (e) { /* ignore */ }
+                    URL.revokeObjectURL(audio.src);
+                    document.getElementById('cloneRefText').value = finalTranscript.trim();
+                    if (finalTranscript.trim()) {
+                        showToast('<i class="bi bi-check-circle me-1"></i>Transcription complete, please verify the text', 'success');
+                    } else {
+                        showToast('<i class="bi bi-info-circle me-1"></i>No speech detected, please check microphone or enter text manually', 'info');
+                    }
+                    btnTranscribe.disabled = false;
+                    hideSpinner();
+                };
+
+                audio.onerror = () => {
+                    try { recognition.stop(); } catch (e) { /* ignore */ }
+                    URL.revokeObjectURL(audio.src);
+                    showToast('<i class="bi bi-x-circle me-1"></i>Audio playback failed', 'error');
+                    btnTranscribe.disabled = false;
+                    hideSpinner();
+                };
+
+                try {
+                    recognition.start();
+                    recognitionStarted = true;
+                    setTimeout(() => audio.play().catch(e => {
+                        try { recognition.stop(); } catch (e2) { /* ignore */ }
+                        showToast('<i class="bi bi-x-circle me-1"></i>Audio playback failed: ' + e.message, 'error');
+                        btnTranscribe.disabled = false;
+                        hideSpinner();
+                    }), 300);
+                } catch (e) {
+                    showToast('<i class="bi bi-x-circle me-1"></i>Failed to start speech recognition: ' + e.message, 'error');
+                    btnTranscribe.disabled = false;
+                    hideSpinner();
+                }
+            }
+
+            async function uploadVoice() {
+                const baseUrl = getBaseUrl();
+                const fileInput = document.getElementById('cloneAudioFile');
+                const nameInput = document.getElementById('cloneName');
+                const consentInput = document.getElementById('cloneConsent');
+                const refTextInput = document.getElementById('cloneRefText');
+                const descInput = document.getElementById('cloneDescription');
+                const btnUpload = document.getElementById('btnUpload');
+
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>Please select an audio file', 'error');
+                    return;
+                }
+                if (!nameInput.value.trim()) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>Please enter a voice name', 'error');
+                    return;
+                }
+                if (!refTextInput.value.trim()) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>Please fill in reference text (click the Transcribe button to auto-generate)', 'error');
+                    return;
+                }
+
+                const file = fileInput.files[0];
+                const maxSize = 10 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>Audio file must not exceed 10MB', 'error');
+                    return;
+                }
+
+                // Auto-generate consent ID if not set
+                if (!consentInput.value.trim()) {
+                    consentInput.value = generateConsentId();
+                }
+
+                btnUpload.disabled = true;
+                showSpinner('Uploading clone voice...');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('audio_sample', file);
+                    formData.append('name', nameInput.value.trim());
+                    formData.append('consent', consentInput.value.trim());
+                    formData.append('ref_text', refTextInput.value.trim());
+                    if (descInput.value.trim()) {
+                        formData.append('speaker_description', descInput.value.trim());
+                    }
+
+                    const resp = await fetch(`${baseUrl}/v1/audio/voices`, {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    if (resp.ok) {
+                        showToast(`<i class="bi bi-check-circle me-1"></i>Voice "${nameInput.value.trim()}" uploaded successfully!`, 'success');
+
+                        fileInput.value = '';
+                        nameInput.value = '';
+                        consentInput.value = generateConsentId();
+                        refTextInput.value = '';
+                        descInput.value = '';
+                        document.getElementById('btnTranscribe').disabled = true;
+
+                        await refreshVoices();
+                    } else {
+                        const errText = await resp.text();
+                        let errMsg = `${resp.status} ${resp.statusText}`;
+                        try {
+                            const errJson = JSON.parse(errText);
+                            errMsg = errJson.detail || errJson.message || errMsg;
+                        } catch (e) { /* use raw text */ }
+                        throw new Error(errMsg);
+                    }
+                } catch (e) {
+                    showToast(`<i class="bi bi-x-circle me-1"></i>Upload failed: ${e.message}`, 'error');
+                    console.error('Upload error:', e);
+                } finally {
+                    btnUpload.disabled = false;
+                    hideSpinner();
+                }
+            }
+
+            // ==================== Synthesize ====================
+            async function synthesize() {
+                const baseUrl = getBaseUrl();
+                const voice = document.getElementById('synthVoice').value;
+                const text = document.getElementById('synthText').value.trim();
+                const speed = parseFloat(document.getElementById('synthSpeed').value);
+                const language = document.getElementById('synthLanguage').value;
+                const format = document.getElementById('synthFormat').value;
+                const taskType = document.getElementById('synthTaskType').value;
+                const instructions = document.getElementById('synthInstructions').value.trim();
+                const btnSynthesize = document.getElementById('btnSynthesize');
+
+                if (!voice) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>Please select a voice', 'error');
+                    return;
+                }
+                if (!text) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>Please enter text to synthesize', 'error');
+                    return;
+                }
+
+                btnSynthesize.disabled = true;
+                showSpinner('Synthesizing speech...');
+
+                if (audioUrl) {
+                    URL.revokeObjectURL(audioUrl);
+                    audioUrl = null;
+                }
+                audioBlob = null;
+
+                try {
+                    const body = {
+                        input: text,
+                        voice: voice,
+                        response_format: format,
+                        speed: speed,
+                        language: language,
+                        task_type: taskType,
+                    };
+
+                    if (instructions) {
+                        body.instructions = instructions;
+                    }
+
+                    if (taskType === 'Base') {
+                        const refAudioUrl = document.getElementById('refAudioUrl').value.trim();
+                        const refText = document.getElementById('refText').value.trim();
+                        const xVectorOnly = document.getElementById('xVectorOnly').checked;
+
+                        if (refAudioUrl) body.ref_audio = refAudioUrl;
+                        if (refText) body.ref_text = refText;
+                        if (xVectorOnly) body.x_vector_only_mode = true;
+                    }
+
+                    const resp = await fetch(`${baseUrl}/v1/audio/speech`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(body),
+                    });
+
+                    if (!resp.ok) {
+                        const errText = await resp.text();
+                        let errMsg = `${resp.status} ${resp.statusText}`;
+                        try {
+                            const errJson = JSON.parse(errText);
+                            errMsg = errJson.detail || errJson.message || errMsg;
+                        } catch (e) { /* use raw text */ }
+                        throw new Error(errMsg);
+                    }
+
+                    audioBlob = await resp.blob();
+
+                    const mimeType = getMimeType(format);
+                    audioUrl = URL.createObjectURL(new Blob([audioBlob], { type: mimeType }));
+
+                    const previewSection = document.getElementById('audioPreviewSection');
+                    const audioEl = document.getElementById('audioPreview');
+                    previewSection.style.display = 'block';
+                    audioEl.src = audioUrl;
+                    audioEl.load();
+
+                    document.getElementById('btnDownload').disabled = false;
+
+                    audioEl.onplay = () => document.getElementById('playingIndicator').classList.add('active');
+                    audioEl.onpause = () => document.getElementById('playingIndicator').classList.remove('active');
+                    audioEl.onended = () => document.getElementById('playingIndicator').classList.remove('active');
+
+                    showToast(`<i class="bi bi-check-circle me-1"></i>Speech synthesized successfully!`, 'success');
+                } catch (e) {
+                    showToast(`<i class="bi bi-x-circle me-1"></i>Synthesis failed: ${e.message}`, 'error');
+                    console.error('Synthesis error:', e);
+                } finally {
+                    btnSynthesize.disabled = false;
+                    hideSpinner();
+                }
+            }
+
+            function downloadAudio() {
+                if (!audioBlob) {
+                    showToast('<i class="bi bi-exclamation-triangle me-1"></i>Please synthesize speech first', 'error');
+                    return;
+                }
+
+                const format = document.getElementById('synthFormat').value;
+                const voice = document.getElementById('synthVoice').value || 'tts';
+                const ext = format === 'pcm' ? 'pcm' : format;
+                const mimeType = getMimeType(format);
+
+                const url = URL.createObjectURL(new Blob([audioBlob], { type: mimeType }));
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${voice}_${Date.now()}.${ext}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            function getMimeType(format) {
+                const map = {
+                    'wav': 'audio/wav',
+                    'mp3': 'audio/mpeg',
+                    'flac': 'audio/flac',
+                    'aac': 'audio/aac',
+                    'opus': 'audio/opus',
+                    'pcm': 'audio/pcm',
+                };
+                return map[format] || 'audio/wav';
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // ==================== Event Listeners ====================
+            document.getElementById('synthTaskType').addEventListener('change', function() {
+                const refCard = document.getElementById('refAudioCard');
+                refCard.style.display = this.value === 'Base' ? 'block' : 'none';
+            });
+
+            document.getElementById('synthText').addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    synthesize();
+                }
+            });
+
+            document.getElementById('serverUrl').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    checkServer();
+                }
+            });
+
+            // ==================== Init ====================
+            window.addEventListener('DOMContentLoaded', () => {
+                loadConfig();
+            });
+        </script>
+    </body>
+
+    </html>

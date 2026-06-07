@@ -53,6 +53,7 @@ from typing import Dict
 from utils.logger import logger
 import copy
 import gc
+from dotenv import load_dotenv
 
 
 app = Flask(__name__)
@@ -222,6 +223,7 @@ def main():
 # os.environ['MULTIPROCESSING_METHOD'] = 'forkserver'                                                    
 if __name__ == '__main__':
     mp.set_start_method('spawn')
+    load_dotenv()  # Load environment variables from .env file, if it exists
     main()
     
     
