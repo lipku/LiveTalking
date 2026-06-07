@@ -23,3 +23,5 @@ dist
 
 ffmpeg/
 README.txt
+
+node_modules/
