@@ -45,16 +45,6 @@ class QwenTTS(BaseTTS):
         self.voice = opt.REF_FILE if opt.REF_FILE else 'Cherry'
         # 模型名
         self.model = getattr(opt, 'qwen_tts_model', 'qwen3-tts-flash-realtime')
-        # WebSocket URL
-        self.ws_url = getattr(opt, 'qwen_tts_url',
-                              'wss://dashscope.aliyuncs.com/api-ws/v1/realtime')
-
-        # 设置 DashScope API Key
-        api_key = getattr(opt, 'dashscope_api_key', None) or os.environ.get('DASHSCOPE_API_KEY')
-        if api_key:
-            dashscope.api_key = api_key
-        else:
-            logger.warning("QwenTTS: DASHSCOPE_API_KEY 未设置，请设置环境变量或通过参数传入")
 
         # ---------- 内部状态 ----------
         self._remainder = np.array([], dtype=np.float32)  # 上次重采样后不足一 chunk 的 16kHz 样本
@@ -63,94 +53,35 @@ class QwenTTS(BaseTTS):
         self._current_text = ''
         self._current_textevent = {}
 
-        # ---------- 回调类 ----------
-        tts_ref = self
-
-        class _Callback(QwenTtsRealtimeCallback):
-            def on_open(self) -> None:
-                logger.info("QwenTTS WebSocket 连接已建立")
-
-            def on_close(self, close_status_code, close_msg) -> None:
-                logger.info(f"QwenTTS WebSocket 关闭: code={close_status_code}, msg={close_msg}")
-                tts_ref._response_event.set()
-
-            def on_event(self, response: dict) -> None:
-                try:
-                    event_type = response.get('type', '')
-
-                    if event_type == 'session.created':
-                        logger.info(f"QwenTTS session: {response.get('session', {}).get('id', '')}")
-
-                    elif event_type == 'response.audio.delta':
-                        audio_b64 = response.get('delta', '')
-                        if audio_b64:
-                            pcm_data = base64.b64decode(audio_b64)
-                            tts_ref._on_audio_data(pcm_data)
-
-                    elif event_type == 'response.done':
-                        logger.info("QwenTTS response done")
-                        tts_ref._flush_remainder()
-                        tts_ref._response_event.set()
-
-                    elif event_type == 'error':
-                        logger.error(f"QwenTTS 错误: {response}")
-                        tts_ref._response_event.set()
-
-                except Exception as e:
-                    logger.exception(f"QwenTTS 回调处理异常: {e}")
-
-        # ---------- 建立唯一连接 ----------
-        self._callback = _Callback()
-        self._tts_client = QwenTtsRealtime(
-            model=self.model,
-            callback=self._callback,
-            url=self.ws_url,
-        )
-        self._tts_client.connect()
-        self._tts_client.update_session(
-            voice=self.voice,
-            response_format=AudioFormat.PCM_24000HZ_MONO_16BIT,  # Qwen TTS 只支持 24kHz 输出
-            sample_rate=16000,
-            mode='commit',
-        )
-        logger.info(f"QwenTTS 初始化完成: model={self.model}, voice={self.voice}")
+        logger.info("Mock QwenTTS initialized (no remote API connection established)")
 
     # ========================== 核心方法 ==========================
 
     def txt_to_audio(self, msg: tuple[str, dict]):
-        text, textevent = msg
-        t_start = time.perf_counter()
-
-        ref_file = textevent.get('tts', {}).get('ref_file',self.opt.REF_FILE)
-
-        # 重置状态
-        self._remainder = np.array([], dtype=np.float32)
-        self._first_chunk = True
-        self._current_text = text
-        self._current_textevent = textevent
-        self._response_event.clear()
-
         try:
-            #logger.info(f"QwenTTS 发送文本: {text[:80]}...")
-            if ref_file != self.voice:
-                logger.info(f'ref_file:{ref_file},self.voice:{self.voice}')
-                self.voice=ref_file
-                self._tts_client.close()
-                self._tts_client.connect()
-                self._tts_client.update_session(
-                    voice=self.voice,
-                    response_format=AudioFormat.PCM_24000HZ_MONO_16BIT,  # Qwen TTS 只支持 24kHz 输出
-                    sample_rate=16000,
-                    mode='commit',
-                )
-            self._tts_client.append_text(text)
-            self._tts_client.commit()
+            text, textevent = msg
+            t_start = time.perf_counter()
 
-            # 等待 response.done（音频在回调中流式处理）
-            self._response_event.wait(timeout=60)
+            logger.info(f"Mock QwenTTS synthesis for text: {text}")
+            
+            # Output start frame
+            eventpoint_start = {'status': 'start', 'text': text}
+            eventpoint_start.update(**textevent)
+            self.parent.put_audio_frame(np.zeros(self.chunk, np.float32), eventpoint_start)
+
+            # Output mock silence
+            for _ in range(10):
+                if self.state != State.RUNNING:
+                    break
+                self.parent.put_audio_frame(np.zeros(self.chunk, np.float32), textevent)
+
+            # Output end frame
+            eventpoint_end = {'status': 'end', 'text': text}
+            eventpoint_end.update(**textevent)
+            self.parent.put_audio_frame(np.zeros(self.chunk, np.float32), eventpoint_end)
 
             t_end = time.perf_counter()
-            logger.info(f"QwenTTS 合成完成，耗时: {t_end - t_start:.2f}s")
+            logger.info(f"Mock QwenTTS synthesis completed, time: {t_end - t_start:.2f}s")
 
         except Exception as e:
             logger.exception(f"QwenTTS txt_to_audio 异常: {e}")
