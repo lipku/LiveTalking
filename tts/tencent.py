@@ -78,41 +78,46 @@ class TencentTTS(BaseTTS):
         )
 
     def tencent_voice(self, text, reffile, reftext,language, server_url) -> Iterator[bytes]:
-        start = time.perf_counter()
-        session_id = str(uuid.uuid1())
-        params = self.__gen_params(session_id, text, reffile)
-        signature = self.__gen_signature(params)
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": str(signature)
-        }
-        url = _PROTOCOL + _HOST + _PATH
-        try:
-            res = requests.post(url, headers=headers,
-                          data=json.dumps(params), stream=True)
-            
-            end = time.perf_counter()
-            logger.info(f"tencent Time to make POST: {end-start}s")
-                
-            first = True
-        
-            for chunk in res.iter_content(chunk_size=6400): # 640 16K*20ms*2
-                #logger.info('chunk len:%d',len(chunk))
-                if first:
-                    try:
-                        rsp = json.loads(chunk)
-                        #response["Code"] = rsp["Response"]["Error"]["Code"]
-                        #response["Message"] = rsp["Response"]["Error"]["Message"]
-                        logger.error("tencent tts:%s",rsp["Response"]["Error"]["Message"])
-                        return
-                    except:
-                        end = time.perf_counter()
-                        logger.info(f"tencent Time to first chunk: {end-start}s")
-                        first = False                    
-                if chunk and self.state==State.RUNNING:
-                    yield chunk
-        except Exception as e:
-            logger.exception('tencent')
+        # Mock/static return to avoid using paid Tencent service
+        logger.info(f"Mock Tencent TTS voice synthesis for text: {text}")
+        yield b'\x00' * 51200
+        return
+
+        # start = time.perf_counter()
+        # session_id = str(uuid.uuid1())
+        # params = self.__gen_params(session_id, text, reffile)
+        # signature = self.__gen_signature(params)
+        # headers = {
+        #     "Content-Type": "application/json",
+        #     "Authorization": str(signature)
+        # }
+        # url = _PROTOCOL + _HOST + _PATH
+        # try:
+        #     res = requests.post(url, headers=headers,
+        #                   data=json.dumps(params), stream=True)
+        #     
+        #     end = time.perf_counter()
+        #     logger.info(f"tencent Time to make POST: {end-start}s")
+        #         
+        #     first = True
+        # 
+        #     for chunk in res.iter_content(chunk_size=6400): # 640 16K*20ms*2
+        #         #logger.info('chunk len:%d',len(chunk))
+        #         if first:
+        #             try:
+        #                 rsp = json.loads(chunk)
+        #                 #response["Code"] = rsp["Response"]["Error"]["Code"]
+        #                 #response["Message"] = rsp["Response"]["Error"]["Message"]
+        #                 logger.error("tencent tts:%s",rsp["Response"]["Error"]["Message"])
+        #                 return
+        #             except:
+        #                 end = time.perf_counter()
+        #                 logger.info(f"tencent Time to first chunk: {end-start}s")
+        #                 first = False                    
+        #         if chunk and self.state==State.RUNNING:
+        #             yield chunk
+        # except Exception as e:
+        #     logger.exception('tencent')
 
     def stream_tts(self,audio_stream,msg:tuple[str, dict]):
         text,textevent = msg

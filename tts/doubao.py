@@ -49,54 +49,59 @@ class DoubaoTTS(BaseTTS):
         }
 
     async def doubao_voice(self, text, ref_file): # -> Iterator[bytes]:
-        start = time.perf_counter()
-        voice_type = ref_file #self.opt.REF_FILE
+        # Mock/static return to avoid using paid Doubao service
+        logger.info(f"Mock Doubao TTS voice synthesis for text: {text}")
+        yield b'\x00' * 51200
+        return
 
-        try:
-            # 创建请求对象
-            default_header = bytearray(b'\x11\x10\x11\x00')
-            submit_request_json = copy.deepcopy(self.request_json)
-            submit_request_json["user"]["uid"] = self.parent.sessionid
-            submit_request_json["audio"]["voice_type"] = voice_type
-            submit_request_json["request"]["text"] = text
-            submit_request_json["request"]["reqid"] = str(uuid.uuid4())
-            submit_request_json["request"]["operation"] = "submit"
-            payload_bytes = str.encode(json.dumps(submit_request_json))
-            payload_bytes = gzip.compress(payload_bytes)  # if no compression, comment this line
-            full_client_request = bytearray(default_header)
-            full_client_request.extend((len(payload_bytes)).to_bytes(4, 'big'))  # payload size(4 bytes)
-            full_client_request.extend(payload_bytes)  # payload
-
-            header = {"Authorization": f"Bearer; {self.token}"}
-            first = True
-            async with websockets.connect(self.api_url, extra_headers=header, ping_interval=None) as ws:
-                await ws.send(full_client_request)
-                while True:
-                    res = await ws.recv()
-                    header_size = res[0] & 0x0f
-                    message_type = res[1] >> 4
-                    message_type_specific_flags = res[1] & 0x0f
-                    payload = res[header_size*4:]
-
-                    if message_type == 0xb:  # audio-only server response
-                        if message_type_specific_flags == 0:  # no sequence number as ACK
-                            #print("                Payload size: 0")
-                            continue
-                        else:
-                            if first:
-                                end = time.perf_counter()
-                                logger.info(f"doubao tts Time to first chunk: {end-start}s")
-                                first = False
-                            sequence_number = int.from_bytes(payload[:4], "big", signed=True)
-                            payload_size = int.from_bytes(payload[4:8], "big", signed=False)
-                            payload = payload[8:]
-                            yield payload
-                        if sequence_number < 0:
-                            break
-                    else:
-                        break
-        except Exception as e:
-            logger.exception('doubao')
+        # start = time.perf_counter()
+        # voice_type = ref_file #self.opt.REF_FILE
+        # 
+        # try:
+        #     # 创建请求对象
+        #     default_header = bytearray(b'\x11\x10\x11\x00')
+        #     submit_request_json = copy.deepcopy(self.request_json)
+        #     submit_request_json["user"]["uid"] = self.parent.sessionid
+        #     submit_request_json["audio"]["voice_type"] = voice_type
+        #     submit_request_json["request"]["text"] = text
+        #     submit_request_json["request"]["reqid"] = str(uuid.uuid4())
+        #     submit_request_json["request"]["operation"] = "submit"
+        #     payload_bytes = str.encode(json.dumps(submit_request_json))
+        #     payload_bytes = gzip.compress(payload_bytes)  # if no compression, comment this line
+        #     full_client_request = bytearray(default_header)
+        #     full_client_request.extend((len(payload_bytes)).to_bytes(4, 'big'))  # payload size(4 bytes)
+        #     full_client_request.extend(payload_bytes)  # payload
+        # 
+        #     header = {"Authorization": f"Bearer; {self.token}"}
+        #     first = True
+        #     async with websockets.connect(self.api_url, extra_headers=header, ping_interval=None) as ws:
+        #         await ws.send(full_client_request)
+        #         while True:
+        #             res = await ws.recv()
+        #             header_size = res[0] & 0x0f
+        #             message_type = res[1] >> 4
+        #             message_type_specific_flags = res[1] & 0x0f
+        #             payload = res[header_size*4:]
+        # 
+        #             if message_type == 0xb:  # audio-only server response
+        #                 if message_type_specific_flags == 0:  # no sequence number as ACK
+        #                     #print("                Payload size: 0")
+        #                     continue
+        #                 else:
+        #                     if first:
+        #                         end = time.perf_counter()
+        #                         logger.info(f"doubao tts Time to first chunk: {end-start}s")
+        #                         first = False
+        #                     sequence_number = int.from_bytes(payload[:4], "big", signed=True)
+        #                     payload_size = int.from_bytes(payload[4:8], "big", signed=False)
+        #                     payload = payload[8:]
+        #                     yield payload
+        #                 if sequence_number < 0:
+        #                     break
+        #             else:
+        #                 break
+        # except Exception as e:
+        #     logger.exception('doubao')
         # # 检查响应状态码
         # if response.status_code == 200:
         #     # 处理响应数据
