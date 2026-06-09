@@ -2,8 +2,7 @@
     <img src="./assets/LiveTalking-logo.png" align="middle" width="600"/>
 </p>
 
-中文版 ｜ [English](./README-EN.md)
-
+English | [中文版](./README.md)
 
 <p align="center">
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
@@ -16,205 +15,203 @@
 <a href="https://trendshift.io/repositories/12565" target="_blank"><img src="https://trendshift.io/api/badge/repositories/12565" alt="lipku%2FLiveTalking | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 </p>
 
-实时交互流式数字人引擎，实现音视频同步对话，已在业内获得广泛商用
+A real-time interactive streaming digital human engine enabling synchronized audio-video conversation, widely adopted in commercial applications.
 
-**效果演示**: [wav2lip](https://www.bilibili.com/video/BV1scwBeyELA/) | [ernerf](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk](https://www.bilibili.com/video/BV1bUwezvEnG/)
+**Demos**: [wav2lip](https://youtu.be/-ss0H8qLr7E) | [ernerf](https://www.bilibili.com/video/BV1G1421z73r/) | [musetalk](https://youtu.be/vzUMruoZlxc/)
 
-国内镜像: <https://gitee.com/lipku/LiveTalking>
+Domestic Mirror: <https://gitee.com/lipku/LiveTalking>
 
 ---
 
 ## Features
-1. 支持多种数字人模型: ernerf、musetalk、wav2lip、Ultralight-Digital-Human
-2. 支持声音克隆
-3. 支持数字人说话被打断
-4. 支持全身视频拼接
-5. 支持 WebRTC、RTMP、虚拟摄像头输出
-6. 支持动作编排：不说话时播放自定义视频
-7. 支持多并发
-8. 支持自定义数字人形象
-9. 提供前端API接口对接
+1. Supports multiple digital human models: ernerf, musetalk, wav2lip, Ultralight-Digital-Human
+2. Supports voice cloning
+3. Supports interrupting the digital human while speaking
+4. Supports full-body video stitching
+5. Supports WebRTC, RTMP, and virtual camera output
+6. Supports action choreography: plays custom videos when not speaking
+7. Supports multi-concurrency
+8. Supports custom digital human avatars
+9. Provides frontend API integration
 
 ---
 
-## 使用场景
+## Usage Scenarios
 
-LiveTalking 基于实时流式数字人技术，通过文本或语音驱动虚拟形象说话，结合 LLM 实现智能对话。适用于以下场景：
+LiveTalking leverages real-time streaming digital human technology to drive virtual avatars via text or voice, combined with LLM for intelligent conversation. Suitable for the following scenarios:
 
-| 场景 | 说明 |
-|------|------|
-| **虚拟主播/直播带货** | 24 小时无人直播，通过 LLM 自动生成带货话术，配合动作编排实现自然表现 |
-| **AI 数字人客服** | 接入企业知识库，用户语音提问，数字人实时回答，支持打断重说 |
-| **在线教育/培训** | 教师数字分身录制课程，或通过 API 驱动数字人讲师实时授课 |
-| **智能语音助手** | 结合智能音箱或 APP，调用 `/human` 接口驱动数字人进行语音对话交互 |
-| **大屏讲解** | 数字人讲解员在展厅大屏、活动现场等场景进行内容讲解和互动 |
-| **短视频批量制作** | 通过 API 批量提交文案生成数字人出镜视频，无需真人拍摄，调用 `/human` + `/record` 接口 |
+| Scenario | Description |
+|----------|-------------|
+| **Virtual Streamer / Live Commerce** | 24/7 unmanned live streaming with LLM-generated sales scripts and action choreography for natural performance |
+| **AI Digital Human Customer Service** | Integrate enterprise knowledge bases for real-time voice Q&A with interruption support |
+| **Online Education / Training** | Digital teacher分身 for course recording, or API-driven digital instructor for real-time lectures |
+| **Intelligent Voice Assistant** | Pair with smart speakers or apps, calling the `/human` API to drive digital human voice interactions |
+| **Large Screen Presentation** | Digital human presenter for exhibition halls, event venues, and other content narration scenarios |
+| **Batch Short Video Creation** | Submit scripts in batch via API to generate digital human videos without real-person filming, using `/human` + `/record` APIs |
 
-**核心流程**：用户输入文字/音频 → LLM 生成回复（可选）→ TTS 合成语音 → 数字人实时口型同步 → 音视频推流输出
+**Core Flow**: User input (text/audio) → LLM response (optional) → TTS speech synthesis → Real-time lip-sync → Audio/video streaming output
 
 ---
 
-## 1. 安装
+## 1. Installation
 
-已在 Ubuntu 22.04、Python 3.12、PyTorch 2.9.1、CUDA 13.0 测试通过。
+Tested on Ubuntu 24.04, Python 3.12, PyTorch 2.9.1, CUDA 13.0.
 
-### 1.1 安装依赖
+### 1.1 Install Dependencies
 
 ```bash
 git clone https://github.com/lipku/LiveTalking.git 
 conda create -n livetalking python=3.12
 conda activate livetalking
-# 如果 CUDA 版本不为 13.0 (运行 nvidia-smi 确认)，请根据 PyTorch 官网(https://pytorch.org/get-started/previous-versions)安装对应版本
+# If CUDA version is not 13.0 (check via nvidia-smi), install the corresponding PyTorch version(https://pytorch.org/get-started/previous-versions)
 pip install torch==2.9.1 torchvision==0.24.1 torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu130
 cd LiveTalking
 pip install -r requirements.txt
 ```
 
-安装常见问题：[FAQ](https://doc.livetalking.ai/docs/faq/)
+Installation FAQ: <https://doc.livetalking.ai/en/docs/faq/>
 
-Linux CUDA 环境搭建参考: <https://zhuanlan.zhihu.com/p/674972886>
+Linux CUDA environment setup: <https://zhuanlan.zhihu.com/p/674972886>
 
 ---
 
-## 2. 快速开始
+## 2. Quick Start
 
-### 2.1 下载模型
+### 2.1 Download Models
 
-| 网盘 | 地址 |
-|------|------|
-| 夸克云盘 | <https://pan.quark.cn/s/83a750323ef0> |
+| Source | Link |
+|--------|------|
+| Quark Cloud | <https://pan.quark.cn/s/83a750323ef0> |
 | Google Drive | <https://drive.google.com/drive/folders/1FOC_MD6wdogyyX_7V1d4NDIO7P9NlSAJ?usp=sharing> |
 
-1. 将 `wav2lip256.pth` 拷贝到项目的 `models/` 目录下，重命名为 `wav2lip.pth`
-2. 将 `wav2lip256_avatar1.tar.gz` 解压后整个文件夹拷贝到 `data/avatars/` 目录下
+1. Copy `wav2lip256.pth` to the project's `models/` directory and rename it to `wav2lip.pth`
+2. Extract `wav2lip256_avatar1.tar.gz` and copy the entire extracted folder to `data/avatars/`
 
-### 2.2 启动服务
+### 2.2 Start the Server
 
 ```bash
 python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 ```
 
+> **Note**: The server must open ports TCP:8010, UDP:1-65536
 
->  **注意**: 服务端需开放端口 TCP:8010, UDP:1-65536  
+### 2.3 Client Access
 
+| Method | Description |
+|--------|-------------|
+| Browser | Open `http://serverip:8010/index.html`, click "Start Connection" to play the digital human video, then enter text and submit |
+| API | See [API Docs](docs/api.md) for HTTP-based integration |
+| Desktop App | Download: <https://pan.quark.cn/s/d7192d8ac19b> |
 
-### 2.3 客户端接入
+### 2.4 Web Pages
 
-| 方式 | 说明 |
-|------|------|
-| 浏览器 | 打开 `http://serverip:8010/index.html`，点击"开始连接"播放数字人视频，在文本框输入文字提交即可 |
-| API 调用 | 参考 [API 文档](docs/api.md) 通过 HTTP 接口驱动 |
-| 桌面客户端 | 下载地址: <https://pan.quark.cn/s/d7192d8ac19b> |
-
-### 2.4 Web 页面
-
-| 页面 | 地址 | 说明 |
-|------|------|------|
-| 首页 | `/index.html` | WebRTC 连接 + 文本/音频驱动 + 录制控制 |
-| Avatar 生成 | `/avatar.html` | 上传视频自动生成数字人形象 |
-| 管理后台 | `/admin.html` | 实时监控会话状态与全局配置 |
+| Page | URL | Description |
+|------|-----|-------------|
+| Home | `/index.html` | WebRTC connection + text/audio driver + recording control |
+| Avatar Creator | `/avatar.html` | Upload video to auto-generate digital human avatars |
+| Admin Console | `/admin.html` | Real-time session monitoring & global configuration |
 
 <img src="./assets/index.jpg" align="middle"/>
 
-### 2.5 快速体验
+### 2.5 Quick Experience
 
-使用在线镜像创建实例即可运行:
+Create an instance with a cloud image to run instantly:
 
-- [UCloud 镜像](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking)
+- [UCloud Image](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking)
 
-### 2.6 使用说明
-<https://doc.livetalking.ai>
+### 2.6 Documentation
+<https://doc.livetalking.ai/en>
+
 ---
 
-## 3. 系统架构
+## 3. Architecture
 
-### 数据流图
+### Dataflow Diagram
 
 <img src="./assets/dataflow.png" align="middle" />
 
+### Layer Overview
 
-### 各层说明
+**API Layer**
+- `/human`: Accepts text, supporting echo (direct playback) and chat (LLM conversation) modes
+- `/humanaudio`: Accepts audio files for direct playback
+- Each connection is assigned a unique `sessionid`, supporting multi-user concurrency
 
-**API 层**
-- `/human`: 接收文本，支持 echo（直接复读）和 chat（LLM 对话）模式
-- `/humanaudio`: 接收音频文件直接播放
-- 每个连接分配唯一 `sessionid`，支持多用户并发
+**Logic Layer**
+- **LLM Engine**: Integrates with models like Qwen to generate conversational responses
+- **TTS Engine**: Modular design supporting EdgeTTS, GPT-SoVITS, CosyVoice, Tencent Cloud, and more
+- **Feature Extraction**: Synchronously extracts acoustic features (e.g., Mel spectrograms) for lip-sync inference
 
-**逻辑层**
-- **LLM 引擎**: 对接 Qwen 等大模型生成对话回复
-- **TTS 引擎**: 模块化设计，支持 EdgeTTS、GPT-SoVITS、CosyVoice、腾讯云等多种方案
-- **特征提取**: 同步提取音频的声学特征（如 Mel 频谱），用于口型推理
+**Rendering Layer**
+- **Model Inference**: Uses deep learning models (Wav2Lip, MuseTalk, etc.) to generate lip-sync frames from audio features
+- **Post-Processing**: Smoothly overlays the generated mouth region back onto the original high-definition video
 
-**渲染层**
-- **模型推理**: 使用深度学习模型 (Wav2Lip, MuseTalk 等) 根据音频特征生成口型画面
-- **后处理**: 将生成的口型区域平滑贴回原始高清视频
+**Streaming Layer**
+- **WebRTC**: Low-latency browser-based streaming
+- **RTMP**: Standard live streaming protocol, supports pushing to platforms like Bilibili/YouTube
+- **Virtual Camera**: Outputs as a system camera device
 
-**推流层**
-- **WebRTC**: 低延迟浏览器端推流
-- **RTMP**: 标准直播协议，支持推流到 B站/YouTube 等平台
-- **虚拟摄像头**: 输出为系统摄像头设备
-
-**插件系统**
-- 基于 [registry.py](registry.py) 的去中心化注册机制，开发者可自行扩展 TTS、Avatar、Output 模块
-
----
-
-## 4. API 接口
-
-| 文档 | 说明 |
-|------|------|
-| [docs/api.md](docs/api.md) | 通用业务 API — WebRTC、文本/音频驱动、录制、动作编排 |
-| [docs/avatar_api.md](docs/avatar_api.md) | Avatar 生成 API — 创建任务、查询进度、删除任务 |
-| [docs/admin_api.md](docs/admin_api.md) | Admin 管理 API — 全局配置、会话监控、强制停止 |
+**Plugin System**
+- Decentralized registration mechanism based on [registry.py](registry.py), allowing developers to extend TTS, Avatar, and Output modules
 
 ---
 
-## 5. Docker 运行
+## 4. API Documentation
 
-镜像说明:
-- **AutoDL**: <https://www.codewithgpu.com/i/lipku/livetalking/base> — [教程](https://doc.livetalking.ai/docs/autodl/)
-- **UCloud**: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking> — 支持开放任意端口，无需额外部署 SRS — [教程](https://doc.livetalking.ai/docs/ucloud/)
-
-> AutoDL 由于不能开放 UDP 端口，需自行部署 SRS 或 TURN 转发服务。
+| Document | Description |
+|----------|-------------|
+| [docs/api.md](docs/api.md) | General API — WebRTC, text/audio driver, recording, action choreography |
+| [docs/avatar_api.md](docs/avatar_api.md) | Avatar Generation API — create tasks, query progress, delete tasks |
+| [docs/admin_api.md](docs/admin_api.md) | Admin API — global config, session monitoring, force stop |
 
 ---
 
-## 6. 性能指标
+## 5. Docker
 
-- 每路视频压缩消耗 CPU，分辨率越高 CPU 消耗越大；每路口型推理消耗 GPU
-- 不说话时并发数取决于 CPU，同时说话并发数取决于 GPU
-- 后端日志 `inferfps` = GPU 推理帧率, `finalfps` = 最终推流帧率，两者均需 >=25 才算实时
+Available images:
+- **AutoDL**: <https://www.codewithgpu.com/i/lipku/livetalking/base> — [Tutorial](https://doc.livetalking.ai/en/docs/autodl/)
+- **UCloud**: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking> — Supports opening any port, no additional SRS deployment required — [Tutorial](https://doc.livetalking.ai/en/docs/ucloud/)
 
-### 实时推理性能
+> AutoDL cannot open UDP ports, so you need to deploy SRS or TURN relay service separately.
 
-| 模型 | 显卡 | FPS |
-|:------|:------|:----|
+---
+
+## 6. Performance
+
+- Each video stream compression consumes CPU; higher resolution means greater CPU usage. Each lip-sync inference consumes GPU
+- Concurrent sessions when not speaking depend on CPU; concurrent speaking sessions depend on GPU
+- In backend logs: `inferfps` = GPU inference frame rate, `finalfps` = final streaming frame rate. Both must be >= 25 for real-time performance
+
+### Real-Time Inference Performance
+
+| Model | GPU | FPS |
+|:------|:----|:----|
 | wav2lip256 | RTX 3060 | 60 |
 | wav2lip256 | RTX 3080Ti | 120 |
 | musetalk | RTX 3080Ti | 42 |
 | musetalk | RTX 3090 | 45 |
 | musetalk | RTX 4090 | 72 |
 
-- wav2lip256 推荐 RTX 3060 及以上
-- musetalk 推荐 RTX 3080Ti 及以上
+- wav2lip256: RTX 3060 or higher recommended
+- musetalk: RTX 3080Ti or higher recommended
 
 ---
 
-## 7. 声明
+## 7. Statement
 
-基于本项目开发并发布在B站、视频号、抖音等平台上的视频需带上 LiveTalking 水印和标识。
+Videos developed based on this project and published on platforms such as Bilibili, WeChat Channels, and Douyin must include the LiveTalking watermark and logo.
 
 ---
 
-如果本项目对你有帮助，帮忙点个 Star。也欢迎感兴趣的朋友一起来完善该项目。
+If this project is helpful to you, please give it a Star. Contributors interested in improving this project are also welcome.
 
-| 社区 | 链接 |
-|------|------|
-| 知识星球 | <https://t.zsxq.com/7NMyO> |
-| 微信 | wxwubug (加群请备注) |
+| Community | Link |
+|-----------|------|
+| Knowledge Planet | <https://t.zsxq.com/7NMyO> |
+| WeChat | wxwubug (mention for group invite) |
 | Telegram | <https://t.me/livetalking> |
 | Discord | <https://discord.gg/n5jSPCT3Uf> |
 | Email | lipku@foxmail.com |
-| 微信公众号 | 数字人技术 |
+| WeChat Official | 数字人技术 |
 
 <img src="./assets/qrcode-wechat.jpg" align="middle" />
