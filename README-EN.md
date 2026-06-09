@@ -8,6 +8,9 @@
   <a href=""><img src="https://img.shields.io/badge/python-3.10+-aff.svg"></a>
   <a href=""><img src="https://img.shields.io/badge/os-linux%2C%20win%2C%20mac-pink.svg"></a>
 </p>
+<p align="center">
+<a href="https://trendshift.io/repositories/12565" target="_blank"><img src="https://trendshift.io/api/badge/repositories/12565" alt="lipku%2FLiveTalking | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+</p>
 
 A real-time interactive streaming digital human system enabling synchronized audio-video conversation, meeting commercial application standards.
 

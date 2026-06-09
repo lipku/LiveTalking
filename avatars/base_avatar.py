@@ -95,7 +95,8 @@ class BaseAvatar:
             'doubao': 'tts.doubao',
             'indextts2': 'tts.indextts2',
             'azuretts': 'tts.azure',
-            'qwentts': 'tts.qwentts'
+            'qwentts': 'tts.qwentts',
+            'omnitts': 'tts.omnitts'
         }
 
         if opt.tts in _tts_modules:
@@ -250,11 +251,11 @@ class BaseAvatar:
         if self.width == 0:
             self.height, self.width, _ = image.shape
         if self.recording:
-            self._record_video_pipe.stdin.write(image.tostring())
+            self._record_video_pipe.stdin.write(image.tobytes()) #tostring()
 
     def record_audio_data(self, frame):
         if self.recording:
-            self._record_audio_pipe.stdin.write(frame.tostring())
+            self._record_audio_pipe.stdin.write(frame.tobytes())
 		
     def stop_recording(self):
         if not self.recording:

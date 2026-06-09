@@ -17,7 +17,7 @@
 
 # server.py
 from flask import Flask, render_template,send_from_directory,request, jsonify
-from flask_sockets import Sockets
+#from flask_sockets import Sockets
 import base64
 import json
 #import gevent
@@ -54,6 +54,7 @@ from typing import Dict
 from utils.logger import logger
 import copy
 import gc
+from dotenv import load_dotenv
 
 from utils.hardware_monitor import log_device_info, log_resource_usage, start_monitoring
 
@@ -256,6 +257,7 @@ def main():
 # os.environ['MULTIPROCESSING_METHOD'] = 'forkserver'                                                    
 if __name__ == '__main__':
     mp.set_start_method('spawn')
+    load_dotenv()  # Load environment variables from .env file, if it exists
     main()
     
     
