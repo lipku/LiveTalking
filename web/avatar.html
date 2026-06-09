@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avatar 生成 - LiveTalking</title>
+    <title>Avatar Creator - LiveTalking</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
@@ -128,23 +128,23 @@
     <div class="container-fluid px-4">
         <a class="navbar-brand" href="#">
             <i class="bi bi-person-bounding-box me-2"></i>
-            LiveTalking Avatar 生成系统
+            LiveTalking Avatar Creator
         </a>
     </div>
 </nav>
 
 <div class="container">
     <div class="row">
-        <!-- 提交任务表单 -->
+        <!-- Task Form -->
         <div class="col-lg-5">
             <div class="glass-card">
                 <div class="card-header">
-                    <i class="bi bi-plus-circle-fill"></i> 创建新生成任务
+                    <i class="bi bi-plus-circle-fill"></i> Create New Task
                 </div>
                 <div class="card-body">
                     <form id="taskForm">
                         <div class="mb-3">
-                            <label class="form-label">算法模型</label>
+                            <label class="form-label">Model</label>
                             <select class="form-select" name="model" id="modelSelect" required>
                                 <option value="wav2lip">Wav2Lip</option>
                                 <option value="musetalk">MuseTalk</option>
@@ -152,22 +152,22 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Avatar ID</label>
-                            <input type="text" class="form-control" name="avatar_id" placeholder="如: wav2lip256_test" required>
+                            <input type="text" class="form-control" name="avatar_id" placeholder="e.g. my_avatar_001" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">视频文件</label>
+                            <label class="form-label">Video File</label>
                             <input type="file" class="form-control" name="video_file" accept="video/*" required>
                         </div>
 
                         <div class="mb-3">
                             <a class="text-decoration-none" data-bs-toggle="collapse" href="#advancedParams" role="button">
-                                <i class="bi bi-gear me-1"></i> 高级参数 (可选)
+                                <i class="bi bi-gear me-1"></i> Advanced (Optional)
                             </a>
                             <div class="collapse mt-2" id="advancedParams">
                                 <div class="param-group">
                                     <div class="row">
                                         <div class="col-6 mb-2">
-                                            <label class="form-label small">图像大小</label>
+                                            <label class="form-label small">Image Size</label>
                                             <input type="number" class="form-control form-control-sm" name="img_size" id="imgSizeInput" value="256">
                                         </div>
                                         <div class="col-6 mb-2">
@@ -177,11 +177,11 @@
                                     </div>
                                     <div class="row">
                                         <div class="col-6 mb-2">
-                                            <label class="form-label small">Pads (上下左右)</label>
+                                            <label class="form-label small">Pads (top bottom left right)</label>
                                             <input type="text" class="form-control form-control-sm" name="pads" value="0 10 0 0" placeholder="0 10 0 0">
                                         </div>
                                         <div class="col-6 mb-2">
-                                            <label class="form-label small">人脸检测批大小</label>
+                                            <label class="form-label small">Face Detect Batch Size</label>
                                             <input type="number" class="form-control form-control-sm" name="face_det_batch_size" value="4">
                                         </div>
                                     </div>
@@ -190,26 +190,26 @@
                         </div>
 
                         <button type="submit" class="btn btn-submit w-100 mt-2" id="submitBtn">
-                            <i class="bi bi-cloud-arrow-up-fill me-2"></i>提交生成任务
+                            <i class="bi bi-cloud-arrow-up-fill me-2"></i>Submit Task
                         </button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- 任务列表 -->
+        <!-- Task List -->
         <div class="col-lg-7">
             <div class="glass-card">
                 <div class="card-header">
-                    <i class="bi bi-list-task"></i> 任务列表
+                    <i class="bi bi-list-task"></i> Task List
                     <span class="refresh-spinner" id="refreshInfo">
-                        <i class="bi bi-arrow-repeat spin"></i> 自动更新中...
+                        <i class="bi bi-arrow-repeat spin"></i> Auto refreshing...
                     </span>
                 </div>
                 <div class="card-body" id="taskList" style="max-height: 600px; overflow-y: auto;">
                     <div class="text-center py-5 text-muted">
                         <div class="spinner-border spinner-border-sm me-2"></div>
-                        正在加载任务列表...
+                        Loading tasks...
                     </div>
                 </div>
             </div>
@@ -223,11 +223,10 @@
     const submitBtn = document.getElementById('submitBtn');
     const taskList = document.getElementById('taskList');
 
-    // 提交任务
     taskForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>正在上传并创建任务...';
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading & creating task...';
 
         const formData = new FormData(taskForm);
 
@@ -239,21 +238,20 @@
             const result = await response.json();
 
             if (result.code === 0) {
-                alert('任务提交成功! Task ID: ' + result.data.task_id);
+                alert('Task created! Task ID: ' + result.data.task_id);
                 refreshTasks();
             } else {
-                alert('提交失败: ' + result.msg);
+                alert('Failed: ' + result.msg);
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('提交发生网络错误');
+            alert('Network error');
         } finally {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-2"></i>提交生成任务';
+            submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-2"></i>Submit Task';
         }
     });
 
-    // 刷新任务列表
     async function refreshTasks() {
         try {
             const response = await fetch('/api/avatar/tasks');
@@ -269,7 +267,7 @@
 
     function renderTasks(tasks) {
         if (!tasks || tasks.length === 0) {
-            taskList.innerHTML = '<div class="text-center py-5 text-muted">暂无任务</div>';
+            taskList.innerHTML = '<div class="text-center py-5 text-muted">No tasks yet</div>';
             return;
         }
 
@@ -309,7 +307,7 @@
                     <div class="d-flex justify-content-end mt-2">
                         ${isPending ? `
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTask('${task.task_id}')">
-                            <i class="bi bi-trash"></i> 取消任务
+                            <i class="bi bi-trash"></i> Cancel
                         </button>` : ''}
                     </div>
                 </div>
@@ -319,7 +317,7 @@
     }
 
     async function deleteTask(taskId) {
-        if (!confirm('确定要取消此 Pending 任务吗?')) return;
+        if (!confirm('Cancel this pending task?')) return;
 
         try {
             const response = await fetch(`/api/avatar/task/${taskId}`, {
@@ -332,14 +330,12 @@
                 alert(result.msg);
             }
         } catch (error) {
-            alert('删除请求失败');
+            alert('Delete request failed');
         }
     }
 
-    // 初始加载及自动定时刷新
     refreshTasks();
     setInterval(refreshTasks, 3000);
-
 </script>
 
 </body>

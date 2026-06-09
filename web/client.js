@@ -77,7 +77,7 @@ function stop() {
 }
 
 window.onunload = function(event) {
-    // 在这里执行你想要的操作
+    // Perform operations here
     setTimeout(() => {
         pc.close();
     }, 500);
@@ -88,10 +88,10 @@ window.onbeforeunload = function (e) {
                 pc.close();
             }, 500);
         e = e || window.event
-        // 兼容IE8和Firefox 4之前的版本
+        // Compatibility for older browser versions
         if (e) {
-          e.returnValue = '关闭提示'
+          e.returnValue = 'Are you sure you want to leave?'
         }
         // Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
-        return '关闭提示'
+        return 'Are you sure you want to leave?'
       }

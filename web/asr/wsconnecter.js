@@ -4,7 +4,7 @@
  */
 /* 2021-2023 by zhaoming,mali aihealthx.com */
 
-function WebSocketConnectMethod( config ) { //定义socket连接方法类
+function WebSocketConnectMethod( config ) { // Define socket connection method class
 
 	
 	var speechSokt;
@@ -14,20 +14,20 @@ function WebSocketConnectMethod( config ) { //定义socket连接方法类
 	var stateHandle = config.stateHandle;
 			  
 	this.wsStart = function () {
-		var Uri = document.getElementById('wssip').value; //"wss://111.205.137.58:5821/wss/" //设置wss asr online接口地址 如 wss://X.X.X.X:port/wss/
+		var Uri = document.getElementById('wssip').value; //"wss://111.205.137.58:5821/wss/" // Set wss asr online interface address e.g. wss://X.X.X.X:port/wss/
 		if(Uri.match(/wss:\S*|ws:\S*/))
 		{
 			console.log("Uri"+Uri);
 		}
 		else
 		{
-			alert("请检查wss地址正确性");
+			alert("Please check that the WSS address is correct");
 			return 0;
 		}
  
 		if ( 'WebSocket' in window ) {
-			speechSokt = new WebSocket( Uri ); // 定义socket连接对象
-			speechSokt.onopen = function(e){onOpen(e);}; // 定义响应函数
+			speechSokt = new WebSocket( Uri ); // Define socket connection object
+			speechSokt.onopen = function(e){onOpen(e);}; // Define handler functions
 			speechSokt.onclose = function(e){
 			    console.log("onclose ws!");
 			    //speechSokt.close();
@@ -38,12 +38,12 @@ function WebSocketConnectMethod( config ) { //定义socket连接方法类
 			return 1;
 		}
 		else {
-			alert('当前浏览器不支持 WebSocket');
+			alert('WebSocket is not supported by this browser');
 			return 0;
 		}
 	};
 	
-	// 定义停止与发送函数
+	// Define stop and send functions
 	this.wsStop = function () {
 		if(speechSokt != undefined) {
 			console.log("stop ws!");
@@ -62,9 +62,9 @@ function WebSocketConnectMethod( config ) { //定义socket连接方法类
 		}
 	};
 	
-	// SOCEKT连接中的消息与状态响应
+	// Message and status handlers for socket connection
 	function onOpen( e ) {
-		// 发送json
+		// Send JSON
 		var chunk_size = new Array( 5, 10, 5 );
 		var request = {
 			"chunk_size": chunk_size,
@@ -93,7 +93,7 @@ function WebSocketConnectMethod( config ) { //定义socket连接方法类
 		}
 		console.log(JSON.stringify(request));
 		speechSokt.send(JSON.stringify(request));
-		console.log("连接成功");
+		console.log("Connection successful");
 		stateHandle(0);
  
 	}
@@ -109,7 +109,7 @@ function WebSocketConnectMethod( config ) { //定义socket连接方法类
 	
 	function onError( e ) {
  
-		info_div.innerHTML="连接"+e;
+		info_div.innerHTML="Connection " + e;
 		console.log(e);
 		stateHandle(2);
 		
