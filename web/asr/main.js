@@ -51,12 +51,18 @@ var file_data_array;  // array to save file data
 var totalsend=0;
 
 
-// var now_ipaddress=window.location.href;
-// now_ipaddress=now_ipaddress.replace("https://","wss://");
-// now_ipaddress=now_ipaddress.replace("static/index.html","");
-// var localport=window.location.port;
-// now_ipaddress=now_ipaddress.replace(localport,"10095");
-// document.getElementById('wssip').value=now_ipaddress;
+// Auto-detect local ASR server endpoint (Issue #604: SenseVoice integration)
+// Falls back to the input field's default value if detection fails.
+(function() {
+	try {
+		var protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+		var host = window.location.host; // includes hostname:port
+		document.getElementById('wssip').value = protocol + host + "/api/asr";
+		console.log("[ASR] Auto-detected local endpoint: " + protocol + host + "/api/asr");
+	} catch(e) {
+		console.warn("[ASR] Auto-detect failed, using default address", e);
+	}
+})();
 addresschange();
 function addresschange()
 {   
