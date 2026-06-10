@@ -194,7 +194,7 @@ def main():
     elif opt.transport=='rtcpush':
         pagename='rtcpushapi.html'
     logger.info('start http server; http://<serverip>:'+str(opt.listenport)+'/'+pagename)
-    # logger.info('如果使用webrtc，推荐访问webrtc集成前端: http://<serverip>:'+str(opt.listenport)+'/dashboard.html')
+    # logger.info('If using WebRTC, it is recommended to access the WebRTC integrated frontend: http://<serverip>:'+str(opt.listenport)+'/dashboard.html')
     def run_server(runner):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)

@@ -97,7 +97,7 @@
 	  });
 
     $('#btn_start_record').click(function() {
-        // 开始录制
+        // Start recording
         console.log('Starting recording...');
         fetch('/record', {
             body: JSON.stringify({
@@ -123,7 +123,7 @@
     });
 
     $('#btn_stop_record').click(function() {
-        // 结束录制
+        // Stop recording
         console.log('Stopping recording...');
         fetch('/record', {
             body: JSON.stringify({
@@ -149,7 +149,7 @@
     });
 
     // $('#btn_download').click(function() {
-    //     // 下载视频文件
+    //     // Download video file
     //     console.log('Downloading video...');
     //     fetch('/record_lasted.mp4', {
     //         method: 'GET'
@@ -160,17 +160,17 @@
     //             throw new Error('Failed to download the video.');
     //         }
     //     }).then(function(blob) {
-    //         // 创建一个 Blob 对象
+    //         // Create a Blob object
     //         const url = window.URL.createObjectURL(blob);
-    //         // 创建一个隐藏的可下载链接
+    //         // Create a hidden downloadable link
     //         const a = document.createElement('a');
     //         a.style.display = 'none';
     //         a.href = url;
     //         a.download = 'record_lasted.mp4';
     //         document.body.appendChild(a);
-    //         // 触发下载
+    //         // Trigger download
     //         a.click();
-    //         // 清理
+    //         // Cleanup
     //         window.URL.revokeObjectURL(url);
     //         document.body.removeChild(a);
     //         console.log('Video downloaded successfully.');
