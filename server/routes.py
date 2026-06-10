@@ -203,6 +203,18 @@ def setup_routes(app):
     app.router.add_get("/api/admin/config", admin_config)
     app.router.add_get("/api/admin/sessions", admin_sessions)
 
+    # ── Local ASR endpoint (SenseVoice/FunASR) ── Issue #604 ──
+    try:
+        from server.asr_server import asr_websocket_handler, is_funasr_available
+        if is_funasr_available():
+            app.router.add_get("/api/asr", asr_websocket_handler)
+            logger.info("[ASR] ✅ Local SenseVoice ASR endpoint enabled at /api/asr")
+        else:
+            logger.info("[ASR] funasr not installed — local ASR endpoint disabled "
+                        "(pip install funasr modelscope)")
+    except Exception as e:
+        logger.warning(f"[ASR] Failed to register ASR endpoint: {e}")
+
     # 注册 avatar 生成相关的路由
     setup_avatar_routes(app)
 

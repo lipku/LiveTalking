@@ -50,3 +50,8 @@ dashscope
 
 #typeguard==2.13.3
 #onnxruntime-gpu
+
+# Local ASR server (SenseVoice/FunASR) — Issue #604
+# Optional: remove these lines if you don't need local ASR
+funasr
+modelscope
