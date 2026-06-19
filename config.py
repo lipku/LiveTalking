@@ -6,6 +6,12 @@ import argparse
 import json
 import os
 
+try:
+    import yaml
+    _has_yaml = True
+except ImportError:
+    _has_yaml = False
+
 
 def str_or_int(value):
     """尝试转换为 int，失败则返回 str"""
@@ -15,9 +21,31 @@ def str_or_int(value):
         return value
 
 
+def _yaml_to_args(yaml_cfg):
+    """将 YAML 字典中的 key 转换为 argparse 兼容的 `--key` 形式。
+
+    argparse 的 dest 默认规则：`--model` → `model`，`--push-url` → `push_url`。
+    此函数同时支持两种 key 写法：
+      - model / batch_size          → 直接透传
+      - model-name / batch-size    → 转换为 model_name / batch_size
+    """
+    result = {}
+    for k, v in yaml_cfg.items():
+        dest = k.replace('-', '_')
+        result[dest] = v
+    return result
+
+
 def parse_args():
-    """解析命令行参数"""
+    """解析命令行参数，支持 YAML 配置文件覆盖默认值。
+
+    优先级：CLI 参数 > YAML 配置文件 > add_argument(default=...)
+    """
     parser = argparse.ArgumentParser(description="LiveTalking Digital Human Server")
+
+    # ─── 配置文件 ──────────────────────────────────────────────────────
+    parser.add_argument('--config', '-c', type=str, default='config.yaml',
+                        help='YAML 配置文件路径（设为空字符串可跳过）')
 
     # ─── 音频 ──────────────────────────────────────────────────────────
     parser.add_argument('--fps', type=int, default=25, help="video fps, must be 25")
@@ -55,10 +83,26 @@ def parse_args():
                         help="output: rtcpush/webrtc/rtmp/virtualcam")
     parser.add_argument('--push_url', type=str,
                         default='http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream')
-    parser.add_argument('--max_session', type=int, default=1)
+    parser.add_argument('--max_session', type=int, default=5)
     parser.add_argument('--listenport', type=int, default=8010,
                         help="web listen port")
 
+    # ─── 加载 YAML 配置文件 ────────────────────────────────────────────
+    if _has_yaml:
+        # 先用 parser 的已知参数做一次临时解析，只拿 --config 的值
+        tmp_opt, _ = parser.parse_known_args()
+        config_path = tmp_opt.config
+        if config_path and os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                yaml_cfg = yaml.safe_load(f)
+            if yaml_cfg and isinstance(yaml_cfg, dict):
+                yaml_defaults = _yaml_to_args(yaml_cfg)
+                parser.set_defaults(**yaml_defaults)
+    else:
+        print("[config] PyYAML 未安装，跳过 YAML 配置文件加载。"
+              "安装: pip install pyyaml")
+
+    # ─── 正式解析 CLI 参数 ─────────────────────────────────────────────
     opt = parser.parse_args()
 
     # ─── 后处理 ────────────────────────────────────────────────────────

@@ -146,6 +146,7 @@
                         <button class="btn-primary-custom" id="btnStart" onclick="start()"><i class="bi bi-play-fill"></i> 开始连接</button>
                         <button class="btn-danger-custom" id="btnStop" onclick="stop()" style="display:none;"><i class="bi bi-stop-fill"></i> 断开连接</button>
                     </div>
+                    <div id="offerError" class="alert alert-danger mt-3" role="alert" style="display:none;"></div>
                     <div class="mt-3">
                         <video id="video" autoplay playsinline muted controls></video>
                         <audio id="audio" autoplay></audio>
@@ -239,6 +240,13 @@ function setSessionId(sid) {
     document.getElementById('sessionIdDisplay').textContent = 'SID: ' + (sid || '-');
 }
 
+function showError(msg) {
+    const el = document.getElementById('offerError');
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 8000);
+}
+
 // ─── WebRTC ────────────────────────────────────────────────
 function negotiate() {
     pc.addTransceiver('video', { direction: 'recvonly' });
@@ -262,12 +270,29 @@ function negotiate() {
         };
         return fetch('/offer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }).then(res => res.json()).then(answer => {
+        // 检查服务端返回的错误码
+        if (answer.code && answer.code !== 0) {
+            throw new Error(answer.msg || 'Unknown server error');
+        }
+        if (!answer.sdp) {
+            throw new Error('Server returned no SDP');
+        }
         if (answer.sessionid) setSessionId(answer.sessionid);
         return pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answer.sdp }));
-    }).catch(e => console.error('Negotiation error:', e));
+    }).catch(e => {
+        const msg = e.message || String(e);
+        showError(msg);
+        // 出错时重置连接状态
+        if (pc) { pc.close(); pc = null; }
+        updateStatus(false);
+        setSessionId(null);
+        document.getElementById('btnStart').style.display = 'inline-block';
+        document.getElementById('btnStop').style.display = 'none';
+    });
 }
 
 function start() {
+    document.getElementById('offerError').style.display = 'none';
     const config = { sdpSemantics: 'unified-plan' };
     if (document.getElementById('use-stun')?.checked) {
         config.iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];

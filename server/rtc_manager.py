@@ -22,6 +22,7 @@ from utils.logger import logger
 
 
 from server.session_manager import session_manager
+from server.session_manager import MaxSessionError
 
 class RTCManager:
     """
@@ -43,17 +44,15 @@ class RTCManager:
         params = await request.json()
         offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
 
-        if False: # 不再由 RTCManager 控制 max_session，让业务逻辑或SessionManager 控制
-            logger.info('reach max session')
+        # 通过 SessionManager 构建（内部会检查 max_session）
+        try:
+            sessionid = await session_manager.create_session(params)
+        except MaxSessionError as e:
+            logger.warning("Rejecting offer: %s", e)
             return web.Response(
                 content_type="application/json",
-                text=json.dumps({"code": -1, "msg": "reach max session"}),
+                text=json.dumps({"code": -1, "msg": str(e)}),
             )
-
-        #sessionid = _rand_session_id()
-
-        # 通过 SessionManager 构建
-        sessionid = await session_manager.create_session(params)
         logger.info('offer sessionid=%s', sessionid)
         avatar_session = session_manager.get_session(sessionid)
 

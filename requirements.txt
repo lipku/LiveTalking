@@ -1,4 +1,5 @@
 python-dotenv
+pyyaml
 #torch-ema
 ##ninja
 #trimesh

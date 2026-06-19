@@ -121,7 +121,7 @@ class QwenTTS(BaseTTS):
         text, textevent = msg
         t_start = time.perf_counter()
 
-        ref_file = textevent.get('tts', {}).get('ref_file',self.opt.REF_FILE)
+        ref_file = textevent.get('tts', {}).get('ref_file',self.voice)
 
         # 重置状态
         self._remainder = np.array([], dtype=np.float32)

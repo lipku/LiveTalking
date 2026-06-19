@@ -12,12 +12,12 @@ class AzureTTS(BaseTTS):
     def __init__(self, opt, parent):
         super().__init__(opt,parent)
         self.audio_buffer = b''
-        voicename = self.opt.REF_FILE   # 比如"zh-CN-XiaoxiaoMultilingualNeural"
+        self.voice = opt.REF_FILE or "zh-CN-XiaoxiaoMultilingualNeural"   # 比如"zh-CN-XiaoxiaoMultilingualNeural"
         speech_key = os.getenv("AZURE_SPEECH_KEY")
         tts_region = os.getenv("AZURE_TTS_REGION")
         speech_endpoint = f"wss://{tts_region}.tts.speech.microsoft.com/cognitiveservices/websocket/v2"
         self.speech_config = speechsdk.SpeechConfig(subscription=speech_key,endpoint=speech_endpoint)
-        self.speech_config.speech_synthesis_voice_name = voicename
+        self.speech_config.speech_synthesis_voice_name = self.voice
         self.speech_config.set_speech_synthesis_output_format(speechsdk.SpeechSynthesisOutputFormat.Raw16Khz16BitMonoPcm)
         
         # 获取内存中流形式的结果
@@ -26,7 +26,7 @@ class AzureTTS(BaseTTS):
         
     def txt_to_audio(self,msg:tuple[str, dict]):
         msg_text, textevent = msg
-        ref_file = textevent.get('tts', {}).get('ref_file',self.opt.REF_FILE)
+        ref_file = textevent.get('tts', {}).get('ref_file',self.voice)
         self.speech_config.speech_synthesis_voice_name = ref_file
         # 实时根据新的发言人配置生成新的 synthesizer 可能会很慢，但为保持代码兼容这里不做大幅度调整
         # self.speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config, audio_config=None)

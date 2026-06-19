@@ -151,6 +151,7 @@ def main():
         warm_up(opt.batch_size,global_avatars[opt.avatar_id],160)
 
     # init rtc manager
+    session_manager.set_max_session(opt.max_session)
     session_manager.init_builder(build_avatar_session)
     rtc_manager = RTCManager(opt)
     # share avatar_sessions (RTCManager handles it but routes.py expects it)

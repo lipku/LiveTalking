@@ -1,0 +1,29 @@
+###############################################################################
+#  LiveTalking Configuration
+#  CLI arguments override values in this file
+###############################################################################
+
+# -------- Audio ----------------------------------------------------------
+l: 10
+m: 8
+r: 10
+
+# -------- Avatar Model ----------------------------------------------------------
+model: wav2lip                 # musetalk / wav2lip / ultralight
+avatar_id: wav2lip256_avatar1
+batch_size: 16
+
+# -------- Custom Actions ----------------------------------------------------------
+customvideo_config: ''
+
+# -------- TTS ----------------------------------------------------------
+tts: edgetts                   # edgetts / gpt-sovits / cosyvoice / fishtts / tencent / doubao / indextts2 / azuretts / qwentts
+REF_FILE: ''                   # voice name or reference audio file path (wav, 16kHz, mono)
+REF_TEXT: ''                   # reference text for voice cloning (English or Chinese)
+TTS_SERVER: ''                 # TTS server URL, no trailing slash
+
+# -------- Transport ----------------------------------------------------------
+transport: webrtc              # rtcpush / webrtc / rtmp / virtualcam
+push_url: ''                   # push URL for rtcpush/rtmp (not needed for webrtc/virtualcam)
+max_session: 5                 # max concurrent sessions
+listenport: 8010

@@ -8,6 +8,11 @@ from typing import Dict, Optional
 from utils.logger import logger
 from avatars.base_avatar import BaseAvatar
 
+
+class MaxSessionError(Exception):
+    """会话数达到上限时抛出"""
+    pass
+
 def _rand_session_id() -> str:
     """生成 UUID session ID"""
     return str(uuid.uuid4())
@@ -29,7 +34,12 @@ class SessionManager:
         if not hasattr(self, "initialized"):
             self.sessions: Dict[str, BaseAvatar] = {}
             self.build_session_fn = None
+            self.max_session = 1   # default, override via set_max_session()
             self.initialized = True
+
+    def set_max_session(self, n: int):
+        """设置最大并发会话数"""
+        self.max_session = max(1, n)
 
     def init_builder(self, build_session_fn):
         """配置用于构建 avatar_session 的工厂函数"""
@@ -54,7 +64,14 @@ class SessionManager:
         if sessionid is None:
             sessionid = _rand_session_id()
             
-        logger.info('Creating sessionid=%s, current session num=%d', sessionid, len(self.sessions))
+        # 检查是否达到最大会话数
+        active_count = sum(1 for s in self.sessions.values() if s is not None)
+        if active_count >= self.max_session:
+            raise MaxSessionError(
+                f"Maximum session limit reached ({active_count}/{self.max_session})"
+            )
+
+        logger.info('Creating sessionid=%s, current session num=%d', sessionid, active_count)
         # 预先占位防止重复
         self.sessions[sessionid] = None
 

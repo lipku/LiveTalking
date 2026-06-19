@@ -26,6 +26,7 @@ class TencentTTS(BaseTTS):
         self.secret_key = os.getenv("TENCENT_SECRET_KEY")
         self.secret_id = os.getenv("TENCENT_SECRET_ID")
         #self.voice_type = int(opt.REF_FILE)
+        self.voice = opt.REF_FILE or "101001"
         self.codec = "pcm"
         self.sample_rate = 16000
         self.volume = 0
@@ -64,7 +65,7 @@ class TencentTTS(BaseTTS):
 
     def txt_to_audio(self,msg:tuple[str, dict]):
         text,textevent = msg 
-        ref_file = textevent.get('tts', {}).get('ref_file',self.opt.REF_FILE)
+        ref_file = textevent.get('tts', {}).get('ref_file',self.voice)
         ref_text = textevent.get('tts', {}).get('ref_text',self.opt.REF_TEXT)
         self.stream_tts(
             self.tencent_voice(
