@@ -10,11 +10,7 @@ python app.py --transport virtualcam --model wav2lip --avatar_id mianshiguan1 --
 
 **OBS Studio**: 添加视频捕获设备 → OBS Virtual Camera
 
-需要下载并启动OBS Studio，然后添加设备捕获，创建虚拟摄像头，从而使用`pyvirtualcam`推流到OBS Studio虚拟摄像头
-
-![1782554623100](image/virtualcam_guide/1782554623100.png)
-
-![1782554793389](image/virtualcam_guide/1782554793389.png)
+需要下载并启动OBS Studio
 
 ### 2. 打开控制页面
 
@@ -123,13 +119,49 @@ GET /api/virtualcam/status
 
 ## 使用指南
 
+### OBS Studio 安装和配置
+
+#### OBS 与 pyvirtualcam 的关系
+
+- **OBS Studio**: 提供虚拟摄像头设备驱动
+- **pyvirtualcam**: Python 库，向虚拟摄像头推送视频流
+- **Zoom/Teams/腾讯会议**: 从虚拟摄像头读取画面
+
+**工作流程**: OBS 创建设备 → pyvirtualcam 推流 → 其他应用读取
+
+#### 安装步骤
+
+1. **下载并安装 OBS Studio**
+
+   - 官网: https://obsproject.com/
+2. **首次使用必须启动 OBS Studio 一次**
+
+   - 打开 OBS Studio（首次）
+   - 这会激活虚拟摄像头设备
+   - 关闭 OBS（设备已注册到系统）
+3. **验证虚拟摄像头已注册**
+
+   ```python
+   import pyvirtualcam
+
+   try:
+       cam = pyvirtualcam.Camera(width=640, height=480, fps=30)
+       print(f"成功: {cam.device}")  # 应输出: OBS Virtual Camera
+       cam.close()
+   except Exception as e:
+       print(f"失败: {e}")
+   ```
+
+**重要提示**:
+
+- ✅ 首次使用需要启动 OBS 一次
+- ✅ 之后无需打开 OBS，设备自动可用
+- ✅ 系统重启后设备仍然存在
+
 ### 前置要求
 
 ```bash
-# 安装 OBS Studio（提供虚拟摄像头设备）
-# 下载: https://obsproject.com/
-
-# 安装 Python 依赖
+# 安装 OBS Studio 后安装 Python 依赖
 pip install pyvirtualcam pyaudio
 ```
 
@@ -272,10 +304,21 @@ Device Index: 25
 
 ### Q3: RuntimeError: virtual camera output could not be started
 
-**解决**: 安装并启动 OBS Studio
+**原因**: 虚拟摄像头设备未注册或未激活
 
-- 下载: https://obsproject.com/
-- 打开 OBS → 工具 → 虚拟摄像头 → 启动
+**解决步骤**:
+
+1. 确认已安装 OBS Studio: https://obsproject.com/
+2. **首次使用必须启动 OBS Studio 一次**
+   - 打开 OBS Studio
+   - 关闭 OBS（设备已激活）
+3. 验证设备已注册:
+   ```python
+   import pyvirtualcam
+   cam = pyvirtualcam.Camera(width=640, height=480, fps=30)
+   print(cam.device)  # 应输出: OBS Virtual Camera
+   ```
+4. 之后无需打开 OBS，设备自动可用
 
 ### Q4: ModuleNotFoundError: No module named 'pyaudio'
 
