@@ -155,14 +155,17 @@ def main():
     session_manager.init_builder(build_avatar_session)
     rtc_manager = RTCManager(opt)
     # share avatar_sessions (RTCManager handles it but routes.py expects it)
-    
-    if opt.transport=='virtualcam' or opt.transport=='rtmp':
+
+    # 虚拟摄像头或 RTMP 模式：启动后台渲染线程
+    if opt.transport == 'virtualcam' or opt.transport == 'rtmp':
         thread_quit = Event()
         params = {}
         # session 0 for virtualcam
         session_manager.add_session('0', build_avatar_session('0', params))
-        rendthrd = Thread(target=session_manager.get_session('0').render,args=(thread_quit,))
+        rendthrd = Thread(target=session_manager.get_session('0').render, args=(thread_quit,))
         rendthrd.start()
+        if opt.transport == 'virtualcam':
+            logger.info("[VirtualCam] Virtual camera output enabled - digital human will be rendered to virtual camera")
 
     #############################################################################
     appasync = web.Application(client_max_size=1024**2*100)

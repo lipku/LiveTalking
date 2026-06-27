@@ -87,6 +87,10 @@ def parse_args():
     parser.add_argument('--listenport', type=int, default=8010,
                         help="web listen port")
 
+    # ─── 虚拟摄像头 ───────────────────────────────────────────────────
+    parser.add_argument('--audio_output_device', type=int, default=None,
+                        help="音频输出设备索引（None=系统默认，仅用于 --transport=virtualcam）。使用 python list_audio_devices.py 查看所有设备")
+
     # ─── 加载 YAML 配置文件 ────────────────────────────────────────────
     if _has_yaml:
         # 先用 parser 的已知参数做一次临时解析，只拿 --config 的值

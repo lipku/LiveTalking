@@ -21,6 +21,7 @@ class VirtualCamOutput(BaseOutput):
         self.width = getattr(opt, 'W', 450)
         self.height = getattr(opt, 'H', 450)
         self.fps = getattr(opt, 'fps', 25)
+        self.audio_output_device = getattr(opt, 'audio_output_device', None)
         self._cam = None
         self._audio_queue = None
         self._audio_thread = None
@@ -29,12 +30,33 @@ class VirtualCamOutput(BaseOutput):
     def _play_audio_loop(self):
         import pyaudio
         p = pyaudio.PyAudio()
+
+        # 使用用户指定的设备索引，或自动选择默认设备
+        if self.audio_output_device is not None:
+            output_device_index = self.audio_output_device
+            try:
+                device_info = p.get_device_info_by_index(output_device_index)
+                logger.info(f"[VirtualCam Audio] Using specified device: {device_info['name']} (index {output_device_index})")
+            except:
+                logger.warning(f"[VirtualCam Audio] Device index {output_device_index} not found, using default")
+                output_device_index = None
+        else:
+            # 获取默认输出设备
+            try:
+                default_output_info = p.get_default_output_device_info()
+                output_device_index = default_output_info['index']
+                logger.info(f"[VirtualCam Audio] Using default output device: {default_output_info['name']} (index {output_device_index})")
+            except:
+                # 如果无法获取默认设备，使用 None 让 PyAudio 自动选择
+                output_device_index = None
+                logger.warning("[VirtualCam Audio] Cannot get default output device, using system default")
+
         stream = p.open(
             rate=16000,
             channels=1,
             format=8,
             output=True,
-            output_device_index=1,
+            output_device_index=output_device_index,
         )
         stream.start_stream()
         import queue
@@ -45,6 +67,7 @@ class VirtualCamOutput(BaseOutput):
             except queue.Empty:
                 continue
         stream.close()
+        p.terminate()
 
     def start(self) -> None:
         """启动虚拟摄像头音频线程，视频流延迟到第一帧接收时初始化"""
@@ -74,8 +97,11 @@ class VirtualCamOutput(BaseOutput):
                     fps=self.fps,
                 )
                 logger.info(f"VirtualCam output started: {self._cam.device} with resolution {self.width}x{self.height}")
-            
-            self._cam.send(frame)
+
+            # pyvirtualcam 需要 RGB 格式，而 cv2 渲染的是 BGR 格式，需要转换
+            import cv2
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            self._cam.send(frame_rgb)
             self._cam.sleep_until_next_frame()
 
     def push_audio_frame(self, frame, eventpoint=None) -> None:
