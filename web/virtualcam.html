@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveTalking - 虚拟摄像头控制台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3f37c9;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #f0f4fc;
+            --card-bg: rgba(255,255,255,0.85);
+            --radius: 14px;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: #1e293b;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: var(--radius);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            padding: 16px 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-header i { color: var(--primary); font-size: 1.2rem; }
+        .card-body { padding: 20px; }
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(67,97,238,0.4);
+        }
+        .btn-success-custom {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+        .btn-success-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+        }
+        .btn-danger-custom {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+        .btn-danger-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239,68,68,0.4);
+        }
+        .btn-warning-custom {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+        .btn-warning-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245,158,11,0.4);
+        }
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .status-speaking {
+            background: rgba(16,185,129,0.2);
+            color: #059669;
+        }
+        .status-silent {
+            background: rgba(100,116,139,0.2);
+            color: #64748b;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        .status-speaking .status-dot {
+            background: #10b981;
+        }
+        .status-silent .status-dot {
+            background: #94a3b8;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .config-section {
+            background: rgba(241,245,249,0.5);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .config-section h6 {
+            color: #4361ee;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        textarea {
+            resize: none;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+            padding: 12px;
+            font-family: inherit;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #4361ee;
+            box-shadow: 0 0 0 3px rgba(67,97,238,0.1);
+        }
+        .form-select, .form-control {
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+            padding: 10px 12px;
+        }
+        .form-select:focus, .form-control:focus {
+            outline: none;
+            border-color: #4361ee;
+            box-shadow: 0 0 0 3px rgba(67,97,238,0.1);
+        }
+        .history-item {
+            background: rgba(241,245,249,0.5);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .history-item:hover {
+            background: rgba(241,245,249,0.8);
+            transform: translateX(4px);
+        }
+        .history-item .time {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        .history-item .text {
+            color: #1e293b;
+        }
+        .page-title {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .page-title h1 {
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        .page-title p {
+            color: rgba(255,255,255,0.8);
+            font-size: 1rem;
+        }
+        .alert-info-custom {
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.3);
+            color: #1e40af;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+        .quick-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: rgba(67,97,238,0.1);
+            color: #4361ee;
+            font-weight: 600;
+            margin: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .quick-btn:hover {
+            background: rgba(67,97,238,0.2);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="page-title">
+        <h1><i class="bi bi-camera-video"></i> 虚拟摄像头控制台</h1>
+        <p>Session 0 专用控制面板 - 数字人虚拟摄像头输出</p>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <!-- 左侧：控制面板 -->
+            <div class="col-lg-8">
+                <!-- 状态显示 -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <i class="bi bi-activity"></i>
+                        <span>当前状态</span>
+                        <span id="statusIndicator" class="status-indicator status-silent ms-auto">
+                            <span class="status-dot"></span>
+                            <span>静音中</span>
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="config-section">
+                                    <h6><i class="bi bi-camera-video-fill"></i> 虚拟摄像头</h6>
+                                    <p class="mb-1"><strong>设备名称：</strong><span id="virtualcamDevice">OBS Virtual Camera</span></p>
+                                    <p class="mb-1"><strong>分辨率：</strong><span id="resolution">1280x720</span></p>
+                                    <p class="mb-0"><strong>帧率：</strong><span id="fps">25 FPS</span></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="config-section">
+                                    <h6><i class="bi bi-speaker"></i> 音频输出</h6>
+                                    <p class="mb-1"><strong>设备：</strong><span id="audioDevice">系统默认扬声器</span></p>
+                                    <p class="mb-0"><strong>采样率：</strong>16000 Hz</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文本输入 -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <i class="bi bi-chat-text"></i>
+                        <span>语音输出</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">输入文本内容</label>
+                            <textarea id="textInput" class="form-control" rows="4"
+                                placeholder="输入要让数字人说的文本，然后点击发送按钮..."></textarea>
+                        </div>
+
+                        <!-- 快捷短语 -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">快捷短语</label>
+                            <div>
+                                <span class="quick-btn" onclick="quickSpeak('你好，欢迎观看')">你好</span>
+                                <span class="quick-btn" onclick="quickSpeak('感谢您的关注')">感谢</span>
+                                <span class="quick-btn" onclick="quickSpeak('请问有什么可以帮助您的？')">询问</span>
+                                <span class="quick-btn" onclick="quickSpeak('再见，下次再见')">再见</span>
+                                <span class="quick-btn" onclick="quickSpeak('请稍等，我正在处理')">等待</span>
+                            </div>
+                        </div>
+
+                        <!-- 控制按钮 -->
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button id="speakBtn" class="btn btn-success-custom" onclick="sendText()">
+                                <i class="bi bi-play-fill"></i> 发送文本
+                            </button>
+                            <button id="interruptBtn" class="btn btn-danger-custom" onclick="interruptSpeech()">
+                                <i class="bi bi-stop-fill"></i> 打断播放
+                            </button>
+                            <button class="btn btn-warning-custom" onclick="clearInput()">
+                                <i class="bi bi-x-circle"></i> 清空输入
+                            </button>
+                            <button class="btn btn-primary-custom" onclick="checkStatus()">
+                                <i class="bi bi-refresh"></i> 刷新状态
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 当前运行配置 -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <i class="bi bi-gear"></i>
+                        <span>当前运行配置</span>
+                        <span class="badge bg-info ms-auto">实时状态</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info-custom mb-3">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>提示：</strong>配置由服务启动参数决定，如需修改请编辑
+                            <code>config.yaml</code> 或修改启动命令参数。
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Avatar ID</label>
+                                <input type="text" id="avatarId" class="form-control" readonly
+                                    style="background: #f8f9fa;">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">TTS 类型</label>
+                                <input type="text" id="ttsType" class="form-control" readonly
+                                    style="background: #f8f9fa;">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">REF_FILE (音色)</label>
+                                <input type="text" id="refFile" class="form-control" readonly
+                                    style="background: #f8f9fa;">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">音频输出设备索引</label>
+                                <input type="text" id="audioDeviceIndex" class="form-control" readonly
+                                    style="background: #f8f9fa;" placeholder="系统默认">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">模型</label>
+                                <input type="text" id="modelType" class="form-control" readonly
+                                    style="background: #f8f9fa;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：历史记录 -->
+            <div class="col-lg-4">
+                <div class="glass-card">
+                    <div class="card-header">
+                        <i class="bi bi-clock-history"></i>
+                        <span>发送历史</span>
+                        <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="clearHistory()">
+                            <i class="bi bi-trash"></i> 清空
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="historyList" style="max-height: 400px; overflow-y: auto;">
+                            <!-- 历史记录会动态插入 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 使用说明 -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <i class="bi bi-book"></i>
+                        <span>使用说明</span>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success"></i>
+                                输入文本后点击"发送文本"即可让数字人说话
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success"></i>
+                                点击"打断播放"可立即停止当前说话
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success"></i>
+                                快捷短语可快速发送常用语句
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success"></i>
+                                历史记录可点击重新发送
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success"></i>
+                                键盘快捷键：Ctrl+Enter 发送，Escape 打断
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-info-circle text-primary"></i>
+                                配置由启动参数决定，页面仅显示当前状态
+                            </li>
+                            <li class="mb-0">
+                                <i class="bi bi-info-circle text-primary"></i>
+                                Session ID 固定为 "0"
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8010';
+        const SESSION_ID = '0';
+        let speakingHistory = [];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            checkStatus();
+            loadHistory();
+            loadVirtualCamStatus();
+            // 定期更新状态
+            setInterval(checkStatus, 3000);
+            setInterval(loadVirtualCamStatus, 5000);
+        });
+
+        // 加载虚拟摄像头状态（实时配置）
+        async function loadVirtualCamStatus() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/virtualcam/status`);
+                const result = await response.json();
+
+                if (result.code === 0 && result.data) {
+                    const data = result.data;
+                    // 显示当前运行的实际配置
+                    document.getElementById('avatarId').value = data.avatar_id || '未配置';
+                    document.getElementById('ttsType').value = data.tts || '未配置';
+                    document.getElementById('refFile').value = data.ref_file || '未配置';
+                    document.getElementById('modelType').value = data.model || '未配置';
+
+                    // 音频设备显示
+                    if (data.audio_output_device !== null) {
+                        document.getElementById('audioDeviceIndex').value = data.audio_output_device;
+                        document.getElementById('audioDevice').textContent = `设备索引 ${data.audio_output_device}`;
+                    } else {
+                        document.getElementById('audioDeviceIndex').value = '系统默认';
+                        document.getElementById('audioDevice').textContent = '系统默认扬声器';
+                    }
+                }
+            } catch (error) {
+                console.error('加载虚拟摄像头状态错误:', error);
+            }
+        }
+
+        // 发送文本
+        async function sendText() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                alert('请输入文本内容！');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/human`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionid: SESSION_ID,
+                        type: 'echo',
+                        text: text
+                    })
+                });
+
+                const result = await response.json();
+                if (result.code === 0) {
+                    console.log('发送成功:', text);
+                    addToHistory(text);
+                    document.getElementById('textInput').value = '';
+                    // 立即更新状态
+                    setTimeout(checkStatus, 500);
+                } else {
+                    alert('发送失败: ' + result.msg);
+                }
+            } catch (error) {
+                console.error('发送错误:', error);
+                alert('发送失败，请检查服务是否运行！');
+            }
+        }
+
+        // 快捷说话
+        function quickSpeak(text) {
+            document.getElementById('textInput').value = text;
+            sendText();
+        }
+
+        // 打断播放
+        async function interruptSpeech() {
+            try {
+                const response = await fetch(`${BASE_URL}/interrupt_talk`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionid: SESSION_ID })
+                });
+
+                const result = await response.json();
+                if (result.code === 0) {
+                    console.log('已打断说话');
+                    checkStatus();
+                } else {
+                    alert('打断失败: ' + result.msg);
+                }
+            } catch (error) {
+                console.error('打断错误:', error);
+                alert('打断失败，请检查服务是否运行！');
+            }
+        }
+
+        // 检查状态
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${BASE_URL}/is_speaking`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionid: SESSION_ID })
+                });
+
+                const result = await response.json();
+                updateStatusIndicator(result.data);
+            } catch (error) {
+                console.error('状态检查错误:', error);
+                updateStatusIndicator(false);
+            }
+        }
+
+        // 更新状态指示器
+        function updateStatusIndicator(isSpeaking) {
+            const indicator = document.getElementById('statusIndicator');
+            if (isSpeaking) {
+                indicator.className = 'status-indicator status-speaking ms-auto';
+                indicator.innerHTML = '<span class="status-dot"></span><span>说话中</span>';
+            } else {
+                indicator.className = 'status-indicator status-silent ms-auto';
+                indicator.innerHTML = '<span class="status-dot"></span><span>静音中</span>';
+            }
+        }
+
+        // 清空输入
+        function clearInput() {
+            document.getElementById('textInput').value = '';
+        }
+
+        // 添加到历史记录
+        function addToHistory(text) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+            speakingHistory.unshift({ text, time: timeStr });
+            if (speakingHistory.length > 20) {
+                speakingHistory.pop();
+            }
+
+            saveHistory();
+            renderHistory();
+        }
+
+        // 渲染历史记录
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            container.innerHTML = speakingHistory.map(item => `
+                <div class="history-item" onclick="replayFromHistory('${item.text}')">
+                    <div class="time">${item.time}</div>
+                    <div class="text">${item.text}</div>
+                </div>
+            `).join('');
+        }
+
+        // 从历史重播
+        function replayFromHistory(text) {
+            document.getElementById('textInput').value = text;
+            sendText();
+        }
+
+        // 清空历史
+        function clearHistory() {
+            speakingHistory = [];
+            saveHistory();
+            renderHistory();
+        }
+
+        // 保存历史到 localStorage
+        function saveHistory() {
+            localStorage.setItem('virtualcam_history', JSON.stringify(speakingHistory));
+        }
+
+        // 加载历史
+        function loadHistory() {
+            const saved = localStorage.getItem('virtualcam_history');
+            if (saved) {
+                speakingHistory = JSON.parse(saved);
+                renderHistory();
+            }
+        }
+
+        // 保存配置
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                sendText();
+            }
+            if (e.key === 'Escape') {
+                interruptSpeech();
+            }
+        });
+    </script>
+</body>
+</html>

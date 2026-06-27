@@ -87,6 +87,36 @@ async def interrupt_talk(request):
         return json_error(str(e))
 
 
+async def virtualcam_status(request):
+    """获取虚拟摄像头状态信息"""
+    try:
+        opt = request.app.get("opt")
+        if not opt:
+            return json_error("config not found")
+
+        # 获取 session 0 的状态
+        avatar_session = get_session(request, '0')
+        is_speaking = False
+        if avatar_session and hasattr(avatar_session, 'speaking'):
+            is_speaking = avatar_session.speaking
+
+        status_info = {
+            "sessionid": "0",
+            "transport": opt.transport,
+            "model": opt.model,
+            "avatar_id": opt.avatar_id,
+            "tts": opt.tts,
+            "ref_file": opt.REF_FILE,
+            "audio_output_device": getattr(opt, 'audio_output_device', None),
+            "is_speaking": is_speaking,
+        }
+
+        return json_ok(status_info)
+    except Exception as e:
+        logger.exception('virtualcam_status exception:')
+        return json_error(str(e))
+
+
 async def humanaudio(request):
     """上传音频文件"""
     try:
@@ -202,13 +232,14 @@ def setup_routes(app):
     app.router.add_post("/is_speaking", is_speaking)
     app.router.add_get("/api/admin/config", admin_config)
     app.router.add_get("/api/admin/sessions", admin_sessions)
+    app.router.add_get("/api/virtualcam/status", virtualcam_status)  # 新增虚拟摄像头状态 API
 
     # ── Local ASR endpoint (SenseVoice/FunASR) ── Issue #604 ──
     try:
         from server.asr_server import asr_websocket_handler, is_funasr_available
         if is_funasr_available():
             app.router.add_get("/api/asr", asr_websocket_handler)
-            logger.info("[ASR] ✅ Local SenseVoice ASR endpoint enabled at /api/asr")
+            logger.info("[ASR] Local SenseVoice ASR endpoint enabled at /api/asr")
         else:
             logger.info("[ASR] funasr not installed — local ASR endpoint disabled "
                         "(pip install funasr modelscope)")
