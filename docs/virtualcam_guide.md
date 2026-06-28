@@ -5,7 +5,7 @@
 ### 1. 启动服务
 
 ```bash
-python app.py --transport virtualcam --model wav2lip --avatar_id mianshiguan1 --tts doubao --REF_FILE zh_male_yangguangqingnian_emo_v2_mars_bigtts
+python app.py --transport virtualcam --model wav2lip --avatar_id wav2lip256_avatar1
 ```
 
 **OBS Studio**: 添加视频捕获设备 → OBS Virtual Camera
@@ -35,11 +35,11 @@ python app.py --transport virtualcam --model wav2lip --avatar_id mianshiguan1 --
 
 ### 主要特性
 
-✅ 后台渲染 - 不依赖浏览器页面
-✅ 自动音频设备 - 自动检测系统默认扬声器
-✅ 颜色修复 - 自动转换 BGR 到 RGB
-✅ Web 控制台 - 完整的 HTTP API 和页面控制
-✅ 实时监控 - 说话状态、设备信息实时显示
+✅ 后台渲染 - 不依赖浏览器页面  
+✅ 自动音频设备 - 自动检测系统默认扬声器  
+✅ 颜色修复 - 自动转换 BGR 到 RGB  
+✅ Web 控制台 - 完整的 HTTP API 和页面控制  
+✅ 实时监控 - 说话状态、设备信息实时显示  
 
 ### 运行模式
 
@@ -50,72 +50,6 @@ python app.py --transport virtualcam --model wav2lip --avatar_id mianshiguan1 --
 
 ---
 
-## 核心修复说明
-
-### 1. 音频设备自动检测
-
-**问题**: 原代码硬编码 `output_device_index=1`，可能指向麦克风
-
-**修复**: 自动检测系统默认输出设备
-
-```python
-# streamout/virtualcam.py
-if self.audio_output_device is not None:
-    output_device_index = self.audio_output_device
-else:
-    default_output_info = p.get_default_output_device_info()
-    output_device_index = default_output_info['index']
-```
-
-### 2. 颜色空间转换
-
-**问题**: OpenCV 使用 BGR，pyvirtualcam 需要 RGB，导致画面偏蓝
-
-**修复**: 自动转换颜色空间
-
-```python
-# streamout/virtualcam.py
-frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-self._cam.send(frame_rgb)
-```
-
----
-
-## 代码修改清单
-
-### 1. config.py - 新增参数
-
-```python
-parser.add_argument('--audio_output_device', type=int, default=None,
-                    help="音频输出设备索引（None=系统默认）")
-```
-
-### 2. app.py - 启动逻辑
-
-```python
-if opt.transport == 'virtualcam' or opt.transport == 'rtmp':
-    session_manager.add_session('0', build_avatar_session('0', params))
-    Thread(target=session_manager.get_session('0').render, args=(thread_quit,)).start()
-```
-
-### 3. streamout/virtualcam.py - 核心实现
-
-- 音频设备自动检测
-- BGR 到 RGB 颜色转换
-- PyAudio 音频播放
-
-### 4. server/routes.py - 新增 API
-
-```python
-# 获取虚拟摄像头状态
-GET /api/virtualcam/status
-```
-
-### 5. web/virtualcam.html - 控制页面
-
-完整的 Web UI 控制台
-
----
 
 ## 使用指南
 
@@ -170,7 +104,7 @@ pip install pyvirtualcam pyaudio
 #### 自动音频设备（推荐）
 
 ```bash
-python app.py --transport virtualcam --model wav2lip --avatar_id mianshiguan1 --tts doubao --REF_FILE zh_male_yangguangqingnian_emo_v2_mars_bigtts
+python app.py --transport virtualcam --model wav2lip --avatar_id wav2lip256_avatar1
 ```
 
 #### 手动指定音频设备
@@ -189,9 +123,7 @@ python app.py --transport virtualcam --audio_output_device 25
 # config.yaml
 transport: virtualcam
 model: wav2lip
-avatar_id: mianshiguan1
-tts: doubao
-REF_FILE: zh_male_yangguangqingnian_emo_v2_mars_bigtts
+avatar_id: wav2lip256_avatar1
 audio_output_device: 25  # 可选
 ```
 
@@ -384,7 +316,6 @@ app.py
 | `/human`                 | POST | 发送文本     |
 | `/interrupt_talk`        | POST | 打断说话     |
 | `/is_speaking`           | POST | 查询说话状态 |
-| `/api/virtualcam/status` | GET  | 获取完整状态 |
 
 ### 关键文件
 
@@ -403,8 +334,8 @@ app.py
 
 虚拟摄像头功能现已完整实现，支持：
 
-✅ **核心功能** - 自动音频检测、颜色修复、后台渲染
-✅ **易用性** - Web 控制台、HTTP API、交互式操作
-✅ **稳定性** - 独立线程、异常处理、资源管理
+✅ **核心功能** - 自动音频检测、颜色修复、后台渲染  
+✅ **易用性** - Web 控制台、HTTP API、交互式操作  
+✅ **稳定性** - 独立线程、异常处理、资源管理  
 
 现在可以轻松将数字人推流到 Zoom、Teams、OBS 等应用！

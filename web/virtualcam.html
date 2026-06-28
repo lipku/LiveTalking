@@ -304,55 +304,6 @@
                     </div>
                 </div>
 
-                <!-- 当前运行配置 -->
-                <div class="glass-card">
-                    <div class="card-header">
-                        <i class="bi bi-gear"></i>
-                        <span>当前运行配置</span>
-                        <span class="badge bg-info ms-auto">实时状态</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-info-custom mb-3">
-                            <i class="bi bi-info-circle"></i>
-                            <strong>提示：</strong>配置由服务启动参数决定，如需修改请编辑
-                            <code>config.yaml</code> 或修改启动命令参数。
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Avatar ID</label>
-                                <input type="text" id="avatarId" class="form-control" readonly
-                                    style="background: #f8f9fa;">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">TTS 类型</label>
-                                <input type="text" id="ttsType" class="form-control" readonly
-                                    style="background: #f8f9fa;">
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label fw-bold">REF_FILE (音色)</label>
-                                <input type="text" id="refFile" class="form-control" readonly
-                                    style="background: #f8f9fa;">
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">音频输出设备索引</label>
-                                <input type="text" id="audioDeviceIndex" class="form-control" readonly
-                                    style="background: #f8f9fa;" placeholder="系统默认">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">模型</label>
-                                <input type="text" id="modelType" class="form-control" readonly
-                                    style="background: #f8f9fa;">
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- 右侧：历史记录 -->
@@ -416,7 +367,7 @@
     </div>
 
     <script>
-        const BASE_URL = 'http://localhost:8010';
+        //const BASE_URL = 'http://localhost:8010';
         const SESSION_ID = '0';
         let speakingHistory = [];
 
@@ -424,39 +375,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             checkStatus();
             loadHistory();
-            loadVirtualCamStatus();
             // 定期更新状态
             setInterval(checkStatus, 3000);
-            setInterval(loadVirtualCamStatus, 5000);
         });
-
-        // 加载虚拟摄像头状态（实时配置）
-        async function loadVirtualCamStatus() {
-            try {
-                const response = await fetch(`${BASE_URL}/api/virtualcam/status`);
-                const result = await response.json();
-
-                if (result.code === 0 && result.data) {
-                    const data = result.data;
-                    // 显示当前运行的实际配置
-                    document.getElementById('avatarId').value = data.avatar_id || '未配置';
-                    document.getElementById('ttsType').value = data.tts || '未配置';
-                    document.getElementById('refFile').value = data.ref_file || '未配置';
-                    document.getElementById('modelType').value = data.model || '未配置';
-
-                    // 音频设备显示
-                    if (data.audio_output_device !== null) {
-                        document.getElementById('audioDeviceIndex').value = data.audio_output_device;
-                        document.getElementById('audioDevice').textContent = `设备索引 ${data.audio_output_device}`;
-                    } else {
-                        document.getElementById('audioDeviceIndex').value = '系统默认';
-                        document.getElementById('audioDevice').textContent = '系统默认扬声器';
-                    }
-                }
-            } catch (error) {
-                console.error('加载虚拟摄像头状态错误:', error);
-            }
-        }
 
         // 发送文本
         async function sendText() {
@@ -467,7 +388,7 @@
             }
 
             try {
-                const response = await fetch(`${BASE_URL}/human`, {
+                const response = await fetch(`/human`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -502,7 +423,7 @@
         // 打断播放
         async function interruptSpeech() {
             try {
-                const response = await fetch(`${BASE_URL}/interrupt_talk`, {
+                const response = await fetch(`/interrupt_talk`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sessionid: SESSION_ID })
@@ -524,7 +445,7 @@
         // 检查状态
         async function checkStatus() {
             try {
-                const response = await fetch(`${BASE_URL}/is_speaking`, {
+                const response = await fetch(`/is_speaking`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sessionid: SESSION_ID })
