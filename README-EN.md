@@ -55,7 +55,7 @@ LiveTalking leverages real-time streaming digital human technology to drive virt
 
 ## 1. Installation
 
-Tested on Ubuntu 24.04, Python 3.12, PyTorch 2.9.1, CUDA 13.0.
+Tested on Ubuntu 24.04, Python 3.12, PyTorch 2.9.1, CUDA 12.8.
 
 ### 1.1 Install Dependencies
 
@@ -64,7 +64,7 @@ git clone https://github.com/lipku/LiveTalking.git
 conda create -n livetalking python=3.12
 conda activate livetalking
 # If CUDA version is not 13.0 (check via nvidia-smi), install the corresponding PyTorch version(https://pytorch.org/get-started/previous-versions)
-pip install torch==2.9.1 torchvision==0.24.1 torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu130
+pip install torch==2.9.1 torchvision==0.24.1 torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu128
 cd LiveTalking
 pip install -r requirements.txt
 ```
@@ -115,9 +115,9 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 
 ### 2.5 Quick Experience
 
-Create an instance with a cloud image to run instantly:
-
-- [UCloud Image](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking)
+1. Create an instance with a cloud image to run instantly: [UCloud Image](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking)  
+2. Windows Integrated Package <https://pan.quark.cn/s/a040bf5cb065>
+3. Commercial Version Demo URL <https://www.livetalking.top>
 
 ### 2.6 Documentation
 <https://doc.livetalking.ai/en>

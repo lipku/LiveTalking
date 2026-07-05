@@ -54,5 +54,5 @@ dashscope
 
 # Local ASR server (SenseVoice/FunASR) — Issue #604
 # Optional: remove these lines if you don't need local ASR
-funasr
-modelscope
+#funasr
+#modelscope

@@ -57,7 +57,7 @@ class RTCManager:
         avatar_session = session_manager.get_session(sessionid)
 
         # 创建 PeerConnection
-        ice_server = RTCIceServer(urls='stun:stun.freeswitch.org:3478')
+        ice_server = RTCIceServer(urls=self.opt.stun) #'stun:stun.freeswitch.org:3478'
         pc = RTCPeerConnection(
             configuration=RTCConfiguration(iceServers=[ice_server])
         )
