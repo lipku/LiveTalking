@@ -28,7 +28,6 @@ import time
 import cv2
 import glob
 import pickle
-import copy
 
 import queue
 from queue import Queue
@@ -173,7 +172,7 @@ class LightReal(BaseAvatar):
     
     def paste_back_frame(self,pred_frame,idx:int):
         bbox = self.coord_list_cycle[idx]
-        combine_frame = copy.deepcopy(self.frame_list_cycle[idx])
+        combine_frame = self.frame_list_cycle[idx].copy()
         x1, y1, x2, y2 = bbox
 
         crop_img = self.face_list_cycle[idx]

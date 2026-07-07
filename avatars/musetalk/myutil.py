@@ -1,12 +1,11 @@
 import numpy as np
 import cv2
-import copy
 
 def get_image_blending(image,face,face_box,mask_array,crop_box):
     body = image
     x, y, x1, y1 = face_box
     x_s, y_s, x_e, y_e = crop_box
-    face_large = copy.deepcopy(body[y_s:y_e, x_s:x_e])
+    face_large = body[y_s:y_e, x_s:x_e].copy()
     face_large[y-y_s:y1-y_s, x-x_s:x1-x_s]=face
 
     mask_image = cv2.cvtColor(mask_array,cv2.COLOR_BGR2GRAY)
