@@ -16,6 +16,7 @@ import json
 import time
 import io
 import asyncio
+import threading
 import numpy as np
 from aiohttp import web
 
@@ -25,36 +26,44 @@ from utils.logger import logger
 # ─── Lazy Model Loader ────────────────────────────────────────────────────
 
 _sensevoice_model = None
+_sensevoice_load_lock = threading.Lock()
+_sensevoice_inference_lock = threading.Lock()
 
 
 def _load_sensevoice():
     """
     Load the SenseVoice model on first call (lazy singleton).
-    Thread-safe via the GIL — only one thread will enter the init block.
+    Concurrent first requests must share the same model initialization.
     """
     global _sensevoice_model
     if _sensevoice_model is not None:
         return _sensevoice_model
 
-    import torch
-    from funasr import AutoModel
+    with _sensevoice_load_lock:
+        if _sensevoice_model is not None:
+            return _sensevoice_model
 
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    logger.info(
-        f"[ASR] Loading SenseVoiceSmall on device='{device}' "
-        f"(first run will download ~500MB from ModelScope)..."
-    )
+        import torch
+        from funasr import AutoModel
 
-    t0 = time.perf_counter()
-    _sensevoice_model = AutoModel(
-        model="iic/SenseVoiceSmall",
-        vad_model="fsmn-vad",
-        vad_kwargs={"max_single_segment_time": 30000},
-        device=device,
-        trust_remote_code=True,
-    )
-    elapsed = time.perf_counter() - t0
-    logger.info(f"[ASR] ✅ SenseVoiceSmall ready — loaded in {elapsed:.1f}s on {device}")
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        logger.info(
+            f"[ASR] Loading SenseVoiceSmall on device='{device}' "
+            f"(first run will download ~500MB from ModelScope)..."
+        )
+
+        t0 = time.perf_counter()
+        _sensevoice_model = AutoModel(
+            model="iic/SenseVoiceSmall",
+            vad_model="fsmn-vad",
+            vad_kwargs={"max_single_segment_time": 30000},
+            device=device,
+            trust_remote_code=True,
+        )
+        elapsed = time.perf_counter() - t0
+        logger.info(
+            f"[ASR] ✅ SenseVoiceSmall ready — loaded in {elapsed:.1f}s on {device}"
+        )
     return _sensevoice_model
 
 
@@ -80,13 +89,14 @@ def _run_inference(audio_float32: np.ndarray, sample_rate: int, use_itn: bool):
     wav_buf.seek(0)
 
     t0 = time.perf_counter()
-    res = model.generate(
-        input=wav_buf,
-        cache={},
-        language="auto",
-        use_itn=use_itn,
-        batch_size_s=60,
-    )
+    with _sensevoice_inference_lock:
+        res = model.generate(
+            input=wav_buf,
+            cache={},
+            language="auto",
+            use_itn=use_itn,
+            batch_size_s=60,
+        )
     inference_ms = (time.perf_counter() - t0) * 1000
 
     text = ""
