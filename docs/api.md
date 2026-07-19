@@ -185,3 +185,46 @@ POST /set_audiotype
 ```json
 { "code": 0, "msg": "ok" }
 ```
+
+---
+
+## 9. SSE 事件流
+
+```
+GET /sse?sessionid=<sessionid>
+```
+
+**协议**: Server-Sent Events (SSE)
+
+用于接收**服务器→客户端**的异步状态推送（播报事件、状态变化等）
+
+**请求参数 (Query)**:
+
+| 参数 | 必填 | 类型 | 说明 |
+|------|------|------|------|
+| `sessionid` | 是 | string | 会话 ID |
+
+**响应格式**: `Content-Type: text/event-stream`
+
+每条事件一行 JSON，格式为：
+
+```
+data: {"status": "start"}
+
+```
+
+**客户端示例**:
+
+```javascript
+const es = new EventSource(`/sse?sessionid=${sessionid}`);
+es.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    // data 为服务器推送的播报状态/事件
+};
+es.onerror = () => {
+    // 连接出错或服务端主动断开，EventSource 会自动重连
+};
+
+// 断开时
+es.close();
+```

@@ -149,6 +149,44 @@ async def is_speaking(request):
         return json_error("session not found")
     return json_ok(data=avatar_session.is_speaking())
 
+async def sse_handler(request):
+    """SSE 事件流，推送服务器状态更新到客户端"""
+    sessionid = request.query.get('sessionid', '')
+    avatar_session = session_manager.get_session(sessionid)
+    if avatar_session is None:
+        return json_error("session not found")
+
+    response = web.StreamResponse(
+        status=200,
+        reason='OK',
+        headers={
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*',
+        }
+    )
+    await response.prepare(request)
+
+    import queue
+    msgqueue = queue.Queue()
+    avatar_session.add_msgqueue(msgqueue)
+
+    try:
+        while True:
+            try:
+                msg = msgqueue.get_nowait()
+                await response.write(f"data: {msg}\n\n".encode('utf-8'))
+            except queue.Empty:
+                await asyncio.sleep(0.01)
+    except (asyncio.CancelledError, ConnectionResetError):
+        logger.info('SSE connection closed for session: %s', sessionid)
+    finally:
+        if msgqueue in avatar_session.msgqueues:
+            avatar_session.msgqueues.remove(msgqueue)
+
+    return response
+
 
 async def admin_config(request):
     """Admin: 获取全局配置参数"""
@@ -202,6 +240,7 @@ def setup_routes(app):
     app.router.add_post("/is_speaking", is_speaking)
     app.router.add_get("/api/admin/config", admin_config)
     app.router.add_get("/api/admin/sessions", admin_sessions)
+    app.router.add_get('/sse', sse_handler)
 
     # ── Local ASR endpoint (SenseVoice/FunASR) ── Issue #604 ──
     try:

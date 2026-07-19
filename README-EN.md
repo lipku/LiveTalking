@@ -42,7 +42,7 @@ LiveTalking leverages real-time streaming digital human technology to drive virt
 
 | Scenario | Description |
 |----------|-------------|
-| **Virtual Streamer / Live Commerce** | 24/7 unmanned live streaming with LLM-generated sales scripts and action choreography for natural performance |
+| **Virtual Streamer / Live Commerce [LiveStream](https://github.com/lipku/livestream)** | 24/7 unmanned live streaming with LLM-generated sales scripts and action choreography for natural performance |
 | **AI Digital Human Customer Service** | Integrate enterprise knowledge bases for real-time voice Q&A with interruption support |
 | **Online Education / Training** | Digital teacher分身 for course recording, or API-driven digital instructor for real-time lectures |
 | **Intelligent Voice Assistant** | Pair with smart speakers or apps, calling the `/human` API to drive digital human voice interactions |

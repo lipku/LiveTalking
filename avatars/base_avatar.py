@@ -78,6 +78,7 @@ class BaseAvatar:
         self.custom_audio_cycle = {}
         self.custom_audio_index = {}
         self.custom_index = {}
+        self.msgqueues = []
         # self.custom_opt = {}
         self.__loadcustom()
 
@@ -215,9 +216,17 @@ class BaseAvatar:
         for key in self.custom_index:
             self.custom_index[key] = 0
 
+    def add_msgqueue(self, msgqueue):
+        self.msgqueues.append(msgqueue)
+
+    def send_msg(self, msg):
+        for q in self.msgqueues:
+            q.put(msg)
+
     def notify(self, eventpoint:dict):
         if eventpoint and eventpoint.get('status'):
             logger.info("notify:%s", eventpoint)
+            self.send_msg(json.dumps(eventpoint))
 
     def start_recording(self):
         if self.recording:
