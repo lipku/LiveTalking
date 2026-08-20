@@ -69,7 +69,7 @@ class WhisperASR(BaseASR):
         inputs = np.concatenate(self.frames) # [N * chunk]
         whisper_feature = self.audio_processor.audio2feat(inputs)
         whisper_chunks = self._feature2chunks(feature_array=whisper_feature,batch_size=self.batch_size,
-                                              audio_feat_win = [0,5],start=self.stride_left_size/2,
+                                              audio_feat_win = [2,3],start=self.stride_left_size/2,
                                               feature_idx_multiplier=2)
         self.feat_queue.put(whisper_chunks)
         # discard the old part to save memory
