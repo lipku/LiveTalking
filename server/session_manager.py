@@ -87,11 +87,16 @@ class SessionManager:
         self.sessions[sessionid] = avatar_session
         
     def remove_session(self, sessionid: str):
-        """销毁会话资源"""
+        """销毁会话资源：置位 quit_event，级联停掉 render/推理/合帧/TTS 线程"""
         if sessionid in self.sessions:
             logger.info(f"Removing session {sessionid}")
-            # todo: 还可以主动调 avatar_session 释放
-            self.sessions.pop(sessionid, None)
+            avatar_session = self.sessions.pop(sessionid, None)
+            try:
+                if avatar_session is not None and getattr(avatar_session, 'quit_event', None) is not None:
+                    avatar_session.flush_talk()
+                    avatar_session.quit_event.set()
+            except Exception:
+                logger.exception(f"session {sessionid} cleanup error")
 
 # 单例抛出
 session_manager = SessionManager()
