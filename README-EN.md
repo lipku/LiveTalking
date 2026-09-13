@@ -169,8 +169,8 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 ## 5. Docker
 
 Available images:
-- **AutoDL**: <https://www.codewithgpu.com/i/lipku/livetalking/base>  
-- **UCloud**: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking> — Supports opening any port  
+- **AutoDL**: [Image](https://www.codewithgpu.com/i/lipku/livetalking/base)  
+- **UCloud**: [Image](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking) — Supports opening any port  
 
 
 ---
@@ -196,7 +196,17 @@ Available images:
 
 ---
 
-## 7. Statement
+## 7. Commercial
+|dimension|Open Source Version|Commercial Version|
+|---|---|---|
+|Positioning|Open Source Community Edition, Apache 2\.0|Commercial paid version, targeted at customers requiring high performance and operable delivery|
+|Core Objectives|Rapid prototyping, secondary development, and academic research|Out Of The Box commercial delivery: performance acceleration, Self\-Adaptation actions, real\-time interaction|
+|Tech Stack|Three models: wav2lip, musetalk and ultralight|Added wav2lip and a full set of enhancement capabilities based on the open\-source version| 
+
+More detail <https://doc.livetalking.ai/en/docs/service/>  
+
+---
+## 8. Statement
 
 Videos developed based on this project and published on platforms such as Bilibili, WeChat Channels, and Douyin must include the LiveTalking watermark and logo.
 

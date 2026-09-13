@@ -126,8 +126,9 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 2. Windows整合包  <https://pan.quark.cn/s/a040bf5cb065>  
 3. 商用版体验地址 <https://www.livetalking.top>
 
-### 2.6 使用说明
+### 2.6 使用说明  
 <https://doc.livetalking.ai>
+
 ---
 
 ## 3. 系统架构
@@ -176,8 +177,8 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 ## 5. Docker 运行
 
 镜像说明:
-- **AutoDL**: <https://www.codewithgpu.com/i/lipku/livetalking/base>  
-- **UCloud**: <https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking> — 支持开放任意端口 
+- **AutoDL**: [镜像](https://www.codewithgpu.com/i/lipku/livetalking/base)  
+- **UCloud**: [镜像](https://www.compshare.cn/images/4458094e-a43d-45fe-9b57-de79253befe4?referral_code=3XW3852OBmnD089hMMrtuU&ytag=GPU_GitHub_livetalking) — 支持开放任意端口 
 
 
 ---
@@ -203,7 +204,18 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 
 ---
 
-## 7. 声明
+## 7. 商用版
+|维度|开源版 |商用版 |
+|---|---|---|
+|定位|开源社区版，Apache 2\.0 |商用付费版，面向需要高性能、可运营交付的客户|
+|核心目标|快速体验、二次开发、学习研究|开箱即用的商业交付：性能加速、自适应动作、实时语音互动|
+|技术栈|wav2lip / musetalk / ultralight 三款模型|在开源版基础上新增 wav2lipls 及全套增强能力|  
+
+更多详情 <https://doc.livetalking.ai/docs/service/>  
+
+---
+
+## 8. 声明
 
 基于本项目开发并发布在B站、视频号、抖音等平台上的视频需带上 LiveTalking 水印和标识。
 
