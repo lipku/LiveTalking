@@ -18,6 +18,11 @@ LLM_PROVIDERS = {
         "base_url": "https://api.orcarouter.ai/v1",
         "default_model": "orcarouter/auto",
     },
+    "cheaperinference": {
+        "api_key_env": "CHEAPER_INFERENCE_API_KEY",
+        "base_url": "https://api.cheaperinference.com/v1",
+        "default_model": "gpt-5.4-mini",
+    },
 }
 
 
