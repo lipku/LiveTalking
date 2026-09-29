@@ -146,7 +146,7 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 - 每个连接分配唯一 `sessionid`，支持多用户并发
 
 **逻辑层**
-- **LLM 引擎**: 对接 Qwen 等大模型生成对话回复（也可通过[OrcaRouter](https://www.orcarouter.ai/ref/ref_ecb2e41965cb84fbc26d) 等 OpenAI 兼容网关接入，`--llm_provider orcarouter`）
+- **LLM 引擎**: 对接 Qwen 等大模型生成对话回复（也可通过[OrcaRouter](https://www.orcarouter.ai/ref/ref_ecb2e41965cb84fbc26d) 等 OpenAI 兼容网关接入，`--llm_provider orcarouter`；或通过 [Cheaper Inference](https://cheaperinference.com) 接入，`--llm_provider cheaperinference`）。每个模型比其厂商官方标价便宜 15–60%。
 - **TTS 引擎**: 模块化设计，支持 EdgeTTS、GPT-SoVITS、CosyVoice、腾讯云等多种方案
 - **特征提取**: 同步提取音频的声学特征（如 Mel 频谱），用于口型推理
 

@@ -23,8 +23,8 @@ REF_TEXT: ''                   # reference text for voice cloning (English or Ch
 TTS_SERVER: ''                 # TTS server URL, no trailing slash
 
 # -------- LLM ----------------------------------------------------------
-llm_provider: dashscope        # dashscope / orcarouter
-llm_model: ''                  # model override, empty = provider default (qwen-plus / orcarouter/auto)
+llm_provider: dashscope        # dashscope / orcarouter / cheaperinference
+llm_model: ''                  # model override, empty = provider default (qwen-plus / orcarouter/auto / gpt-5.4-mini)
 
 # -------- Transport ----------------------------------------------------------
 transport: webrtc              # rtcpush / webrtc / rtmp / virtualcam

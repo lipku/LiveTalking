@@ -138,7 +138,7 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 - Each connection is assigned a unique `sessionid`, supporting multi-user concurrency
 
 **Logic Layer**
-- **LLM Engine**: Integrates with models like Qwen to generate conversational responses (also accessible through OpenAI-compatible gateways such as [OrcaRouter](https://www.orcarouter.ai/ref/ref_ecb2e41965cb84fbc26d), via `--llm_provider orcarouter`)
+- **LLM Engine**: Integrates with models like Qwen to generate conversational responses (also accessible through OpenAI-compatible gateways such as [OrcaRouter](https://www.orcarouter.ai/ref/ref_ecb2e41965cb84fbc26d), via `--llm_provider orcarouter`, or [Cheaper Inference](https://cheaperinference.com), via `--llm_provider cheaperinference`). Each model costs 15–60% less than the list price of its lab.
 - **TTS Engine**: Modular design supporting EdgeTTS, GPT-SoVITS, CosyVoice, Tencent Cloud, and more
 - **Feature Extraction**: Synchronously extracts acoustic features (e.g., Mel spectrograms) for lip-sync inference
 
