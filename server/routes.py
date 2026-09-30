@@ -144,7 +144,7 @@ async def is_speaking(request):
     """查询是否正在说话"""
     params = await request.json()
     sessionid = params.get('sessionid', '')
-    avatar_session = get_session(request, sessionid)
+    avatar_session = session_manager.get_session(sessionid)
     if avatar_session is None:
         return json_error("session not found")
     return json_ok(data=avatar_session.is_speaking())
@@ -254,9 +254,11 @@ def setup_routes(app):
     app.router.add_get("/api/admin/sessions", admin_sessions)
     app.router.add_get('/sse', sse_handler)
 
-    # ── Local ASR endpoint (SenseVoice/FunASR) ── Issue #604 ──
+    # ── Local ASR endpoint (STT plugin via registry) ── Issue #604 ──
     try:
-        from server.asr_server import asr_websocket_handler, is_funasr_available
+        from server.asr_server import asr_websocket_handler, init_asr_engine, is_funasr_available
+        opt = app.get("opt")
+        init_asr_engine(getattr(opt, "asr", "funasr") if opt else "funasr")
         if is_funasr_available():
             app.router.add_get("/api/asr", asr_websocket_handler)
             logger.info("[ASR] Local SenseVoice ASR endpoint enabled at /api/asr")

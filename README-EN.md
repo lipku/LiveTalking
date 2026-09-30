@@ -33,6 +33,7 @@ Domestic Mirror: [Gitee](https://gitee.com/lipku/LiveTalking) | [GitCode](https:
 7. Supports multi-concurrency
 8. Supports custom digital human avatars
 9. Provides frontend API integration
+10. Supports local speech recognition (STT): `/api/asr` WebSocket endpoint with SenseVoice/FunASR engines (optional dependency)
 
 ---
 
@@ -122,6 +123,20 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 ### 2.6 Documentation
 <https://doc.livetalking.ai/en>
 
+### 2.7 Local Speech Recognition (Optional)
+
+`/api/asr` provides a local speech recognition (STT) WebSocket endpoint, so browser clients can transcribe speech locally instead of calling an external FunASR server. It is implemented with SenseVoice/FunASR as an optional dependency:
+
+```bash
+pip install funasr modelscope
+```
+
+- The engine is selected with the `--asr` option (default `funasr`, i.e. SenseVoiceSmall + fsmn-vad; the model is downloaded from ModelScope on first run)
+- Without funasr installed the server still starts normally; `/api/asr` is simply not registered (see the log) and everything else keeps working
+- The protocol is compatible with the external FunASR server; see [docs/api.md](docs/api.md)
+
+> Note the distinction: `/api/asr` (`server/asr_server.py` + `stt/` plugins) performs **user speech recognition (STT)**; `avatars/audio_features/base_asr.py` extracts **lip-sync audio features** for the avatar and has nothing to do with speech recognition.
+
 ---
 
 ## 3. Architecture
@@ -160,7 +175,7 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 
 | Document | Description |
 |----------|-------------|
-| [docs/api.md](docs/api.md) | General API — WebRTC, text/audio driver, recording, action choreography |
+| [docs/api.md](docs/api.md) | General API — WebRTC, text/audio driver, recording, action choreography, local speech recognition (/api/asr WebSocket) |
 | [docs/avatar_api.md](docs/avatar_api.md) | Avatar Generation API — create tasks, query progress, delete tasks |
 | [docs/admin_api.md](docs/admin_api.md) | Admin API — global config, session monitoring, force stop |
 
@@ -211,7 +226,6 @@ More detail <https://doc.livetalking.ai/en/docs/service/>
 Videos developed based on this project and published on platforms such as Bilibili, WeChat Channels, and Douyin must include the LiveTalking watermark and logo.
 
 ---
-
 ## Citation
 
 If this repository helps your research or project, please cite our work.
