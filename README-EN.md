@@ -21,6 +21,22 @@ A real-time interactive streaming digital human engine enabling synchronized aud
 
 Domestic Mirror: [Gitee](https://gitee.com/lipku/LiveTalking) | [GitCode](https://gitcode.com/lipku/LiveTalking)
 
+## ❤️Sponsor
+
+> [Want to appear here?](mailto:lipku@foxmail.com)
+
+<details open>
+<summary>Click to collapse</summary>
+<table>
+<tr>
+<td width="180"><a href="https://www.packyapi.ai/register?aff=4gqz"><img src="assets/partner/packycode.png" alt="PackyCode" width="150"></a></td>
+<td>Access leading AI models through PackyCode with one API endpoint and one API key. Enjoy fast, reliable access with automatic failover and dedicated high-speed routes for Codex and Claude Code.
+Get started with $1 in free credits, a discount on your first top-up, and savings of up to 80% on eligible routes. Sign up through the <a href="https://www.packyapi.ai/register?aff=4gqz">link</a></td>
+</tr>
+</table>
+
+</details>
+
 ---
 
 ## Features

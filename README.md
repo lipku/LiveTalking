@@ -24,6 +24,22 @@
 国内镜像: [Gitee](https://gitee.com/lipku/LiveTalking) | [GitCode](https://gitcode.com/lipku/LiveTalking)
 
 
+## ❤️赞助商
+
+> [想出现在这里？](mailto:lipku@foxmail.com)
+
+<details open>
+<summary>点击折叠</summary>
+
+<table>
+<tr>
+<td width="180"><a href="https://www.packyapi.ai/register?aff=4gqz"><img src="assets/partner/packycode.png" alt="PackyCode" width="150"></a></td>
+<td>PackyCode 是一家稳定、高效的 API 中转服务商，一句话接入主流大模型。新用户首充立享折扣 + $1免费体验额度，多分组折扣低至 2 折起，提供专属Codex/Claude Code高速通道，点此<a href="https://www.packyapi.ai/register?aff=4gqz">链接</a>注册</td>
+</tr>
+</table>
+
+</details>
+
 ---
 
 ## Features
