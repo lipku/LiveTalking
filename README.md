@@ -52,6 +52,7 @@
 7. 支持多并发
 8. 支持自定义数字人形象
 9. 提供前端API接口对接
+10. 支持本地语音识别（STT）：`/api/asr` WebSocket 接口，SenseVoice/FunASR 引擎（可选依赖）
 
 ---
 
@@ -145,6 +146,20 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 ### 2.6 使用说明  
 <https://doc.livetalking.ai>
 
+### 2.7 本地语音识别（可选）
+
+`/api/asr` 提供本地语音识别（STT）WebSocket 接口，浏览器可将语音直接发给本服务识别，替代外置 FunASR 服务。基于 SenseVoice/FunASR 实现，属于可选依赖：
+
+```bash
+pip install funasr modelscope
+```
+
+- 引擎通过启动参数 `--asr` 选择，默认 `funasr`（SenseVoiceSmall + fsmn-vad，首次运行自动从 ModelScope 下载模型）
+- 未安装 funasr 时服务正常启动，`/api/asr` 不注册（仅日志提示），其余功能不受影响
+- 协议与外置 FunASR 服务兼容，详见 [docs/api.md](docs/api.md)
+
+> 注意区分：`/api/asr`（`server/asr_server.py` + `stt/` 插件）做的是**用户语音识别（STT）**；`avatars/audio_features/base_asr.py` 是数字人**口型特征提取**，与语音识别无关。
+
 ---
 
 ## 3. 系统架构
@@ -184,7 +199,7 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 
 | 文档 | 说明 |
 |------|------|
-| [docs/api.md](docs/api.md) | 通用业务 API — WebRTC、文本/音频驱动、录制、动作编排 |
+| [docs/api.md](docs/api.md) | 通用业务 API — WebRTC、文本/音频驱动、录制、动作编排、本地语音识别（/api/asr WebSocket） |
 | [docs/avatar_api.md](docs/avatar_api.md) | Avatar 生成 API — 创建任务、查询进度、删除任务 |
 | [docs/admin_api.md](docs/admin_api.md) | Admin 管理 API — 全局配置、会话监控、强制停止 |
 

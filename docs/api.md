@@ -289,3 +289,52 @@ es.onerror = () => {
 // 断开时
 es.close();
 ```
+
+---
+
+## 11. 本地语音识别（/api/asr）
+
+用户语音识别（STT）的 WebSocket 接口，与外置 FunASR 服务（`wss://www.funasr.com:10096/`）客户端协议兼容，浏览器端语音可直接在本服务内完成识别。此接口为 WebSocket 协议，不适用上文统一的 `{code, msg, data}` JSON 响应格式。
+
+**可用性**（可选依赖）：
+
+- 安装 `pip install funasr modelscope` 后启动服务即自动注册 `/api/asr`；未安装时服务正常启动，端点不注册（仅日志提示）
+- 引擎通过启动参数 `--asr` 选择，默认 `funasr`（SenseVoiceSmall + fsmn-vad，首次运行自动从 ModelScope 下载模型）
+
+```
+GET /api/asr
+```
+
+**协议**: WebSocket
+
+**消息流**:
+
+1. 客户端发送配置 JSON（开始说话）：
+
+```json
+{"chunk_size":[5,10,5], "wav_name":"h5", "is_speaking":true, "mode":"2pass", "itn":false}
+```
+
+2. 客户端持续发送二进制音频帧：16 kHz、单声道、PCM16 little-endian（每帧 960 字节 ≈ 60 ms）
+3. 客户端发送停止信号：
+
+```json
+{"is_speaking":false}
+```
+
+4. 服务端返回整段识别结果：
+
+```json
+{"text":"hello world", "mode":"2pass-offline", "is_final":true, "timestamp":null}
+```
+
+**回复字段**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `text` | string | 识别文本；推理失败或音频过短（< 20ms）时为 `""` |
+| `mode` | string | 正常识别时请求 `2pass` 映射为 `2pass-offline`，其他值原样返回；音频过短时原样返回请求的 `mode` |
+| `is_final` | bool | 恒为 `true`（整段离线识别） |
+| `timestamp` | null | 保留字段，恒为 `null` |
+
+> 注意区分：`/api/asr`（`server/asr_server.py` + `stt/` 插件，registry 类别 `stt`）做的是**用户语音识别（STT）**；`avatars/audio_features/base_asr.py` 是数字人**口型特征提取**（audio features for lip-sync），与语音识别无关。
