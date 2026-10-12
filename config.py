@@ -80,9 +80,9 @@ def parse_args():
 
     # ─── LLM ──────────────────────────────────────────────────────────
     parser.add_argument('--llm_provider', type=str, default='dashscope',
-                        help="llm provider: dashscope/orcarouter")
+                        help="llm provider: dashscope/orcarouter/cheaperinference")
     parser.add_argument('--llm_model', type=str, default='',
-                        help="llm model override, empty = provider default (qwen-plus / orcarouter/auto)")
+                        help="llm model override, empty = provider default (qwen-plus / orcarouter/auto / gpt-5.4-mini)")
 
     # ─── 传输 ─────────────────────────────────────────────────────────
     parser.add_argument('--transport', type=str, default='webrtc',
