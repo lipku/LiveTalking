@@ -36,6 +36,10 @@
 <td width="180"><a href="https://www.packyapi.ai/register?aff=4gqz"><img src="assets/partner/packycode.png" alt="PackyCode" width="150"></a></td>
 <td>PackyCode 是一家稳定、高效的 API 中转服务商，一句话接入主流大模型。新用户首充立享折扣 + $1免费体验额度，多分组折扣低至 2 折起，提供专属Codex/Claude Code高速通道，点此<a href="https://www.packyapi.ai/register?aff=4gqz">链接</a>注册</td>
 </tr>
+<tr>
+<td width="180"><a href="https://go.apimart.ai/tw-livetalking"><img src="assets/partner/apimart.png" alt="APIMart" width="150"></a></td>
+<td>APIMart 是专注 AI 图片/视频生成的低价 API 平台，GPT-Image-2 低至 $0.006/张，1 美元可出图 160+ 张。图片、视频一套异步 API 通吃，提交任务拿 ID、回调取结果，跑批万张不超时、换模型不改代码。按量付费、无月费，点此<a href="https://go.apimart.ai/tw-livetalking">链接</a>注册</td>
+</tr>
 </table>
 
 </details>
@@ -162,7 +166,7 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 - 每个连接分配唯一 `sessionid`，支持多用户并发
 
 **逻辑层**
-- **LLM 引擎**: 对接 Qwen 等大模型生成对话回复（也可通过[OrcaRouter](https://www.orcarouter.ai/ref/ref_ecb2e41965cb84fbc26d) 等 OpenAI 兼容网关接入，`--llm_provider orcarouter`）
+- **LLM 引擎**: 对接 Qwen 等大模型生成对话回复 
 - **TTS 引擎**: 模块化设计，支持 EdgeTTS、GPT-SoVITS、CosyVoice、腾讯云等多种方案
 - **特征提取**: 同步提取音频的声学特征（如 Mel 频谱），用于口型推理
 

@@ -33,6 +33,10 @@ Domestic Mirror: [Gitee](https://gitee.com/lipku/LiveTalking) | [GitCode](https:
 <td>Access leading AI models through PackyCode with one API endpoint and one API key. Enjoy fast, reliable access with automatic failover and dedicated high-speed routes for Codex and Claude Code.
 Get started with $1 in free credits, a discount on your first top-up, and savings of up to 80% on eligible routes. Sign up through the <a href="https://www.packyapi.ai/register?aff=4gqz">link</a></td>
 </tr>
+<tr>
+<td width="180"><a href="https://go.apimart.ai/tw-livetalking"><img src="assets/partner/apimart.png" alt="APIMart" width="150"></a></td>
+<td>APIMart is a low-cost API platform for AI image & video generation — GPT-Image-2 from $0.006/image, 160+ images per dollar. One async API covers both image and video: submit a task, get an ID, fetch results via polling or callback. Batch tens of thousands of images without timeouts, switch models without changing code. Pay-as-you-go with no monthly fee. Sign up <a href="https://go.apimart.ai/tw-livetalking">here</a> to get started.</td>
+</tr>
 </table>
 
 </details>
@@ -154,7 +158,7 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 - Each connection is assigned a unique `sessionid`, supporting multi-user concurrency
 
 **Logic Layer**
-- **LLM Engine**: Integrates with models like Qwen to generate conversational responses (also accessible through OpenAI-compatible gateways such as [OrcaRouter](https://www.orcarouter.ai/ref/ref_ecb2e41965cb84fbc26d), via `--llm_provider orcarouter`)
+- **LLM Engine**: Integrates with models like Qwen to generate conversational responses 
 - **TTS Engine**: Modular design supporting EdgeTTS, GPT-SoVITS, CosyVoice, Tencent Cloud, and more
 - **Feature Extraction**: Synchronously extracts acoustic features (e.g., Mel spectrograms) for lip-sync inference
 
