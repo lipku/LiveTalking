@@ -17,10 +17,13 @@ batch_size: 16
 customvideo_config: ''
 
 # -------- TTS ----------------------------------------------------------
-tts: edgetts                   # edgetts / gpt-sovits / cosyvoice / fishtts / tencent / doubao / indextts2 / azuretts / qwentts
+tts: edgetts                   # edgetts / gpt-sovits / xtts / tencent / doubao / azuretts / qwentts / omnitts
 REF_FILE: ''                   # voice name or reference audio file path (wav, 16kHz, mono)
 REF_TEXT: ''                   # reference text for voice cloning (English or Chinese)
 TTS_SERVER: ''                 # TTS server URL, no trailing slash
+
+# -------- ASR ----------------------------------------------------------
+asr: funasr                    # local ASR (STT) engine for /api/asr (funasr = SenseVoice; requires `pip install funasr modelscope`)
 
 # -------- LLM ----------------------------------------------------------
 llm_provider: dashscope        # dashscope / orcarouter

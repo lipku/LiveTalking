@@ -10,7 +10,7 @@ _REGISTRY: Dict[str, Dict[str, Type]] = {
     "llm": {},
     "tts": {},
     "avatar": {},
-    "output": {},
+    "streamout": {},
 }
 
 

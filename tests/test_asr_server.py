@@ -1,4 +1,13 @@
+"""Tests for the pluggable STT engine (stt/funasr.py) and the /api/asr WebSocket handler.
+
+零重依赖：torch / funasr / soundfile / aiohttp / utils.logger（registry 与
+stt 插件 import 链上）均以假模块注入 sys.modules，仅 numpy 依赖真实安装
+（与旧版测试一致）。可直接运行：python tests/test_asr_server.py
+"""
+
+import asyncio
 import importlib.util
+import json
 import sys
 import threading
 import time
@@ -8,11 +17,14 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest.mock import patch
 
-import numpy as np
+# 仅 numpy 依赖真实安装（与旧版测试一致）。必须在任何 patch.dict 之前导入：
+# patch.dict 退出时会 clear+恢复快照，若 numpy 首次导入发生在 patch 上下文内，
+# 退出后它会被移出 sys.modules，而下一次 import 会触发扩展模块重复初始化
+# （ImportError: cannot load module more than once per process）。
+import numpy  # noqa: F401
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = REPO_ROOT / "server" / "asr_server.py"
 
 
 class FakeLogger:
@@ -26,7 +38,7 @@ class FakeLogger:
         pass
 
 
-def load_asr_server(auto_model):
+def build_fake_modules(auto_model):
     fake_utils = types.ModuleType("utils")
     fake_logger_module = types.ModuleType("utils.logger")
     fake_logger_module.logger = FakeLogger()
@@ -54,7 +66,7 @@ def load_asr_server(auto_model):
     fake_soundfile = types.ModuleType("soundfile")
     fake_soundfile.write = lambda *args, **kwargs: None
 
-    injected_modules = {
+    return {
         "utils": fake_utils,
         "utils.logger": fake_logger_module,
         "aiohttp": fake_aiohttp,
@@ -64,15 +76,39 @@ def load_asr_server(auto_model):
         "funasr.utils.postprocess_utils": fake_postprocess,
         "soundfile": fake_soundfile,
     }
-    module_name = f"asr_server_under_test_{time.time_ns()}"
-    spec = importlib.util.spec_from_file_location(module_name, MODULE_PATH)
+
+
+def _load_repo_module(name, relpath):
+    """以规范模块名加载仓库内的 py 文件，使绝对/相对导入都解析到 sys.modules。"""
+    spec = importlib.util.spec_from_file_location(name, REPO_ROOT / relpath)
     module = importlib.util.module_from_spec(spec)
-    with patch.dict(sys.modules, injected_modules):
-        spec.loader.exec_module(module)
-    return module, injected_modules
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
-class ASRServerConcurrencyTestCase(unittest.TestCase):
+def load_stt_and_asr_server(auto_model):
+    """加载 registry + stt 插件 + server/asr_server.py（隔离环境，零重依赖）。
+
+    返回 (asr_server, stt_funasr, injected_modules)；后续调用引擎方法时，
+    需以 ``patch.dict(sys.modules, injected_modules)`` 提供假依赖。
+    """
+    injected = build_fake_modules(auto_model)
+    asr_name = f"asr_server_under_test_{time.time_ns()}"
+    with patch.dict(sys.modules, injected):
+        _load_repo_module("registry", "registry.py")
+        stt_pkg = types.ModuleType("stt")
+        stt_pkg.__path__ = [str(REPO_ROOT / "stt")]
+        sys.modules["stt"] = stt_pkg
+        _load_repo_module("stt.base_stt", "stt/base_stt.py")
+        stt_funasr = _load_repo_module("stt.funasr", "stt/funasr.py")
+        asr_server = _load_repo_module(asr_name, "server/asr_server.py")
+    return asr_server, stt_funasr, injected
+
+
+class FunASRSTTConcurrencyTestCase(unittest.TestCase):
+    """引擎行为（等价迁移自旧版 asr_server 测试）：懒加载单例 + 推理串行化。"""
+
     def test_lazy_model_load_constructs_one_model_across_threads(self):
         constructor_started = threading.Event()
         release_constructor = threading.Event()
@@ -89,12 +125,14 @@ class ASRServerConcurrencyTestCase(unittest.TestCase):
             release_constructor.wait(timeout=2)
             return FakeModel()
 
-        module, injected_modules = load_asr_server(auto_model)
-        with patch.dict(sys.modules, injected_modules):
+        _, stt_funasr, injected = load_stt_and_asr_server(auto_model)
+        engine = stt_funasr.FunASRSTT()
+
+        with patch.dict(sys.modules, injected):
             with ThreadPoolExecutor(max_workers=2) as pool:
-                first = pool.submit(module._load_sensevoice)
+                first = pool.submit(engine.ensure_loaded)
                 self.assertTrue(constructor_started.wait(timeout=1))
-                second = pool.submit(module._load_sensevoice)
+                second = pool.submit(engine.ensure_loaded)
                 try:
                     time.sleep(0.1)
                     self.assertEqual(len(constructor_calls), 1)
@@ -129,15 +167,16 @@ class ASRServerConcurrencyTestCase(unittest.TestCase):
                     with state_lock:
                         active_calls -= 1
 
-        module, injected_modules = load_asr_server(lambda **options: FakeModel())
-        module._sensevoice_model = FakeModel()
-        audio = np.zeros(1600, dtype=np.float32)
+        _, stt_funasr, injected = load_stt_and_asr_server(lambda **options: FakeModel())
+        engine = stt_funasr.FunASRSTT()
+        engine._model = FakeModel()
+        audio = b"\x00\x00" * 1600  # 1600 samples of PCM16 silence
 
-        with patch.dict(sys.modules, injected_modules):
+        with patch.dict(sys.modules, injected):
             with ThreadPoolExecutor(max_workers=2) as pool:
-                first = pool.submit(module._run_inference, audio, 16000, False)
+                first = pool.submit(engine.transcribe, audio, 16000, False)
                 self.assertTrue(first_generate_entered.wait(timeout=1))
-                second = pool.submit(module._run_inference, audio, 16000, False)
+                second = pool.submit(engine.transcribe, audio, 16000, False)
                 try:
                     self.assertFalse(second_generate_entered.wait(timeout=0.2))
                 finally:
@@ -145,6 +184,72 @@ class ASRServerConcurrencyTestCase(unittest.TestCase):
 
                 first.result(timeout=2)
                 second.result(timeout=2)
+
+
+class FakeMsg:
+    def __init__(self, msg_type, data):
+        self.type = msg_type
+        self.data = data
+
+
+class FakeWebSocket:
+    """最小 WS 桩：__aiter__ 依次吐出预设消息，send_str 记录服务端回复。"""
+
+    def __init__(self, messages):
+        self._messages = list(messages)
+        self.sent = []
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if not self._messages:
+            raise StopAsyncIteration
+        return self._messages.pop(0)
+
+    async def send_str(self, payload):
+        self.sent.append(payload)
+
+
+class ASRProtocolContractTestCase(unittest.TestCase):
+    """/api/asr 协议契约：配置 JSON → 二进制帧 → is_speaking:false → 识别结果。"""
+
+    def test_two_pass_offline_message_flow(self):
+        class FakeModel:
+            def generate(self, **options):
+                return [{"text": "hello world"}]
+
+        asr_server, _, injected = load_stt_and_asr_server(lambda **options: FakeModel())
+
+        config_frame = json.dumps({
+            "chunk_size": [5, 10, 5],
+            "wav_name": "h5",
+            "is_speaking": True,
+            "mode": "2pass",
+            "itn": False,
+        })
+        pcm_frame = b"\x01\x00" * 480  # 960 bytes = 60 ms @ 16 kHz PCM16
+        stop_frame = json.dumps({"is_speaking": False})
+
+        ws = FakeWebSocket([
+            FakeMsg("TEXT", config_frame),
+            FakeMsg("BINARY", pcm_frame),
+            FakeMsg("TEXT", stop_frame),
+        ])
+
+        with patch.dict(sys.modules, injected):
+            engine = asr_server.init_asr_engine("funasr")
+            self.assertIsNotNone(engine)
+            self.assertTrue(asr_server.is_funasr_available())
+            asyncio.run(asr_server._run_asr_session(ws, "127.0.0.1"))
+
+        self.assertEqual(len(ws.sent), 1)
+        self.assertEqual(json.loads(ws.sent[0]), {
+            "text": "hello world",
+            "mode": "2pass-offline",
+            "is_final": True,
+            "timestamp": None,
+        })
 
 
 if __name__ == "__main__":

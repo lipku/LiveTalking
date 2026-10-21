@@ -8,112 +8,51 @@
 #  The browser client (web/asr/main.js) can connect here instead, keeping
 #  all ASR processing local and cutting ~600ms of network + Whisper latency.
 #
+#  The engine itself is a pluggable STT plugin (registry category "stt",
+#  see stt/); FunASR/SenseVoice is the first registered engine ("funasr"),
+#  selected via the --asr option.
+#
 #  Copyright (C) 2024 LiveTalking@lipku https://github.com/lipku/LiveTalking
 #  Licensed under the Apache License, Version 2.0
 ###############################################################################
 
 import json
 import time
-import io
 import asyncio
-import threading
-import numpy as np
+
 from aiohttp import web
 
+import registry
+import stt.funasr  # noqa: F401  # importing registers the ("stt", "funasr") plugin
 from utils.logger import logger
 
 
-# ─── Lazy Model Loader ────────────────────────────────────────────────────
+# ─── Engine Bootstrap ──────────────────────────────────────────────────────
 
-_sensevoice_model = None
-_sensevoice_load_lock = threading.Lock()
-_sensevoice_inference_lock = threading.Lock()
+_engine = None
 
 
-def _load_sensevoice():
+def init_asr_engine(engine_name: str = "funasr"):
+    """Create the STT engine via the registry (once per process).
+
+    Called once at server startup with the --asr option (see server/routes.py).
+    On failure (unknown plugin / missing dependency) this degrades silently:
+    the engine stays None, /api/asr is not registered and only an info log
+    is emitted — same behaviour as the old funasr-availability check.
     """
-    Load the SenseVoice model on first call (lazy singleton).
-    Concurrent first requests must share the same model initialization.
-    """
-    global _sensevoice_model
-    if _sensevoice_model is not None:
-        return _sensevoice_model
-
-    with _sensevoice_load_lock:
-        if _sensevoice_model is not None:
-            return _sensevoice_model
-
-        import torch
-        from funasr import AutoModel
-
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        logger.info(
-            f"[ASR] Loading SenseVoiceSmall on device='{device}' "
-            f"(first run will download ~500MB from ModelScope)..."
-        )
-
-        t0 = time.perf_counter()
-        _sensevoice_model = AutoModel(
-            model="iic/SenseVoiceSmall",
-            vad_model="fsmn-vad",
-            vad_kwargs={"max_single_segment_time": 30000},
-            device=device,
-            trust_remote_code=True,
-        )
-        elapsed = time.perf_counter() - t0
-        logger.info(
-            f"[ASR] ✅ SenseVoiceSmall ready — loaded in {elapsed:.1f}s on {device}"
-        )
-    return _sensevoice_model
+    global _engine
+    if _engine is not None:
+        return _engine
+    try:
+        _engine = registry.create("stt", engine_name)
+    except Exception as e:
+        logger.info(f"[ASR] STT engine '{engine_name}' unavailable: {e}")
+    return _engine
 
 
-def _run_inference(audio_float32: np.ndarray, sample_rate: int, use_itn: bool):
-    """
-    Run SenseVoice inference on a float32 audio array.
-
-    This is a **blocking** call — always invoke from ``run_in_executor``.
-
-    Returns
-    -------
-    tuple[str, float, float]
-        (transcribed_text, inference_ms, audio_duration_s)
-    """
-    import soundfile as sf
-    from funasr.utils.postprocess_utils import rich_transcription_postprocess
-
-    model = _load_sensevoice()
-
-    # Write to in-memory WAV so funasr can read the sample rate from the header
-    wav_buf = io.BytesIO()
-    sf.write(wav_buf, audio_float32, sample_rate, format="WAV")
-    wav_buf.seek(0)
-
-    t0 = time.perf_counter()
-    with _sensevoice_inference_lock:
-        res = model.generate(
-            input=wav_buf,
-            cache={},
-            language="auto",
-            use_itn=use_itn,
-            batch_size_s=60,
-        )
-    inference_ms = (time.perf_counter() - t0) * 1000
-
-    text = ""
-    if res and len(res) > 0 and res[0].get("text"):
-        text = rich_transcription_postprocess(res[0]["text"])
-
-    audio_duration_s = len(audio_float32) / sample_rate
-
-    logger.info(
-        f"[ASR] ✅ SenseVoice inference complete\n"
-        f"       ├─ Latency     : {inference_ms:>8.0f} ms\n"
-        f"       ├─ Audio length: {audio_duration_s:>8.1f} s\n"
-        f"       ├─ RTF         : {inference_ms / 1000 / max(audio_duration_s, 0.001):>8.3f}\n"
-        f"       └─ Text        : \"{text[:100]}{'…' if len(text) > 100 else ''}\""
-    )
-
-    return text, inference_ms, audio_duration_s
+def is_funasr_available() -> bool:
+    """Return True if an STT engine was created and its deps are importable."""
+    return _engine is not None and _engine.is_available()
 
 
 # ─── WebSocket Handler ─────────────────────────────────────────────────────
@@ -145,8 +84,16 @@ async def asr_websocket_handler(request):
     """
     ws = web.WebSocketResponse()
     await ws.prepare(request)
+    await _run_asr_session(ws, request.remote)
+    return ws
 
-    client_ip = request.remote
+
+async def _run_asr_session(ws, client_ip):
+    """Message loop of one /api/asr session (protocol documented above)."""
+    if _engine is None:
+        logger.warning("[ASR] No STT engine initialized, closing connection")
+        return
+
     logger.info(f"[ASR] 🔌 WebSocket connected from {client_ip}")
 
     audio_buffer = bytearray()
@@ -190,55 +137,39 @@ async def asr_websocket_handler(request):
                         f"session wall time {session_elapsed:.1f}s"
                     )
 
-                    if buf_bytes < 640:  # < 20 ms of audio — skip
-                        logger.warning("[ASR] Audio too short (< 20ms), returning empty")
-                        await ws.send_str(json.dumps({
-                            "text": "",
-                            "mode": config.get("mode", "offline"),
-                            "is_final": True,
-                            "timestamp": None,
-                        }))
-                        continue
-
                     # Ensure even number of bytes for int16 conversion
                     if buf_bytes % 2 != 0:
                         logger.warning(f"[ASR] Odd number of bytes received ({buf_bytes}), dropping incomplete sample")
                         audio_buffer = audio_buffer[:-1]
                         buf_bytes -= 1
 
-                    # Convert PCM16 → float32 in [-1, 1]
-                    audio_int16 = np.frombuffer(bytes(audio_buffer), dtype=np.int16)
-                    audio_float32 = audio_int16.astype(np.float32) / 32768.0
                     use_itn = config.get("itn", False)
 
-                    # Offload blocking inference to a thread
+                    # Offload blocking inference to a thread (the engine does
+                    # the short-audio skip, PCM16 → float32 conversion and
+                    # builds the reply payload)
                     loop = asyncio.get_event_loop()
                     try:
-                        text, inference_ms, audio_dur = await loop.run_in_executor(
+                        reply = await loop.run_in_executor(
                             None,
-                            _run_inference,
-                            audio_float32,
+                            _engine.transcribe,
+                            bytes(audio_buffer),
                             SAMPLE_RATE,
                             use_itn,
+                            config.get("mode", "offline"),
                         )
                     except Exception as e:
                         logger.exception(f"[ASR] ❌ Inference failed: {e}")
-                        text = ""
+                        mode = config.get("mode", "offline")
+                        reply = {
+                            "text": "",
+                            "mode": "2pass-offline" if mode == "2pass" else mode,
+                            "is_final": True,
+                            "timestamp": None,
+                        }
 
-                    # Map the client mode to the response mode the frontend expects
-                    mode = config.get("mode", "offline")
-                    if mode == "2pass":
-                        response_mode = "2pass-offline"
-                    else:
-                        response_mode = mode  # "online" or "offline"
-
-                    await ws.send_str(json.dumps({
-                        "text": text,
-                        "mode": response_mode,
-                        "is_final": True,
-                        "timestamp": None,
-                    }))
-                    logger.info(f"[ASR] 📤 Result sent to client (mode={response_mode})")
+                    await ws.send_str(json.dumps(reply))
+                    logger.info(f"[ASR] 📤 Result sent to client (mode={reply['mode']})")
 
             elif msg.type == web.WSMsgType.BINARY:
                 audio_buffer.extend(msg.data)
@@ -253,15 +184,3 @@ async def asr_websocket_handler(request):
         logger.exception(f"[ASR] ❌ WebSocket handler error: {e}")
 
     logger.info(f"[ASR] 🔌 WebSocket disconnected ({client_ip})")
-    return ws
-
-
-# ─── Availability Check ───────────────────────────────────────────────────
-
-def is_funasr_available() -> bool:
-    """Return True if the ``funasr`` package is importable."""
-    try:
-        import funasr  # noqa: F401
-        return True
-    except ImportError:
-        return False
