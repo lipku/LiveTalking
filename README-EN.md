@@ -2,7 +2,7 @@
     <img src="./assets/LiveTalking-logo.png" align="middle" width="600"/>
 </p>
 
-English | [中文版](./README.md)
+English | [中文版](./README.md) | [日本語](./README-JA.md)
 
 <p align="center">
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
