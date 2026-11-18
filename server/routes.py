@@ -4,6 +4,7 @@
 
 import json
 import asyncio
+import threading
 from aiohttp import web
 
 from utils.logger import logger
@@ -36,6 +37,28 @@ from server.avatar_routes import setup_avatar_routes
 def get_session(request, sessionid: str):
     """从 app 中获取 session 实例"""
     return session_manager.get_session(sessionid)
+
+
+# 音频上传解码/重采样是 CPU 密集操作，放到默认线程池执行，避免阻塞事件循环
+# （WebRTC 信令与所有会话共用该 loop）；同一会话串行、跨会话并行
+_humanaudio_lock_guard = threading.Lock()
+
+
+def _get_humanaudio_lock(avatar_session):
+    """同一会话的上传需要串行（分块入队不能交错），不同会话之间可以并行"""
+    lock = getattr(avatar_session, '_humanaudio_lock', None)
+    if lock is None:
+        with _humanaudio_lock_guard:
+            lock = getattr(avatar_session, '_humanaudio_lock', None)
+            if lock is None:
+                lock = threading.Lock()
+                avatar_session._humanaudio_lock = lock
+    return lock
+
+
+def _put_audio_file_serialized(avatar_session, filebytes, datainfo):
+    with _get_humanaudio_lock(avatar_session):
+        avatar_session.put_audio_file(filebytes, datainfo)
 
 
 # ─── 路由处理函数 ──────────────────────────────────────────────────────────
@@ -100,7 +123,10 @@ async def humanaudio(request):
         avatar_session = get_session(request, sessionid)
         if avatar_session is None:
             return json_error("session not found")
-        avatar_session.put_audio_file(filebytes, datainfo)
+        # 解码/重采样耗时与音频时长相关，放到默认线程池执行，避免阻塞事件循环；
+        # 同一会话串行、跨会话并行
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, _put_audio_file_serialized, avatar_session, filebytes, datainfo)
         return json_ok()
     except Exception as e:
         logger.exception('humanaudio exception:')
