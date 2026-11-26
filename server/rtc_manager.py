@@ -70,6 +70,9 @@ class RTCManager:
         transceiver = pc.getTransceivers()[1]
         transceiver.setCodecPreferences(preferences)
 
+        # DataChannel（推送字幕等消息）
+        self._setup_datachannel(pc, avatar_session)
+
         await pc.setRemoteDescription(offer)
         answer = await pc.createAnswer()
         await pc.setLocalDescription(answer)
@@ -103,6 +106,39 @@ class RTCManager:
                 "sessionid": sessionid,
             }),
         )
+
+    def _setup_datachannel(self, pc, avatar_session):
+        """设置 DataChannel：把 avatar_session 的消息队列推送到客户端"""
+        async def send_msg(channel, msgqueue):
+            try:
+                while True:
+                    try:
+                        msg = msgqueue.get_nowait()
+                        channel.send(msg)
+                    except queue.Empty:
+                        await asyncio.sleep(0.01)
+            except asyncio.CancelledError:
+                logger.info('send_msg was cancelled')
+            finally:
+                logger.info('datachannel close')
+
+        @pc.on("datachannel")
+        async def on_datachannel(channel):
+            logger.info("datachannel open: %s", channel.label)
+            msgqueue = queue.Queue()
+            avatar_session.add_msgqueue(msgqueue)
+            task = asyncio.ensure_future(send_msg(channel, msgqueue))
+
+            @channel.on("close")
+            async def on_close():
+                task.cancel()
+                if msgqueue in avatar_session.msgqueues:
+                    avatar_session.msgqueues.remove(msgqueue)
+
+            @channel.on("message")
+            async def on_message(message):
+                if isinstance(message, str) and message.startswith("ping"):
+                    channel.send("pong" + message[4:])
 
     async def handle_whep(self, request):
         """

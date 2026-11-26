@@ -73,6 +73,19 @@
         .param-hint { font-size: 0.75rem; color: #94a3b8; }
         ::placeholder { color: #9ca3af !important; opacity: 1; }
         :-ms-input-placeholder { color: #9ca3af; }
+        .subtitle-list {
+            height: 220px;
+            overflow-y: auto;
+            background: rgba(255,255,255,0.6);
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 0.9rem;
+        }
+        .subtitle-item { margin: 5px 0; padding: 8px; border-radius: 6px; word-break: break-word; }
+        .subtitle-item.user { background: #e0f7fa; text-align: right; }
+        .subtitle-item.bot { background: #ffe0b2; text-align: left; }
+        .subtitle-empty { color: #94a3b8; text-align: center; padding-top: 90px; }
     </style>
 </head>
 <body>
@@ -151,6 +164,16 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Subtitles (DataChannel) -->
+            <div class="glass-card">
+                <div class="card-header"><i class="bi bi-subtitles"></i> Subtitles (DataChannel)</div>
+                <div class="card-body">
+                    <div class="subtitle-list" id="subtitleContainer">
+                        <div class="subtitle-empty">Subtitles will appear here after connecting...</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Right Column: Drivers + Actions -->
@@ -221,6 +244,8 @@
 <script>
 let pc = null;
 let sessionid = null;
+// data channel (receives subtitles and other messages)
+let dc = null;
 
 function updateStatus(connected) {
     const badge = document.getElementById('statusBadge');
@@ -291,6 +316,7 @@ function negotiate() {
 
 function start() {
     document.getElementById('offerError').style.display = 'none';
+    clearSubtitles();
     const config = { sdpSemantics: 'unified-plan' };
     if (document.getElementById('use-stun')?.checked) {
         config.iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
@@ -304,12 +330,36 @@ function start() {
         if (pc.connectionState === 'connected') updateStatus(true);
         else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') { updateStatus(false); setSessionId(null); }
     });
+
+    // --- DataChannel: created when the connection is established, receives subtitles ---
+    dc = pc.createDataChannel('chat');
+    dc.addEventListener('open', () => {
+        console.log('datachannel open');
+    });
+    dc.addEventListener('close', () => {
+        console.log('datachannel close');
+    });
+    dc.addEventListener('error', (e) => {
+        console.error('datachannel error:', e);
+    });
+    dc.addEventListener('message', (evt) => {
+        console.log('datachannel recv:', evt.data);
+        let data;
+        try {
+            data = JSON.parse(evt.data);
+        } catch (e) {
+            data = { text: evt.data };
+        }
+        displaySubtitle(data);
+    });
+
     negotiate();
     document.getElementById('btnStart').style.display = 'none';
     document.getElementById('btnStop').style.display = 'inline-block';
 }
 
 function stop() {
+    if (dc) { dc.close(); dc = null; }
     if (pc) { pc.close(); pc = null; }
     updateStatus(false);
     setSessionId(null);
@@ -317,6 +367,27 @@ function stop() {
     document.getElementById('btnStop').style.display = 'none';
     document.getElementById('video').srcObject = null;
     document.getElementById('audio').srcObject = null;
+}
+
+// --- Subtitle display ---
+function clearSubtitles() {
+    const container = document.getElementById('subtitleContainer');
+    container.innerHTML = '<div class="subtitle-empty">Subtitles will appear here after connecting...</div>';
+}
+
+function displaySubtitle(data) {
+    if (!data || !data.text) return;
+    // The server pushes a start/end event per sentence; only show start and user ASR results
+    if (data.from !== 'user' && data.status !== 'start') return;
+    const container = document.getElementById('subtitleContainer');
+    const empty = container.querySelector('.subtitle-empty');
+    if (empty) empty.remove();
+
+    const item = document.createElement('div');
+    item.className = 'subtitle-item ' + (data.from === 'user' ? 'user' : 'bot');
+    item.textContent = data.text;
+    container.appendChild(item);
+    container.scrollTop = container.scrollHeight;
 }
 
 // --- Text ---
