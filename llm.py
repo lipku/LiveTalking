@@ -18,6 +18,11 @@ LLM_PROVIDERS = {
         "base_url": "https://api.orcarouter.ai/v1",
         "default_model": "orcarouter/auto",
     },
+    "atlascloud": {
+        "api_key_env": "ATLASCLOUD_API_KEY",
+        "base_url": "https://api.atlascloud.ai/v1",
+        "default_model": "deepseek-ai/deepseek-v3.2",
+    },
 }
 
 

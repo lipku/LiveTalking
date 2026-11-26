@@ -23,8 +23,8 @@ REF_TEXT: ''                   # reference text for voice cloning (English or Ch
 TTS_SERVER: ''                 # TTS server URL, no trailing slash
 
 # -------- LLM ----------------------------------------------------------
-llm_provider: dashscope        # dashscope / orcarouter
-llm_model: ''                  # model override, empty = provider default (qwen-plus / orcarouter/auto)
+llm_provider: dashscope        # dashscope / orcarouter / atlascloud
+llm_model: ''                  # model override, empty = provider default (qwen-plus / orcarouter/auto / deepseek-ai/deepseek-v3.2)
 
 # -------- Transport ----------------------------------------------------------
 transport: webrtc              # rtcpush / webrtc / rtmp / virtualcam
