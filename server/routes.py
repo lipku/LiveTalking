@@ -33,6 +33,7 @@ def json_error(msg: str, code: int = -1):
 
 from server.session_manager import session_manager
 from server.avatar_routes import setup_avatar_routes
+from server.admin_routes import setup_admin_routes
 
 def get_session(request, sessionid: str):
     """从 app 中获取 session 实例"""
@@ -294,5 +295,8 @@ def setup_routes(app):
 
     # 注册 avatar 生成相关的路由
     setup_avatar_routes(app)
+
+    # 注册形象管理（/api/admin/avatars）路由
+    setup_admin_routes(app)
 
     app.router.add_static('/', path='web')

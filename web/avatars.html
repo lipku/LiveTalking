@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>形象管理 - LiveTalking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --accent-primary: #4361ee;
+            --accent-secondary: #3f37c9;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --border-radius: 16px;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px -10px rgba(67, 97, 238, 0.15);
+        }
+
+        .header-title {
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title i {
+            color: var(--accent-primary);
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            border: none;
+            color: white;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 8px 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary-custom:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.4);
+        }
+
+        .avatar-card {
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .avatar-thumb {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            background: #e2e8f0;
+            display: block;
+        }
+
+        .thumb-wrap {
+            position: relative;
+        }
+
+        .thumb-placeholder {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e2e8f0;
+            color: #94a3b8;
+            font-size: 3rem;
+        }
+
+        .avatar-body {
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .avatar-name {
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 4px;
+        }
+
+        .avatar-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            word-break: break-all;
+        }
+
+        .badge-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning-color);
+        }
+
+        .status-running {
+            background: rgba(67, 97, 238, 0.15);
+            color: var(--accent-primary);
+        }
+
+        .status-completed {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success-color);
+        }
+
+        .status-failed {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger-color);
+        }
+
+        .status-unknown {
+            background: rgba(100, 116, 139, 0.15);
+            color: var(--text-muted);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 3.5rem;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 6px;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="/index.html">
+                <i class="bi bi-person-bounding-box me-2"></i>LiveTalking 形象管理
+            </a>
+            <a href="/index.html" class="text-white-50 small text-decoration-none">返回主页</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1 class="header-title">
+            <i class="bi bi-people-fill"></i> 形象管理
+            <button class="btn btn-primary-custom ms-auto" onclick="openCreate()">
+                <i class="bi bi-plus-lg"></i> 新建形象
+            </button>
+            <button class="btn btn-outline-secondary" onclick="loadAvatars()">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </h1>
+
+        <div class="row g-4" id="avatarGrid"></div>
+    </div>
+
+    <!-- 创建形象对话框 -->
+    <div class="modal fade" id="createModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle-fill me-2"></i>新建形象</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createForm">
+                        <div class="mb-3">
+                            <label class="form-label">名称</label>
+                            <input type="text" class="form-control" name="name" placeholder="如: 我的数字人" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Avatar ID</label>
+                            <input type="text" class="form-control" name="avatar_id" placeholder="如: my_avatar_001" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-7 mb-3">
+                                <label class="form-label">算法模型</label>
+                                <select class="form-select" name="model_type" id="createModel">
+                                    <option value="wav2lip" selected>Wav2Lip</option>
+                                    <option value="musetalk">MuseTalk</option>
+                                </select>
+                            </div>
+                            <div class="col-5 mb-3">
+                                <label class="form-label">Face大小 <span class="text-muted small">img_size</span></label>
+                                <input type="number" class="form-control" name="img_size" id="createImgSize" value="256">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">视频文件</label>
+                            <input type="file" class="form-control" name="video_file" accept="video/*" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">描述</label>
+                            <textarea class="form-control" name="description" rows="2" placeholder="可选"></textarea>
+                        </div>
+                    </form>
+                    <div class="alert alert-danger d-none" id="createError"></div>
+                    <div class="d-none" id="createProgressWrap">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span id="createProgressLabel">上传中</span>
+                            <span id="createProgressPct">0%</span>
+                        </div>
+                        <div class="progress" style="height:8px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 id="createProgressBar" style="width:0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button class="btn btn-primary-custom" id="createSubmit" onclick="submitCreate()">
+                        <i class="bi bi-cloud-arrow-up-fill me-1"></i>提交生成
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑形象对话框 -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>编辑形象</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" name="avatar_id">
+                        <div class="mb-3">
+                            <label class="form-label">名称</label>
+                            <input type="text" class="form-control" name="name">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">算法模型</label>
+                            <select class="form-select" name="model_type">
+                                <option value="wav2lip">Wav2Lip</option>
+                                <option value="musetalk">MuseTalk</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">描述</label>
+                            <textarea class="form-control" name="description" rows="2"></textarea>
+                        </div>
+                    </form>
+                    <div class="alert alert-danger d-none" id="editError"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button class="btn btn-primary-custom" id="editSubmit" onclick="submitEdit()">
+                        <i class="bi bi-check-lg me-1"></i>保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const createModal = new bootstrap.Modal(document.getElementById('createModal'));
+        const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+        const STATUS_LABEL = {
+            'pending': ['生成中', 'status-pending'],
+            'running': ['生成中', 'status-running'],
+            'completed': ['已完成', 'status-completed'],
+            'failed': ['失败', 'status-failed'],
+        };
+
+        function escapeHtml(str) {
+            return String(str == null ? '' : str)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function statusBadge(status) {
+            const [label, cls] = STATUS_LABEL[status] || ['未知', 'status-unknown'];
+            return `<span class="badge-status ${cls}">${label}</span>`;
+        }
+
+        // ─── 列表 ────────────────────────────────────────────────
+        async function loadAvatars() {
+            const grid = document.getElementById('avatarGrid');
+            if (!grid.dataset.loaded) {
+                grid.innerHTML = Array.from({ length: 3 }).map(() => `
+                    <div class="col-md-4 col-lg-3">
+                        <div class="glass-card avatar-card">
+                            <div class="skeleton" style="aspect-ratio:1/1;border-radius:16px 16px 0 0;"></div>
+                            <div class="avatar-body">
+                                <div class="skeleton mb-2" style="width:60%;height:18px;"></div>
+                                <div class="skeleton" style="width:80%;height:14px;"></div>
+                            </div>
+                        </div>
+                    </div>`).join('');
+            }
+            try {
+                const res = await fetch('/api/admin/avatars');
+                const result = await res.json();
+                if (result.code !== 0) return console.error(result.msg);
+                renderAvatars(result.data.avatars);
+                grid.dataset.loaded = '1';
+                resumePendingPolls();
+            } catch (e) {
+                console.error('加载形象失败', e);
+            }
+        }
+
+        let avatarMap = {};
+        const taskProgress = {};   // avatar_id -> { progress, status }
+
+        // 更新卡片上的生成进度条（轮询时原地刷新，不重建整个列表）
+        function updateCardProgress(avatarId, progress, status) {
+            const enc = encodeURIComponent(avatarId);
+            const pct = Math.max(0, Math.min(100, Math.round(progress || 0)));
+            const bar = document.getElementById(`prog-bar-${enc}`);
+            if (bar) bar.style.width = pct + '%';
+            const txt = document.getElementById(`prog-pct-${enc}`);
+            if (txt) txt.textContent = pct + '%';
+            const label = document.getElementById(`prog-label-${enc}`);
+            if (label) label.textContent = status === 'pending' ? '排队中' : '生成进度';
+        }
+
+        function renderAvatars(avatars) {
+            const grid = document.getElementById('avatarGrid');
+            avatarMap = {};
+            (avatars || []).forEach(a => { avatarMap[a.avatar_id] = a; });
+            if (!avatars || avatars.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-12">
+                        <div class="empty-state glass-card">
+                            <i class="bi bi-inbox"></i>
+                            <h5>暂无形象</h5>
+                            <p>点击右上角「新建形象」上传视频开始创建。</p>
+                        </div>
+                    </div>`;
+                return;
+            }
+            grid.innerHTML = avatars.map(a => {
+                const id = escapeHtml(a.avatar_id);
+                const enc = encodeURIComponent(a.avatar_id);
+                const prog = taskProgress[a.avatar_id];
+                const pct = prog ? Math.max(0, Math.min(100, Math.round(prog.progress || 0))) : 0;
+                const showProgress = a.status === 'pending' || a.status === 'running';
+                return `
+                <div class="col-md-4 col-lg-3">
+                    <div class="glass-card avatar-card">
+                        <div class="thumb-wrap">
+                            <img class="avatar-thumb" alt="${id}"
+                                 src="/api/admin/avatars/${enc}/thumbnail"
+                                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                            <div class="thumb-placeholder" style="display:none;"><i class="bi bi-person-bounding-box"></i></div>
+                        </div>
+                        <div class="avatar-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="avatar-name">${escapeHtml(a.name) || id}</div>
+                                ${statusBadge(a.status)}
+                            </div>
+                            <div class="avatar-meta mt-1">
+                                <div><i class="bi bi-hash"></i> ${id}</div>
+                                <div><i class="bi bi-cpu"></i> ${escapeHtml(a.model_type) || '未指定'}</div>
+                            </div>
+                            ${a.description ? `<div class="avatar-meta mt-2">${escapeHtml(a.description)}</div>` : ''}
+                            ${showProgress ? `
+                            <div class="mt-2">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span id="prog-label-${enc}">${prog && prog.status === 'pending' ? '排队中' : '生成进度'}</span>
+                                    <span id="prog-pct-${enc}">${pct}%</span>
+                                </div>
+                                <div class="progress" style="height:6px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                         id="prog-bar-${enc}" style="width:${pct}%"></div>
+                                </div>
+                            </div>` : ''}
+                            <div class="card-actions mt-auto">
+                                <button class="btn btn-sm btn-primary-custom" onclick="useAvatar('${enc}')">
+                                    <i class="bi bi-play-fill"></i> 使用
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="openEdit('${enc}')">
+                                    <i class="bi bi-pencil"></i> 编辑
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeAvatar('${enc}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ─── 创建（上传视频 + 生成任务 + 元数据）──────────────────
+        const createModel = document.getElementById('createModel');
+        const createImgSize = document.getElementById('createImgSize');
+
+        // 主分支两个模型默认 img_size 均为 256
+        function syncImgSize() {
+            createImgSize.value = '256';
+        }
+
+        function openCreate() {
+            document.getElementById('createForm').reset();
+            syncImgSize();
+            document.getElementById('createError').classList.add('d-none');
+            hideCreateProgress();
+            createModal.show();
+        }
+
+        // ─── 上传/生成进度 ─────────────────────────────────────────
+        function setCreateProgress(label, percent) {
+            const pct = Math.max(0, Math.min(100, Math.round(percent || 0)));
+            document.getElementById('createProgressWrap').classList.remove('d-none');
+            document.getElementById('createProgressLabel').textContent = label;
+            document.getElementById('createProgressPct').textContent = pct + '%';
+            document.getElementById('createProgressBar').style.width = pct + '%';
+        }
+
+        function hideCreateProgress() {
+            const wrap = document.getElementById('createProgressWrap');
+            if (!wrap) return;
+            wrap.classList.add('d-none');
+            document.getElementById('createProgressBar').style.width = '0%';
+        }
+
+        // 用 XHR 上传以便拿到 upload 进度（fetch 不支持上传进度）
+        function uploadFormData(url, formData, onProgress) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', url);
+                xhr.upload.onprogress = e => {
+                    if (onProgress && e.lengthComputable && e.total > 0) {
+                        onProgress(e.loaded / e.total * 100);
+                    }
+                };
+                xhr.onload = () => {
+                    let result;
+                    try {
+                        result = JSON.parse(xhr.responseText || '{}');
+                    } catch (e) {
+                        return reject(new Error(`服务返回异常 (HTTP ${xhr.status})`));
+                    }
+                    if (result.code !== 0) return reject(new Error(result.msg || '任务创建失败'));
+                    resolve(result);
+                };
+                xhr.onerror = () => reject(new Error('网络错误，上传失败'));
+                xhr.onabort = () => reject(new Error('上传已取消'));
+                xhr.send(formData);
+            });
+        }
+
+        async function submitCreate() {
+            const form = document.getElementById('createForm');
+            if (!form.reportValidity()) return;
+            const btn = document.getElementById('createSubmit');
+            const errBox = document.getElementById('createError');
+            errBox.classList.add('d-none');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>提交中...';
+
+            const fd = new FormData(form);
+            const avatar_id = (fd.get('avatar_id') || '').trim();
+            const model_type = fd.get('model_type');
+            const name = (fd.get('name') || '').trim();
+            const description = (fd.get('description') || '').trim();
+
+            try {
+                // 1) 触发生成任务
+                const taskFd = new FormData();
+                taskFd.append('model', model_type);
+                taskFd.append('avatar_id', avatar_id);
+                taskFd.append('img_size', fd.get('img_size'));
+                taskFd.append('video_file', fd.get('video_file'));
+
+                setCreateProgress('上传中', 0);
+                const result = await uploadFormData('/api/avatar/task', taskFd, pct => {
+                    setCreateProgress('上传中', pct);
+                });
+                const taskId = result.data.task_id;
+                setCreateProgress('已提交，正在生成...', 100);
+
+                // 2) 写入形象元数据（pending）
+                const metaRes = await fetch('/api/admin/avatars', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ avatar_id, name, description, model_type, status: 'pending' }),
+                });
+                const metaResult = await metaRes.json();
+                if (metaResult.code !== 0) throw new Error('元数据保存失败: ' + metaResult.msg);
+
+                createModal.hide();
+                form.reset();
+                await loadAvatars();
+                pollTask(taskId, avatar_id);
+
+                // 立即在提示里告知 task id
+                console.log('avatar task created:', taskId);
+            } catch (e) {
+                hideCreateProgress();
+                errBox.textContent = e.message || String(e);
+                errBox.classList.remove('d-none');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i>提交生成';
+            }
+        }
+
+        // 轮询生成任务，结束后更新元数据状态
+        const pollingTasks = new Set();   // 记录正在轮询的 task_id，避免并发起重复循环
+        function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+        async function pollTask(taskId, avatarId) {
+            if (pollingTasks.has(taskId)) return;   // 该任务已有一个轮询循环在跑
+            pollingTasks.add(taskId);
+            try {
+                while (true) {
+                    let data;
+                    try {
+                        const res = await fetch(`/api/avatar/task/${taskId}`);
+                        const result = await res.json();
+                        if (result.code !== 0) {   // 任务已清理，停止轮询
+                            delete taskProgress[avatarId];
+                            break;
+                        }
+                        data = result.data;
+                    } catch (e) {
+                        console.error('轮询任务失败，稍后重试', e);
+                        await sleep(3000);
+                        continue;
+                    }
+
+                    // 实时刷新卡片上的生成进度条
+                    taskProgress[avatarId] = { progress: data.progress || 0, status: data.status };
+                    updateCardProgress(avatarId, data.progress, data.status);
+
+                    if (data.status === 'completed' || data.status === 'failed') {
+                        await fetch(`/api/admin/avatars/${encodeURIComponent(avatarId)}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: data.status }),
+                        });
+                        delete taskProgress[avatarId];
+                        loadAvatars();
+                        break;
+                    }
+                    // pending / running：继续轮询
+                    await sleep(1500);
+                }
+            } finally {
+                pollingTasks.delete(taskId);
+            }
+        }
+
+        // 页面刷新后，为仍处于生成中的形象恢复轮询（借助 /api/avatar/tasks 反查 task_id）
+        async function resumePendingPolls() {
+            const pending = Object.values(avatarMap)
+                .filter(a => a.status === 'pending' || a.status === 'running');
+            if (pending.length === 0) return;
+            try {
+                const res = await fetch('/api/avatar/tasks');
+                const result = await res.json();
+                if (result.code !== 0) return;
+                const tasks = result.data.tasks || [];
+                pending.forEach(a => {
+                    const t = tasks.find(x => x.avatar_id === a.avatar_id &&
+                        (x.status === 'pending' || x.status === 'running'));
+                    if (t) pollTask(t.task_id, a.avatar_id);
+                });
+            } catch (e) {
+                console.error('恢复轮询失败', e);
+            }
+        }
+
+        // ─── 编辑 ────────────────────────────────────────────────
+        function openEdit(encodedId) {
+            const a = avatarMap[decodeURIComponent(encodedId)];
+            if (!a) return;
+            const form = document.getElementById('editForm');
+            form.avatar_id.value = a.avatar_id;
+            form.name.value = a.name || '';
+            form.model_type.value = a.model_type || 'wav2lip';
+            form.description.value = a.description || '';
+            document.getElementById('editError').classList.add('d-none');
+            editModal.show();
+        }
+
+        async function submitEdit() {
+            const form = document.getElementById('editForm');
+            if (!form.reportValidity()) return;
+            const btn = document.getElementById('editSubmit');
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/api/admin/avatars/${encodeURIComponent(form.avatar_id.value)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: form.name.value.trim(),
+                        model_type: form.model_type.value,
+                        description: form.description.value.trim(),
+                    }),
+                });
+                const result = await res.json();
+                if (result.code !== 0) throw new Error(result.msg);
+                editModal.hide();
+                loadAvatars();
+            } catch (e) {
+                const errBox = document.getElementById('editError');
+                errBox.textContent = e.message || String(e);
+                errBox.classList.remove('d-none');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // ─── 删除 / 使用 ─────────────────────────────────────────
+        async function removeAvatar(encodedId) {
+            const avatarId = decodeURIComponent(encodedId);
+            if (!confirm(`确定删除形象「${avatarId}」吗？该形象的数据目录也会被删除。`)) return;
+            try {
+                const res = await fetch(`/api/admin/avatars/${encodedId}`, { method: 'DELETE' });
+                const result = await res.json();
+                if (result.code !== 0) return alert('删除失败: ' + result.msg);
+                loadAvatars();
+            } catch (e) {
+                alert('网络错误: ' + e.message);
+            }
+        }
+
+        function useAvatar(encodedId) {
+            const avatar = decodeURIComponent(encodedId);
+            window.open('/index.html?avatar=' + encodeURIComponent(avatar), '_blank');
+        }
+
+        loadAvatars();
+    </script>
+</body>
+
+</html>

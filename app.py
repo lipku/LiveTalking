@@ -127,6 +127,10 @@ def main():
     from config import parse_args
     opt = parse_args()
 
+    # 初始化管理数据库（形象管理）
+    from server import admin_db
+    admin_db.init_db(os.path.join(getattr(opt, 'data_path', './data'), 'admin.db'))
+
     # ─── 加载 avatar 插件（触发 @register 注册）──────────────────────
     _avatar_modules = {
         'musetalk':   'avatars.musetalk_avatar',

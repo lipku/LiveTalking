@@ -73,6 +73,37 @@ class TaskManager:
         with self.lock:
             return sorted([task.to_dict() for task in self.tasks.values()], key=lambda x: x['start_time'], reverse=True)
 
+    def _create_thumbnail(self, avatar_id, save_path):
+        """从生成结果的首帧生成 thumbnail.jpg，供形象管理页展示。"""
+        avatar_path = os.path.join(save_path, avatar_id)
+        thumbnail_path = os.path.join(avatar_path, "thumbnail.jpg")
+        source_candidates = [
+            os.path.join(avatar_path, "full_imgs", "00000000.png"),
+        ]
+
+        source_path = next((path for path in source_candidates if os.path.exists(path)), None)
+        if not source_path:
+            raise FileNotFoundError("Thumbnail source image not found in full_imgs")
+
+        image = cv2.imread(source_path)
+        if image is None:
+            raise ValueError(f"Failed to read thumbnail source image: {source_path}")
+
+        height, width = image.shape[:2]
+        max_edge = 256
+        scale = min(max_edge / max(height, width), 1.0)
+        if scale < 1.0:
+            resized = cv2.resize(
+                image,
+                (int(width * scale), int(height * scale)),
+                interpolation=cv2.INTER_AREA,
+            )
+        else:
+            resized = image
+
+        if not cv2.imwrite(thumbnail_path, resized, [int(cv2.IMWRITE_JPEG_QUALITY), 90]):
+            raise ValueError(f"Failed to write thumbnail image: {thumbnail_path}")
+
     def _run_task(self, task_id):
         task = self.get_task(task_id)
         if not task:
@@ -112,6 +143,12 @@ class TaskManager:
                 )
             else:
                 raise ValueError(f"Unsupported model type: {task.model_type}")
+
+            # 缩略图失败不影响形象生成结果
+            try:
+                self._create_thumbnail(task.avatar_id, task.params.get('save_path', './data/avatars'))
+            except Exception as e:
+                logger.warning(f"Failed to create thumbnail for {task.avatar_id}: {e}")
 
             task.status = "completed"
             task.progress = 100

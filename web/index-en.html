@@ -104,11 +104,11 @@
     <!-- Quick Links -->
     <div class="row g-3 mb-2">
         <div class="col-md-3">
-            <a href="/avatar-en.html" class="quick-link" target="_blank">
+            <a href="/avatars-en.html" class="quick-link" target="_blank">
                 <div class="glass-card p-3 text-center">
                     <i class="bi bi-person-bounding-box fs-2" style="color: #4361ee;"></i>
-                    <div class="fw-bold mt-2">Avatar Creator</div>
-                    <div class="small text-muted">Generate digital human avatars</div>
+                    <div class="fw-bold mt-2">Avatar Manager</div>
+                    <div class="small text-muted">Create · Edit · Use</div>
                 </div>
             </a>
         </div>
@@ -246,6 +246,12 @@ let pc = null;
 let sessionid = null;
 // data channel (receives subtitles and other messages)
 let dc = null;
+
+// --- Prefill from URL params (navigated from the avatar management page) ---
+const _query = new URLSearchParams(location.search);
+if (_query.get('avatar')) {
+    document.getElementById('offerAvatar').value = _query.get('avatar');
+}
 
 function updateStatus(connected) {
     const badge = document.getElementById('statusBadge');

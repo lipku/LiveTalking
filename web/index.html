@@ -106,11 +106,11 @@
     <!-- Quick Links -->
     <div class="row g-3 mb-2">
         <div class="col-md-3">
-            <a href="/avatar.html" class="quick-link" target="_blank">
+            <a href="/avatars.html" class="quick-link" target="_blank">
                 <div class="glass-card p-3 text-center">
                     <i class="bi bi-person-bounding-box fs-2" style="color: #4361ee;"></i>
-                    <div class="fw-bold mt-2">Avatar 生成</div>
-                    <div class="small text-muted">创建数字人形象</div>
+                    <div class="fw-bold mt-2">形象管理</div>
+                    <div class="small text-muted">创建 · 编辑 · 使用</div>
                 </div>
             </a>
         </div>
@@ -248,6 +248,12 @@ let pc = null;
 let sessionid = null;
 // data channel（接收字幕等消息）
 let dc = null;
+
+// ─── 从 URL 参数预填（由形象管理页「使用」跳转而来）─────────
+const _query = new URLSearchParams(location.search);
+if (_query.get('avatar')) {
+    document.getElementById('offerAvatar').value = _query.get('avatar');
+}
 
 function updateStatus(connected) {
     const badge = document.getElementById('statusBadge');
