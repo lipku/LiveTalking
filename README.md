@@ -2,7 +2,7 @@
     <img src="./assets/LiveTalking-logo.png" align="middle" width="600"/>
 </p>
 
-中文版 ｜ [English](./README-EN.md)
+中文版 ｜ [English](./README-EN.md) ｜ [日本語](./README-JA.md)
 
 
 <p align="center">
