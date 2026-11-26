@@ -2,7 +2,7 @@
 
 基础路径：`http://<host>:<listenport>`
 
-所有接口统一返回格式：
+除 WebRTC 信令（`/offer`、`/whep`）和文件下载（`/record/{sessionid}`）外，接口统一返回格式：
 
 ```json
 { "code": 0, "msg": "ok", "data": {} }
@@ -26,10 +26,12 @@ POST /offer
 |------|------|------|--------|------|
 | `sdp` | 是 | string | — | WebRTC Offer SDP |
 | `type` | 是 | string | — | 必须为 `offer` |
-| `avatar` | 否 | string | 启动参数值 | 指定数字人 ID |
+| `avatar` | 否 | string | 启动参数值 | 指定数字人 ID（`data/avatars` 下的目录名） |
 | `refaudio` | 否 | string | — | 参考音频 |
 | `reftext` | 否 | string | — | 参考文本 |
 | `custom_config` | 否 | string | — | 动作编排配置 JSON 字符串 |
+
+> 模型（`--model`）在服务启动时固定，不能按会话切换。
 
 **响应** (200):
 
@@ -40,6 +42,8 @@ POST /offer
   "sessionid": "session-uuid"
 }
 ```
+
+> 客户端如需接收字幕等服务器推送，可在创建 offer 前自建 DataChannel，详见 [11. DataChannel 事件推送（字幕）](#11-datachannel-事件推送字幕)。
 
 ---
 
@@ -58,12 +62,9 @@ POST /whep
 
 | 参数 | 必填 | 类型 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| `avatar` | 否 | string | 启动参数值 | 指定数字人 ID |
+| `avatar` | 否 | string | 启动参数值 | 指定数字人 ID（`data/avatars` 下的目录名） |
 | `refaudio` | 否 | string | — | 参考音频 |
 | `reftext` | 否 | string | — | 参考文本 |
-| `tts` | 否 | string | — | TTS 引擎 |
-| `tts_server` | 否 | string | — | TTS 服务地址 |
-| `tts_speed` | 否 | number | — | TTS 语速 |
 | `custom_config` | 否 | string | — | 动作编排配置 JSON 字符串 |
 
 **Body**: SDP offer 裸文本，例如：
@@ -289,3 +290,53 @@ es.onerror = () => {
 // 断开时
 es.close();
 ```
+
+> SSE 与 DataChannel 推送的是同一份消息队列，二选一即可。
+
+---
+
+## 11. DataChannel 事件推送（字幕）
+
+在 WebRTC 连接中通过 DataChannel 接收**服务器→客户端**的实时事件（字幕、播报状态），作为 SSE 的替代方案。
+
+**建立方式**: 客户端在创建 offer 之前自建 data channel，label 固定为 `chat`：
+
+```javascript
+pc = new RTCPeerConnection(config);
+
+dc = pc.createDataChannel('chat');
+dc.addEventListener('message', (evt) => {
+    const data = JSON.parse(evt.data);   // 字幕/状态事件
+});
+dc.addEventListener('open',  () => console.log('datachannel open'));
+dc.addEventListener('close', () => console.log('datachannel close'));
+
+negotiate();   // 之后照常 POST /offer
+```
+
+服务端在收到 `datachannel` 后，会为该通道创建一个消息队列，把 `avatar_session` 的所有事件以 JSON 字符串推送过来。
+
+**服务器→客户端消息**:
+
+```json
+{ "status": "start", "text": "你好，欢迎使用LiveTalking" }
+{ "status": "end",   "text": "你好，欢迎使用LiveTalking" }
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `status` | string | `start`: 该句开始播报；`end`: 该句播报结束 |
+| `text` | string | 播报文本（可据此显示字幕） |
+
+> 每个句子会推送 `start` / `end` 两条消息，展示字幕时只取 `start` 可以避免重复。
+> 消息中也可能携带 TTS 透传的 `tts` 字段；若后续接入语音识别，用户侧文本会带 `from: "user"`。
+
+**客户端→服务器消息**:
+
+| 消息 | 说明 |
+|------|------|
+| `ping` | 心跳，服务端回复 `pong`（原样带回 `ping` 后的内容） |
+
+**生命周期**: data channel 关闭时，服务端会取消推送协程并从消息队列列表中移除，不会泄漏。多个通道互不影响。
+
+`web/index.html` 与 `web/index-en.html` 已内置该逻辑，连接成功后即可在页面「字幕 (DataChannel)」区域滚动显示字幕。
