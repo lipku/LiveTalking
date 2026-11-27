@@ -251,11 +251,8 @@ If this repository helps your research or project, please cite our work.
 
 | Community | Link |
 |-----------|------|
-| Knowledge Planet | <https://t.zsxq.com/7NMyO> |
-| WeChat | wxwubug  |
+| X | <https://x.com/livetalking_ai> |
 | Telegram | <https://t.me/livetalking> |
-| Discord | <https://discord.gg/n5jSPCT3Uf> |
-| Email | lipku@foxmail.com |
-| WeChat Official | 数字人技术 |
+| WeChat | wxwubug  |
 
 <img src="./assets/qrcode-wechat.jpg" align="middle" />
